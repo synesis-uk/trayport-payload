@@ -8,8 +8,9 @@ import {
 import path from 'path'
 import { fileURLToPath } from 'url'
 
+import { admins, adminsOrEditors } from '@/access/roles'
 import { anyone } from '../access/anyone'
-import { authenticated } from '../access/authenticated'
+import { createLegacySourceField } from '@/fields/legacySource'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -18,16 +19,69 @@ export const Media: CollectionConfig = {
   slug: 'media',
   folders: true,
   access: {
-    create: authenticated,
-    delete: authenticated,
+    create: adminsOrEditors,
+    delete: admins,
     read: anyone,
-    update: authenticated,
+    update: adminsOrEditors,
+  },
+  admin: {
+    defaultColumns: ['filename', 'title', 'mimeType', 'updatedAt'],
+    group: 'Assets',
+    useAsTitle: 'title',
   },
   fields: [
     {
+      name: 'title',
+      type: 'text',
+      admin: {
+        description: 'Editorial asset name. This does not replace image alternative text.',
+      },
+    },
+    {
       name: 'alt',
       type: 'text',
-      //required: true,
+      admin: {
+        description:
+          'Describe the purpose of an image for people who cannot see it. Leave empty for decorative images or non-image files.',
+      },
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'decorative',
+          type: 'checkbox',
+          admin: {
+            description:
+              'Decorative images are intentionally announced with empty alternative text.',
+            width: '50%',
+          },
+          defaultValue: false,
+        },
+        {
+          name: 'altSource',
+          type: 'select',
+          admin: {
+            description:
+              'Records whether alternative text came from WordPress, a migration fallback, or editorial review.',
+            width: '50%',
+          },
+          options: [
+            {
+              label: 'WordPress',
+              value: 'wordpress',
+            },
+            {
+              label: 'Title fallback',
+              value: 'title-fallback',
+            },
+            {
+              label: 'Editor review',
+              value: 'editor-review',
+            },
+          ],
+        },
+      ],
     },
     {
       name: 'caption',
@@ -38,12 +92,33 @@ export const Media: CollectionConfig = {
         },
       }),
     },
+    {
+      name: 'attribution',
+      type: 'text',
+    },
+    {
+      name: 'externalURL',
+      type: 'text',
+      admin: {
+        description: 'Optional externally hosted source, primarily for video.',
+      },
+    },
+    {
+      name: 'poster',
+      type: 'upload',
+      admin: {
+        condition: (data) =>
+          typeof data?.mimeType === 'string' && data.mimeType.startsWith('video/'),
+      },
+      relationTo: 'media',
+    },
+    createLegacySourceField(),
   ],
   upload: {
-    // Upload to the public/media directory in Next.js making them publicly accessible even outside of Payload
     staticDir: path.resolve(dirname, '../../public/media'),
     adminThumbnail: 'thumbnail',
     focalPoint: true,
+    mimeTypes: ['image/*', 'video/*', 'application/pdf'],
     imageSizes: [
       {
         name: 'thumbnail',

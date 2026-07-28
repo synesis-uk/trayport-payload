@@ -1,133 +1,139 @@
 import type { CollectionConfig } from 'payload'
 
-import { authenticated } from '../../access/authenticated'
-import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
-import { Archive } from '../../blocks/ArchiveBlock/config'
-import { CallToAction } from '../../blocks/CallToAction/config'
-import { Content } from '../../blocks/Content/config'
-import { FormBlock } from '../../blocks/Form/config'
-import { MediaBlock } from '../../blocks/MediaBlock/config'
-import { hero } from '@/heros/config'
-import { slugField } from 'payload'
-import { populatePublishedAt } from '../../hooks/populatePublishedAt'
-import { generatePreviewPath } from '../../utilities/generatePreviewPath'
-import { revalidateDelete, revalidatePage } from './hooks/revalidatePage'
+import { admins, adminsOrEditors, publicOrCMSUsers } from '@/access/roles'
+import { trayportLayoutBlocks } from '@/blocks/Trayport/config'
+import { contentPathField } from '@/fields/contentPath'
+import { createLegacySourceField } from '@/fields/legacySource'
+import { publishedAtField } from '@/fields/publishedAt'
+import { seoField } from '@/fields/seo'
+import { trayportSlugField } from '@/fields/slug'
+import { generateContentPreviewPath } from '@/utilities/generateContentPreviewPath'
 
 import {
-  MetaDescriptionField,
-  MetaImageField,
-  MetaTitleField,
-  OverviewField,
-  PreviewField,
-} from '@payloadcms/plugin-seo/fields'
+  revalidateDeletedRoutableContent,
+  revalidateRoutableContent,
+} from '../hooks/revalidateContent'
 
-export const Pages: CollectionConfig<'pages'> = {
+export const Pages: CollectionConfig = {
   slug: 'pages',
   access: {
-    create: authenticated,
-    delete: authenticated,
-    read: authenticatedOrPublished,
-    update: authenticated,
+    create: adminsOrEditors,
+    delete: admins,
+    read: publicOrCMSUsers,
+    readVersions: adminsOrEditors,
+    update: adminsOrEditors,
   },
-  // This config controls what's populated by default when a page is referenced
-  // https://payloadcms.com/docs/queries/select#defaultpopulate-collection-config-property
-  // Type safe if the collection slug generic is passed to `CollectionConfig` - `CollectionConfig<'pages'>
   defaultPopulate: {
-    title: true,
+    meta: {
+      description: true,
+      image: true,
+    },
+    path: true,
     slug: true,
+    title: true,
   },
   admin: {
-    defaultColumns: ['title', 'slug', 'updatedAt'],
+    defaultColumns: ['title', 'path', '_status', 'updatedAt'],
+    group: 'Content',
     livePreview: {
-      url: ({ data, req }) =>
-        generatePreviewPath({
-          slug: data?.slug,
-          collection: 'pages',
-          req,
-        }),
+      url: ({ data }) => generateContentPreviewPath(data?.path),
     },
-    preview: (data, { req }) =>
-      generatePreviewPath({
-        slug: data?.slug as string,
-        collection: 'pages',
-        req,
-      }),
+    preview: (data) => generateContentPreviewPath(data?.path),
     useAsTitle: 'title',
   },
   fields: [
     {
       name: 'title',
       type: 'text',
+      index: true,
       required: true,
     },
     {
       type: 'tabs',
       tabs: [
         {
-          fields: [hero],
-          label: 'Hero',
-        },
-        {
+          label: 'Content',
           fields: [
+            {
+              name: 'summary',
+              type: 'textarea',
+              admin: {
+                description:
+                  'Optional editorial summary used in listings and internal content previews.',
+              },
+            },
             {
               name: 'layout',
               type: 'blocks',
-              blocks: [CallToAction, Content, MediaBlock, Archive, FormBlock],
-              required: true,
+              blocks: trayportLayoutBlocks,
               admin: {
                 initCollapsed: true,
               },
+              required: true,
             },
           ],
-          label: 'Content',
         },
         {
-          name: 'meta',
-          label: 'SEO',
+          label: 'Organisation',
           fields: [
-            OverviewField({
-              titlePath: 'meta.title',
-              descriptionPath: 'meta.description',
-              imagePath: 'meta.image',
-            }),
-            MetaTitleField({
-              hasGenerateFn: true,
-            }),
-            MetaImageField({
-              relationTo: 'media',
-            }),
-
-            MetaDescriptionField({}),
-            PreviewField({
-              // if the `generateUrl` function is configured
-              hasGenerateFn: true,
-
-              // field paths to match the target field for data
-              titlePath: 'meta.title',
-              descriptionPath: 'meta.description',
-            }),
+            {
+              name: 'parent',
+              type: 'relationship',
+              maxDepth: 1,
+              relationTo: 'pages',
+            },
+            {
+              name: 'navigationLabel',
+              type: 'text',
+              admin: {
+                description: 'Optional shorter title for menus and breadcrumbs.',
+              },
+            },
+            {
+              name: 'pageType',
+              type: 'select',
+              defaultValue: 'standard',
+              options: [
+                {
+                  label: 'Standard page',
+                  value: 'standard',
+                },
+                {
+                  label: 'Product page',
+                  value: 'product',
+                },
+                {
+                  label: 'Landing page',
+                  value: 'landing',
+                },
+                {
+                  label: 'Content index',
+                  value: 'index',
+                },
+              ],
+              required: true,
+            },
           ],
+        },
+        {
+          label: 'SEO',
+          fields: [seoField()],
         },
       ],
     },
-    {
-      name: 'publishedAt',
-      type: 'date',
-      admin: {
-        position: 'sidebar',
-      },
-    },
-    slugField(),
+    trayportSlugField(),
+    contentPathField(),
+    publishedAtField(),
+    createLegacySourceField(),
   ],
   hooks: {
-    afterChange: [revalidatePage],
-    beforeChange: [populatePublishedAt],
-    afterDelete: [revalidateDelete],
+    afterChange: [revalidateRoutableContent('pages-sitemap')],
+    afterDelete: [revalidateDeletedRoutableContent('pages-sitemap')],
   },
   versions: {
     drafts: {
       autosave: {
-        interval: 100, // We set this interval for optimal live preview
+        interval: 400,
       },
       schedulePublish: true,
     },

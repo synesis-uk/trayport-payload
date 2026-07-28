@@ -1,53 +1,61 @@
 import type { Metadata } from 'next'
-
-import { cn } from '@/utilities/ui'
-import { GeistMono } from 'geist/font/mono'
-import { GeistSans } from 'geist/font/sans'
-import React from 'react'
+import localFont from 'next/font/local'
+import { draftMode } from 'next/headers'
 
 import { AdminBar } from '@/components/AdminBar'
 import { Footer } from '@/Footer/Component'
 import { Header } from '@/Header/Component'
-import { Providers } from '@/providers'
-import { InitTheme } from '@/providers/Theme/InitTheme'
+import { getServerSideURL } from '@/utilities/getURL'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
-import { draftMode } from 'next/headers'
 
 import './globals.css'
-import { getServerSideURL } from '@/utilities/getURL'
+
+const inter = localFont({
+  display: 'swap',
+  fallback: ['Arial', 'sans-serif'],
+  src: './InterVariable.woff2',
+  variable: '--font-inter',
+  weight: '100 900',
+})
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { isEnabled } = await draftMode()
 
   return (
-    <html className={cn(GeistSans.variable, GeistMono.variable)} lang="en" suppressHydrationWarning>
+    <html className={inter.variable} lang="en">
       <head>
-        <InitTheme />
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
       </head>
       <body>
-        <Providers>
-          <AdminBar
-            adminBarProps={{
-              preview: isEnabled,
-            }}
-          />
-
-          <Header />
-          {children}
-          <Footer />
-        </Providers>
+        <AdminBar
+          adminBarProps={{
+            preview: isEnabled,
+          }}
+        />
+        <a className="skip-link" href="#main-content">
+          Skip to main content
+        </a>
+        <Header />
+        {children}
+        <Footer />
       </body>
     </html>
   )
 }
 
 export const metadata: Metadata = {
+  description:
+    'Trayport connects people and markets through energy trading solutions and a global commodities network.',
   metadataBase: new URL(getServerSideURL()),
-  openGraph: mergeOpenGraph(),
+  openGraph: mergeOpenGraph({
+    title: 'Trayport',
+  }),
+  title: {
+    default: 'Trayport',
+    template: '%s',
+  },
   twitter: {
     card: 'summary_large_image',
-    creator: '@payloadcms',
   },
 }

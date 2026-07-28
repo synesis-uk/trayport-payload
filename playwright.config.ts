@@ -1,41 +1,68 @@
+import 'dotenv/config'
 import { defineConfig, devices } from '@playwright/test'
 
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-import 'dotenv/config'
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000'
+const startLocalServer = process.env.PLAYWRIGHT_SKIP_WEBSERVER !== 'true'
 
-/**
- * See https://playwright.dev/docs/test-configuration.
- */
 export default defineConfig({
   testDir: './tests/e2e',
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
+  expect: {
+    timeout: 10_000,
+  },
+  fullyParallel: true,
+  forbidOnly: Boolean(process.env.CI),
+  outputDir: 'test-results',
+  preserveOutput: 'failures-only',
+  reporter: process.env.CI
+    ? [['github'], ['html', { open: 'never', outputFolder: 'playwright-report' }]]
+    : [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  timeout: 60_000,
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    // baseURL: 'http://localhost:3000',
-
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    baseURL,
+    colorScheme: 'light',
+    contextOptions: {
+      reducedMotion: 'reduce',
+    },
+    locale: 'en-GB',
+    screenshot: 'only-on-failure',
+    timezoneId: 'Europe/London',
     trace: 'on-first-retry',
+    video: 'retain-on-failure',
   },
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'], channel: 'chromium' },
+      name: 'desktop-chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: {
+          height: 1_000,
+          width: 1_440,
+        },
+      },
+    },
+    {
+      name: 'mobile-chromium',
+      use: {
+        ...devices['Pixel 5'],
+        viewport: {
+          height: 800,
+          width: 320,
+        },
+      },
     },
   ],
-  webServer: {
-    command: 'pnpm dev',
-    reuseExistingServer: true,
-    url: 'http://localhost:3000',
-  },
+  webServer: startLocalServer
+    ? {
+        command: 'corepack pnpm dev',
+        env: {
+          ...process.env,
+          NEXT_PUBLIC_SERVER_URL: baseURL,
+        },
+        reuseExistingServer: !process.env.CI,
+        timeout: 180_000,
+        url: baseURL,
+      }
+    : undefined,
+  workers: process.env.CI ? 2 : 3,
 })

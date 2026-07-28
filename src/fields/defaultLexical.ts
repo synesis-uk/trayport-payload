@@ -1,9 +1,12 @@
 import type { TextFieldSingleValidation } from 'payload'
 import {
   BoldFeature,
+  HeadingFeature,
   ItalicFeature,
   LinkFeature,
+  OrderedListFeature,
   ParagraphFeature,
+  UnorderedListFeature,
   lexicalEditor,
   UnderlineFeature,
   type LinkFields,
@@ -15,8 +18,11 @@ export const defaultLexical = lexicalEditor({
     UnderlineFeature(),
     BoldFeature(),
     ItalicFeature(),
+    HeadingFeature({ enabledHeadingSizes: ['h2', 'h3', 'h4'] }),
+    OrderedListFeature(),
+    UnorderedListFeature(),
     LinkFeature({
-      enabledCollections: ['pages', 'posts'],
+      enabledCollections: ['pages', 'articles', 'hubs'],
       fields: ({ defaultFields }) => {
         const defaultFieldsWithoutUrl = defaultFields.filter((field) => {
           if ('name' in field && field.name === 'url') return false

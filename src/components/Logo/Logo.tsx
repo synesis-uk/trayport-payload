@@ -1,29 +1,34 @@
 import clsx from 'clsx'
-import React from 'react'
 
-interface Props {
+type LogoProps = {
   className?: string
-  loading?: 'lazy' | 'eager'
-  priority?: 'auto' | 'high' | 'low'
+  title?: string
 }
 
-export const Logo = (props: Props) => {
-  const { loading: loadingFromProps, priority: priorityFromProps, className } = props
-
-  const loading = loadingFromProps || 'lazy'
-  const priority = priorityFromProps || 'low'
-
-  return (
-    /* eslint-disable @next/next/no-img-element */
-    <img
-      alt="Payload Logo"
-      width={193}
-      height={34}
-      loading={loading}
-      fetchPriority={priority}
-      decoding="async"
-      className={clsx('max-w-[9.375rem] w-full h-[34px]', className)}
-      src="https://raw.githubusercontent.com/payloadcms/payload/3.x/packages/ui/src/assets/payload-logo-light.svg"
-    />
-  )
-}
+export const Logo = ({ className, title = 'TMX Trayport' }: LogoProps) => (
+  <svg
+    aria-label={title}
+    className={clsx('h-auto w-full', className)}
+    role="img"
+    viewBox="0 0 484.7 148"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <g fill="currentColor">
+      <path d="M255.2 62.3h-9.9v31.4h-7.4V62.3H228v-6.6h27.3v6.6Z" />
+      <path d="M276.2 55.6c7.8 0 12.3 5.3 12.3 11.7 0 4.8-3.3 8.7-6.9 10l8.5 16.4h-8.6l-7.4-15.2h-5.3v15.2h-7.4V55.6h14.9Zm-7.5 6.7v10h7.1c3.3 0 5.3-2 5.3-5s-2.1-5-5.3-5h-7.1Z" />
+      <path d="M325.6 93.7h-7.8l-2.2-6.7h-13.5l-2.3 6.7H292l13.9-38.1h5.8l13.9 38.1Zm-21.5-13h9.4l-4.6-13.8-4.7 13.8Z" />
+      <path d="M342.4 78.1v15.6H335V78.1l-11.4-22.5h8.1l7.1 15.3 7-15.3h8.1l-11.4 22.5Z" />
+      <path d="M373.2 55.6c7.9 0 12.6 5.4 12.6 11.9s-4.6 11.9-12.6 11.9h-7.3v14.3h-7.4V55.6h14.8Zm-7.3 6.7v10.5h6.9c3.4 0 5.5-2.1 5.5-5.2s-2.1-5.2-5.5-5.2h-6.9Z" />
+      <path d="M415 59.3c3.8 3.7 3.8 8.1 3.8 15.3s0 11.6-3.8 15.3c-2.6 2.6-5.8 4-10.2 4s-7.6-1.4-10.2-4c-3.8-3.8-3.8-8.1-3.8-15.3s0-11.5 3.8-15.3c2.6-2.6 5.8-4 10.2-4s7.6 1.4 10.2 4ZM400 64c-1.4 1.6-1.9 3.4-1.9 10.7s.4 9 1.9 10.6c1.1 1.2 2.7 2.1 4.8 2.1s3.7-.9 4.8-2.1c1.4-1.6 1.9-3.4 1.9-10.6s-.4-9.1-1.9-10.7c-1.1-1.2-2.7-2-4.8-2s-3.7.8-4.8 2Z" />
+      <path d="M441.3 55.6c7.8 0 12.3 5.3 12.3 11.7 0 4.8-3.3 8.7-6.9 10l8.5 16.4h-8.6l-7.4-15.2h-5.3v15.2h-7.4V55.6h14.9Zm-7.4 6.7v10h7.1c3.3 0 5.3-2 5.3-5s-2.1-5-5.3-5h-7.1Z" />
+      <path d="M484.7 62.3h-9.9v31.4h-7.4V62.3h-9.9v-6.6h27.3v6.6Z" />
+      <path d="m14.8 97.2 12.7-2.8v-38h13.7v-5.7H0l1.4 5.7h13.4v40.8Z" />
+      <path
+        d="M82.9 50.7c-2.8 8-6.2 15.8-10 23.5-3.3-7.7-6.3-15.8-9.7-23.5H49.6v45.1h7.2V65.9L70 95.3l12.9-28.8v29.2h12.7v-45H82.8Z"
+        fillRule="evenodd"
+      />
+      <path d="M165.7 38h-16.9c3-12.4 4.6-25.2 4.6-38l-10.7 4.3c-2 67.5-49.6 125-115.5 139.6l-1.4 4.1c28.1-5.8 54-19.4 74.6-39.4h12.3l16.2-23.2 16.2 23.2h20.5l-27-35.3 27-35.3Z" />
+      <path d="m124.7 61.9-8.4-11.2h-14.1l16.8 21.9c2.2-3.3 4.1-6.9 5.6-10.7Z" />
+    </g>
+  </svg>
+)

@@ -1,49 +1,81 @@
 import type { Metadata } from 'next'
 
-import type { Media, Page, Post, Config } from '../payload-types'
+import type { Article, Hub, Media, Page, SiteSetting } from '@/payload-types'
 
-import { mergeOpenGraph } from './mergeOpenGraph'
 import { getServerSideURL } from './getURL'
+import { mergeOpenGraph } from './mergeOpenGraph'
 
-const getImageURL = (image?: Media | Config['db']['defaultIDType'] | null) => {
-  const serverUrl = getServerSideURL()
+type ContentDocument = Partial<Article> | Partial<Hub> | Partial<Page>
 
-  let url = serverUrl + '/website-template-OG.webp'
-
-  if (image && typeof image === 'object' && 'url' in image) {
-    const ogUrl = image.sizes?.og?.url
-
-    url = ogUrl ? serverUrl + ogUrl : serverUrl + image.url
-  }
-
-  return url
+const absoluteURL = (value?: string | null) => {
+  if (!value) return undefined
+  if (/^https?:\/\//i.test(value)) return value
+  return new URL(value, getServerSideURL()).toString()
 }
 
-export const generateMeta = async (args: {
-  doc: Partial<Page> | Partial<Post> | null
+const getImageURL = (image?: Media | number | null) => {
+  if (!image || typeof image !== 'object') return undefined
+  return absoluteURL(image.sizes?.og?.url || image.url)
+}
+
+const withSuffix = (title: string, suffix: string) => {
+  if (!suffix || title.toLowerCase().includes('trayport')) return title
+  return `${title}${suffix}`
+}
+
+const trimmed = (value?: string | null) => value?.trim() || undefined
+
+export const generateMeta = async ({
+  doc,
+  settings,
+}: {
+  doc: ContentDocument | null
+  settings?: SiteSetting | null
 }): Promise<Metadata> => {
-  const { doc } = args
+  if (!doc) return {}
 
-  const ogImage = getImageURL(doc?.meta?.image)
-
-  const title = doc?.meta?.title
-    ? doc?.meta?.title + ' | Payload Website Template'
-    : 'Payload Website Template'
+  const suffix = settings?.defaultSEO?.titleSuffix || ' | Trayport'
+  const plainTitle =
+    trimmed(doc.meta?.title) || trimmed(doc.title) || trimmed(settings?.siteName) || 'Trayport'
+  const title = withSuffix(plainTitle, suffix)
+  const description = trimmed(
+    doc.meta?.description ||
+      ('summary' in doc ? doc.summary : undefined) ||
+      ('excerpt' in doc ? doc.excerpt : undefined) ||
+      settings?.defaultSEO?.description,
+  )
+  const image =
+    getImageURL(doc.meta?.image) ||
+    getImageURL(settings?.defaultSEO?.image) ||
+    getImageURL('heroMedia' in doc ? doc.heroMedia : undefined)
+  const path = trimmed(typeof doc.path === 'string' ? doc.path : undefined) || '/'
+  const canonical = trimmed(doc.meta?.canonicalURL) || path
 
   return {
-    description: doc?.meta?.description,
+    alternates: {
+      canonical,
+    },
+    description,
     openGraph: mergeOpenGraph({
-      description: doc?.meta?.description || '',
-      images: ogImage
-        ? [
-            {
-              url: ogImage,
-            },
-          ]
-        : undefined,
+      description: description || '',
+      images: image ? [{ url: image }] : undefined,
       title,
-      url: Array.isArray(doc?.slug) ? doc?.slug.join('/') : '/',
+      type: 'website',
+      url: absoluteURL(path),
     }),
+    robots:
+      doc.meta?.noIndex || doc.meta?.noFollow
+        ? {
+            follow: !doc.meta?.noFollow,
+            index: !doc.meta?.noIndex,
+          }
+        : undefined,
     title,
+    twitter: {
+      card: 'summary_large_image',
+      description,
+      images: image ? [image] : undefined,
+      title,
+    },
   }
 }

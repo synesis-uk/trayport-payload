@@ -1,5 +1,8 @@
-import PageTemplate, { generateMetadata } from './[slug]/page'
+import { ContentRoute, contentRouteMetadata } from './contentRoute'
 
-export default PageTemplate
+export default function HomePage() {
+  return <ContentRoute />
+}
 
-export { generateMetadata }
+export const generateMetadata = () => contentRouteMetadata({})
+export const dynamic = 'force-dynamic'

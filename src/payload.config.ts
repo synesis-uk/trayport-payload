@@ -1,32 +1,35 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
+import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import sharp from 'sharp'
 import path from 'path'
 import { buildConfig, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
 
-import { Categories } from './collections/Categories'
+import { ArticleCategories } from './collections/ArticleCategories'
+import { Articles } from './collections/Articles'
+import { AssetClasses } from './collections/AssetClasses'
+import { Hubs } from './collections/Hubs'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
-import { Posts } from './collections/Posts'
+import { Regions } from './collections/Regions'
 import { Users } from './collections/Users'
-import { Footer } from './Footer/config'
-import { Header } from './Header/config'
+import { Venues } from './collections/Venues'
+import { VenueTypes } from './collections/VenueTypes'
+import { Footer } from './globals/Footer'
+import { Navigation } from './globals/Navigation'
+import { SiteSettings } from './globals/SiteSettings'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+const smtpPort = Number.parseInt(process.env.SMTP_PORT || '1025', 10)
 
 export default buildConfig({
   admin: {
     components: {
-      // The `BeforeLogin` component renders a message that you see while logging into your admin panel.
-      // Feel free to delete this at any time. Simply remove the line below.
       beforeLogin: ['@/components/BeforeLogin'],
-      // The `BeforeDashboard` component renders the 'welcome' block that you see after logging into your admin panel.
-      // Feel free to delete this at any time. Simply remove the line below.
-      beforeDashboard: ['@/components/BeforeDashboard'],
     },
     importMap: {
       baseDir: path.resolve(dirname),
@@ -58,13 +61,41 @@ export default buildConfig({
   // This config helps us configure global or default features that the other editors can inherit
   editor: defaultLexical,
   db: postgresAdapter({
+    migrationDir: path.resolve(dirname, 'database/migrations'),
     pool: {
       connectionString: process.env.DATABASE_URL || '',
     },
+    push: process.env.PAYLOAD_DB_PUSH === 'true',
   }),
-  collections: [Pages, Posts, Media, Categories, Users],
+  email: process.env.SMTP_HOST
+    ? nodemailerAdapter({
+        defaultFromAddress: process.env.SMTP_FROM_ADDRESS || 'no-reply@trayport.local',
+        defaultFromName: process.env.SMTP_FROM_NAME || 'Trayport Website',
+        skipVerify: process.env.SMTP_SKIP_VERIFY === 'true',
+        transportOptions: {
+          host: process.env.SMTP_HOST,
+          port: Number.isNaN(smtpPort) ? 1025 : smtpPort,
+          secure: process.env.SMTP_SECURE === 'true',
+        },
+      })
+    : undefined,
+  collections: [
+    Pages,
+    Articles,
+    Hubs,
+    Venues,
+    Media,
+    ArticleCategories,
+    AssetClasses,
+    VenueTypes,
+    Regions,
+    Users,
+  ],
   cors: [getServerSideURL()].filter(Boolean),
-  globals: [Header, Footer],
+  globals: [Navigation, Footer, SiteSettings],
+  graphQL: {
+    disable: true,
+  },
   plugins,
   secret: process.env.PAYLOAD_SECRET,
   sharp,

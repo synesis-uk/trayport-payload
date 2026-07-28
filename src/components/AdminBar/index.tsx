@@ -3,10 +3,9 @@
 import type { PayloadAdminBarProps, PayloadMeUser } from '@payloadcms/admin-bar'
 
 import { cn } from '@/utilities/ui'
-import { useSelectedLayoutSegments } from 'next/navigation'
 import { PayloadAdminBar } from '@payloadcms/admin-bar'
 import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 import './index.scss'
 
@@ -15,17 +14,17 @@ import { getClientSideURL } from '@/utilities/getURL'
 const baseClass = 'admin-bar'
 
 const collectionLabels = {
+  articles: {
+    plural: 'Articles',
+    singular: 'Article',
+  },
+  hubs: {
+    plural: 'Market hubs',
+    singular: 'Market hub',
+  },
   pages: {
     plural: 'Pages',
     singular: 'Page',
-  },
-  posts: {
-    plural: 'Posts',
-    singular: 'Post',
-  },
-  projects: {
-    plural: 'Projects',
-    singular: 'Project',
   },
 }
 
@@ -35,11 +34,13 @@ export const AdminBar: React.FC<{
   adminBarProps?: PayloadAdminBarProps
 }> = (props) => {
   const { adminBarProps } = props || {}
-  const segments = useSelectedLayoutSegments()
   const [show, setShow] = useState(false)
-  const collection = (
-    collectionLabels[segments?.[1] as keyof typeof collectionLabels] ? segments[1] : 'pages'
-  ) as keyof typeof collectionLabels
+  const pathname = usePathname()
+  const collection: keyof typeof collectionLabels = pathname.startsWith('/insights/')
+    ? 'articles'
+    : pathname.startsWith('/market-coverage/')
+      ? 'hubs'
+      : 'pages'
   const router = useRouter()
 
   const onAuthChange = React.useCallback((user: PayloadMeUser) => {

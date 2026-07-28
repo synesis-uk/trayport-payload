@@ -1,22 +1,36 @@
-build
-dist / media
-node_modules
-.DS_Store
-.env
-.next
-next-env.d.ts
-.vercel
+# Build and dependency output
+build/
+dist/
+node_modules/
+.next/
+.pnpm-store/
+*.tsbuildinfo
+.vercel/
 
-# Payload default media upload directory
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# Operating-system files
+.DS_Store
+next-env.d.ts
+
+# Payload local media fallback
 public/media/
 
+# WordPress migration extracts, transformed data, and reports
+migration/work/*
+!migration/work/.gitkeep
+
+# Generated site metadata
 public/robots.txt
 public/sitemap*.xml
 
-
 # Playwright
-node_modules/
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+.playwright-cli/
+output/
