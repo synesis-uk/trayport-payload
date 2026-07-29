@@ -1,4 +1,5 @@
 import { extract } from './extract'
+import { inventoryProduction } from './inventory'
 import { load } from './load'
 import { preflight } from './preflight'
 import { transform } from './transform'
@@ -20,6 +21,14 @@ const main = async (): Promise<void> => {
     case 'extract':
       extract(valueAfter('--run-id'))
       return
+    case 'inventory': {
+      const scope = valueAfter('--scope') || 'production'
+      if (scope !== 'production') {
+        throw new Error(`Unknown inventory scope: ${scope}. Expected production.`)
+      }
+      inventoryProduction(valueAfter('--run-id'))
+      return
+    }
     case 'transform':
       transform(valueAfter('--run-id'))
       return
@@ -35,7 +44,7 @@ const main = async (): Promise<void> => {
       return
     default:
       throw new Error(
-        'Usage: tsx migration/cli.ts <preflight|extract|transform|load|validate> [--scope poc] [--run-id name] [--dry-run] [--publish]',
+        'Usage: tsx migration/cli.ts <preflight|inventory|extract|transform|load|validate> [--scope production|poc] [--run-id name] [--dry-run] [--publish]',
       )
   }
 }

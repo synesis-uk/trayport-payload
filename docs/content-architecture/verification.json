@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "scope": "production",
+  "status": "passed",
+  "assertions": [
+    {
+      "id": "directPublicRoutes",
+      "expected": 53,
+      "actual": 53,
+      "passed": true
+    },
+    {
+      "id": "listingRoutes",
+      "expected": 243,
+      "actual": 243,
+      "passed": true
+    },
+    {
+      "id": "routes",
+      "expected": 296,
+      "actual": 296,
+      "passed": true
+    },
+    {
+      "id": "redirects",
+      "expected": 50,
+      "actual": 50,
+      "passed": true
+    },
+    {
+      "id": "exclusions",
+      "expected": 1,
+      "actual": 1,
+      "passed": true
+    },
+    {
+      "id": "unknownArchetypes",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "unknownLayouts",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "unknownTaxonomies",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "errorIssues",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "duplicateCanonicalOwners",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "route-owner:page-documents",
+      "expected": 51,
+      "actual": 51,
+      "passed": true
+    },
+    {
+      "id": "route-owner:venue-index",
+      "expected": 1,
+      "actual": 1,
+      "passed": true
+    },
+    {
+      "id": "route-owner:market-coverage-index",
+      "expected": 1,
+      "actual": 1,
+      "passed": true
+    },
+    {
+      "id": "route-owner:editorial-posts",
+      "expected": 90,
+      "actual": 90,
+      "passed": true
+    },
+    {
+      "id": "route-owner:venue-details",
+      "expected": 66,
+      "actual": 66,
+      "passed": true
+    },
+    {
+      "id": "route-owner:hub-details",
+      "expected": 72,
+      "actual": 72,
+      "passed": true
+    },
+    {
+      "id": "route-owner:learning-video-details",
+      "expected": 15,
+      "actual": 15,
+      "passed": true
+    }
+  ],
+  "failures": []
+}

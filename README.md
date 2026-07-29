@@ -1,9 +1,10 @@
 # Trayport web
 
-The proof-of-concept replacement for the live Trayport WordPress site. It combines
-Next.js and Payload in one self-hostable application, keeps editorial content and
-media controls in Payload, and stores market facts in application-owned PostgreSQL
-tables.
+The current implementation combines a proof-of-concept frontend with the
+production content-architecture baseline for replacing the live Trayport
+WordPress site. Next.js and Payload run as one self-hostable application,
+editorial content and media controls live in Payload, and market facts live in
+application-owned PostgreSQL tables.
 
 The implementation follows the currently used live navigation and content rather
 than recreating dormant WordPress administration structures.
@@ -16,6 +17,10 @@ than recreating dormant WordPress administration structures.
 - `/resources/insights/`
 - `/insights/on-demand-webinar-data-analytics-for-energy-traders/`
 - `/market-coverage/german-power/`
+
+These six routes are the implemented frontend slice. The verified production
+source corpus contains 296 canonical routes; those routes are inventoried and
+classified, but they are not all imported or rendered by this frontend yet.
 
 The Insights page is backed by all 39 published source records. The connectivity
 view uses 50 imported hubs and 55 locations. German Power uses its 21 live venue
@@ -34,7 +39,10 @@ relationships.
 See [docs/architecture.md](docs/architecture.md) for the content boundary and
 migration flow, and [docs/design-direction.md](docs/design-direction.md) for the
 visual and interaction direction. The [proof-of-concept editor
-guide](docs/editor-guide.md) summarizes the available CMS controls.
+guide](docs/editor-guide.md) summarizes the available CMS controls. The
+[production content-architecture contract](docs/content-architecture/README.md)
+defines the approved 296-route source scope, target archetypes, Payload
+ownership, block catalogue, editor workflows, and production gates.
 
 ## Local setup
 
@@ -97,7 +105,13 @@ This command:
 6. loads media and content in two relationship-aware passes; and
 7. publishes the scoped imported content.
 
-Individual stages are also available:
+Run the production-scope inventory independently:
+
+```bash
+make content-inventory
+```
+
+The proof-of-concept import stages are also available individually:
 
 ```bash
 make import-preflight
@@ -112,6 +126,14 @@ Generated data and reports are written to `migration/work/<run-id>/` and ignored
 by Git. Reports include content coverage, curated exclusions, stale/private
 links, missing media, the alt-text review queue, market-row results, load
 changes, and source/target fingerprints.
+
+`make content-inventory` is the production-scope discovery gate. It reads the
+active ACF navigation and footer, applies the approved FAQ inclusion and
+Commodities Report exclusion, closes over generated listings and dependencies,
+and fails on count drift, unknown archetypes/layouts, error issues, or duplicate
+canonical owners. Per-run output is written to
+`migration/work/inventory/<run-id>/`; sanitized retained evidence lives in
+[`docs/content-architecture`](docs/content-architecture/README.md).
 
 The importer is idempotent. Re-running it against unchanged source data must
 produce no Payload or market-data writes.
@@ -144,6 +166,7 @@ make db-shell
 make storage-init
 make typecheck
 make lint
+make content-inventory
 make test-setup
 make test
 make build
@@ -180,6 +203,11 @@ Keep `PAYLOAD_DB_PUSH=false` in every environment and run committed Payload
 migrations before starting the application. Run the content importer against an
 approved source snapshot or controlled WordPress runtime, then retain its
 reports as migration evidence.
+
+Before a migration release, rerun `make content-inventory` against the approved
+source and review any diff from the retained architecture baseline. A passing
+scope inventory proves source closure only; it does not clear the separate
+schema, importer, rendering, media, link, or content-review gates.
 
 The proof-of-concept runtime image is web-only. Run `corepack pnpm payload
 migrate` from a source checkout or a dedicated migration image/job before

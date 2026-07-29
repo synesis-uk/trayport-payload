@@ -7,6 +7,7 @@
   "scripts": {
     "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
     "content:extract": "cross-env TMPDIR=/tmp tsx migration/cli.ts extract",
+    "content:inventory": "cross-env TMPDIR=/tmp tsx migration/cli.ts inventory --scope production",
     "content:load": "cross-env TMPDIR=/tmp tsx migration/cli.ts load --publish",
     "content:preflight": "cross-env TMPDIR=/tmp tsx migration/cli.ts preflight",
     "content:transform": "cross-env TMPDIR=/tmp tsx migration/cli.ts transform",

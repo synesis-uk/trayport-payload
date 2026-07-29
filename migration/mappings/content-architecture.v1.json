@@ -1,0 +1,1479 @@
+{
+  "schemaVersion": 1,
+  "milestone": "production-content-architecture",
+  "milestoneStatus": "complete",
+  "productionReadiness": "blocked",
+  "contentBoundary": {
+    "included": [
+      {
+        "id": "live-navigation-content",
+        "owner": "payload",
+        "description": "Pages and article detail routes reachable from the live site navigation or from an included listing."
+      },
+      {
+        "id": "market-coverage-editorial",
+        "owner": "payload",
+        "description": "Public hub pages, map-only hub markers, venues, regions, venue types, and asset classes."
+      },
+      {
+        "id": "site-configuration",
+        "owner": "payload",
+        "description": "Navigation, footer, brand, contact, social, notices, redirects, and default SEO."
+      },
+      {
+        "id": "market-volume-facts",
+        "owner": "application-postgres",
+        "description": "Normalized market-volume time series queried by the frontend; Payload owns presentation configuration only."
+      }
+    ],
+    "excluded": [
+      {
+        "id": "hubspot",
+        "disposition": "omit",
+        "reason": "The integration is not in use and is outside the agreed production scope."
+      },
+      {
+        "id": "commodities-report",
+        "disposition": "omit",
+        "reason": "The pages are not in use and are deliberately excluded from navigation and migration."
+      },
+      {
+        "id": "classic-wordpress-menu",
+        "disposition": "omit",
+        "reason": "The active ACF options navigation is authoritative."
+      },
+      {
+        "id": "wordpress-users",
+        "disposition": "replace",
+        "reason": "Payload authentication and the administrator/editor role model replace WordPress accounts."
+      },
+      {
+        "id": "generic-shortcodes",
+        "disposition": "omit",
+        "reason": "Supported semantics are transformed to typed blocks; arbitrary shortcode execution is not migrated."
+      },
+      {
+        "id": "wordpress-market-tables",
+        "disposition": "move",
+        "reason": "Market facts move to app.market_volume_monthly and are not editable CMS content."
+      }
+    ]
+  },
+  "approvedProductionScope": {
+    "publicRouteTotal": 296,
+    "inventoryEvidenceStatus": "verified",
+    "reachableTermSubtypes": [
+      "asset-class",
+      "category",
+      "lh-category",
+      "post_tag",
+      "product-feature",
+      "region",
+      "software-category",
+      "venue-type"
+    ],
+    "routeOwners": [
+      {
+        "id": "page-documents",
+        "count": 51,
+        "sourceType": "page",
+        "targetOwner": "pages",
+        "ownership": "payload-document"
+      },
+      {
+        "id": "venue-index",
+        "count": 1,
+        "sourceType": "virtual-index",
+        "targetOwner": "venues",
+        "ownership": "derived-collection-route"
+      },
+      {
+        "id": "market-coverage-index",
+        "count": 1,
+        "sourceType": "virtual-index",
+        "targetOwner": "hubs",
+        "ownership": "derived-collection-route"
+      },
+      {
+        "id": "editorial-posts",
+        "count": 90,
+        "sourceType": "post",
+        "targetOwner": "articles",
+        "ownership": "payload-document"
+      },
+      {
+        "id": "venue-details",
+        "count": 66,
+        "sourceType": "venue",
+        "targetOwner": "venues",
+        "ownership": "payload-document"
+      },
+      {
+        "id": "hub-details",
+        "count": 72,
+        "sourceType": "hub",
+        "targetOwner": "hubs",
+        "ownership": "payload-document"
+      },
+      {
+        "id": "learning-video-details",
+        "count": 15,
+        "sourceType": "learning-hub-video",
+        "targetOwner": "learning-videos",
+        "ownership": "payload-document"
+      }
+    ],
+    "requiredIncludes": [
+      {
+        "id": "faq",
+        "legacyId": 7609,
+        "path": "/resources/faqs/"
+      }
+    ],
+    "requiredExclusions": [
+      {
+        "id": "commodities-report",
+        "legacyId": 2233,
+        "path": "/resources/commodities-report/"
+      }
+    ]
+  },
+  "blocks": {
+    "implemented": {
+      "topLevel": ["trayportHero", "contentSection", "articleListing"],
+      "sectionComponents": [
+        "heading",
+        "richText",
+        "actions",
+        "media",
+        "featureList",
+        "statistics",
+        "faq",
+        "entityList",
+        "timeline",
+        "dataTable",
+        "gallery",
+        "divider",
+        "marketCoverage",
+        "embed",
+        "dataChart"
+      ]
+    },
+    "planned": [
+      {
+        "id": "content-section-column",
+        "kind": "structural",
+        "placement": "content-section-structure",
+        "targetBlockType": null,
+        "sourceLayouts": [
+          {
+            "scope": "component",
+            "source": "column"
+          }
+        ],
+        "implementationStatus": "planned",
+        "description": "Normalize a nested legacy column into contentSection.columns rather than introducing a presentational renderer block."
+      },
+      {
+        "id": "first-party-form",
+        "kind": "block",
+        "placement": "section-component",
+        "targetBlockType": "form",
+        "sourceLayouts": [
+          {
+            "scope": "component",
+            "source": "form"
+          },
+          {
+            "scope": "article-top-level",
+            "source": "form"
+          }
+        ],
+        "implementationStatus": "planned",
+        "description": "First-party form definition and submission behavior for conversion pages and article forms; no HubSpot dependency."
+      },
+      {
+        "id": "checklist",
+        "kind": "block",
+        "placement": "section-component",
+        "targetBlockType": "checklist",
+        "sourceLayouts": [
+          {
+            "scope": "component",
+            "source": "checklist"
+          }
+        ],
+        "implementationStatus": "planned",
+        "description": "Structured checklist items with controlled visual treatment."
+      },
+      {
+        "id": "lifecycle",
+        "kind": "block",
+        "placement": "section-component",
+        "targetBlockType": "lifecycle",
+        "sourceLayouts": [
+          {
+            "scope": "component",
+            "source": "lifecycle"
+          }
+        ],
+        "implementationStatus": "planned",
+        "description": "Structured lifecycle stages and their managed supporting content."
+      },
+      {
+        "id": "market-matrix",
+        "kind": "block",
+        "placement": "section-component",
+        "targetBlockType": "marketMatrix",
+        "sourceLayouts": [
+          {
+            "scope": "component",
+            "source": "market-matrix"
+          }
+        ],
+        "implementationStatus": "planned",
+        "description": "Interactive market matrix driven by managed hub and venue route owners."
+      },
+      {
+        "id": "office",
+        "kind": "block",
+        "placement": "section-component",
+        "targetBlockType": "office",
+        "sourceLayouts": [
+          {
+            "scope": "component",
+            "source": "office"
+          }
+        ],
+        "implementationStatus": "planned",
+        "description": "Structured office address, contact, and map presentation."
+      },
+      {
+        "id": "markets-map",
+        "kind": "block",
+        "placement": "section-component",
+        "targetBlockType": "marketsMap",
+        "sourceLayouts": [
+          {
+            "scope": "component",
+            "source": "markets-map"
+          }
+        ],
+        "implementationStatus": "planned",
+        "description": "Interactive markets map backed by routable hubs and managed regional relationships."
+      },
+      {
+        "id": "regions",
+        "kind": "block",
+        "placement": "section-component",
+        "targetBlockType": "regions",
+        "sourceLayouts": [
+          {
+            "scope": "component",
+            "source": "regions"
+          }
+        ],
+        "implementationStatus": "planned",
+        "description": "Curated region listing that resolves managed region and hub relationships."
+      },
+      {
+        "id": "cookie-preferences",
+        "kind": "integration",
+        "placement": "section-component",
+        "targetBlockType": "cookiePreferences",
+        "sourceLayouts": [
+          {
+            "scope": "shortcode",
+            "source": "wcc_category_list"
+          }
+        ],
+        "implementationStatus": "planned",
+        "description": "Replace [wcc_category_list] with a first-party consent-category view backed by the target consent implementation."
+      }
+    ]
+  },
+  "archetypes": [
+    {
+      "id": "page.homepage",
+      "collection": "pages",
+      "discriminator": {
+        "field": "pageType",
+        "value": "homepage"
+      },
+      "routePolicy": "required",
+      "contentOwner": "layout",
+      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "editorCapabilities": [
+        "compose-layout",
+        "manage-seo",
+        "preview",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
+      "implementationStatus": "blocked",
+      "gap": "The homepage currently imports as a standard page; the schema does not reserve one homepage archetype or enforce ownership of the root route."
+    },
+    {
+      "id": "page.standard",
+      "collection": "pages",
+      "discriminator": {
+        "field": "pageType",
+        "value": "standard"
+      },
+      "routePolicy": "required",
+      "contentOwner": "layout",
+      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "editorCapabilities": [
+        "compose-layout",
+        "manage-seo",
+        "preview",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
+      "implementationStatus": "partial",
+      "gap": "The discriminator is descriptive only; block allowlists and minimum content are not schema-enforced."
+    },
+    {
+      "id": "page.product",
+      "collection": "pages",
+      "discriminator": {
+        "field": "pageType",
+        "value": "product"
+      },
+      "routePolicy": "required",
+      "contentOwner": "layout",
+      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "editorCapabilities": [
+        "compose-layout",
+        "manage-seo",
+        "preview",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
+      "implementationStatus": "partial",
+      "gap": "The product archetype has no enforced product-specific content invariant."
+    },
+    {
+      "id": "page.landing",
+      "collection": "pages",
+      "discriminator": {
+        "field": "pageType",
+        "value": "landing"
+      },
+      "routePolicy": "required",
+      "contentOwner": "layout",
+      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "editorCapabilities": [
+        "compose-layout",
+        "manage-seo",
+        "preview",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
+      "implementationStatus": "partial",
+      "gap": "The landing archetype is available to editors but has no enforced layout contract."
+    },
+    {
+      "id": "page.legal",
+      "collection": "pages",
+      "discriminator": {
+        "field": "pageType",
+        "value": "legal"
+      },
+      "routePolicy": "required",
+      "contentOwner": "layout",
+      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "editorCapabilities": [
+        "compose-layout",
+        "manage-seo",
+        "preview",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
+      "implementationStatus": "blocked",
+      "gap": "Legal and policy templates are not represented by a dedicated schema invariant, and cookie-category shortcode semantics are not implemented."
+    },
+    {
+      "id": "page.conversion",
+      "collection": "pages",
+      "discriminator": {
+        "field": "pageType",
+        "value": "conversion"
+      },
+      "routePolicy": "required",
+      "contentOwner": "layout-and-first-party-form",
+      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "editorCapabilities": [
+        "compose-layout",
+        "configure-first-party-form",
+        "manage-seo",
+        "preview",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
+      "implementationStatus": "blocked",
+      "gap": "The first-party form block, submission storage/delivery, validation, consent, spam protection, and conversion-page invariant are not implemented."
+    },
+    {
+      "id": "page.interactive-market-matrix",
+      "collection": "pages",
+      "discriminator": {
+        "field": "pageType",
+        "value": "interactive"
+      },
+      "routePolicy": "required",
+      "contentOwner": "layout-and-managed-market-relationships",
+      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "editorCapabilities": [
+        "compose-layout",
+        "configure-market-matrix",
+        "manage-seo",
+        "preview",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
+      "implementationStatus": "blocked",
+      "gap": "The market-matrix archetype and component are not present, and all referenced hub and venue destinations must become managed public route owners."
+    },
+    {
+      "id": "page.content-index",
+      "collection": "pages",
+      "discriminator": {
+        "field": "pageType",
+        "value": "index"
+      },
+      "routePolicy": "required",
+      "contentOwner": "layout",
+      "allowedTopLevelBlocks": ["trayportHero", "contentSection", "articleListing"],
+      "editorCapabilities": [
+        "compose-layout",
+        "configure-listing",
+        "manage-seo",
+        "preview",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
+      "implementationStatus": "blocked",
+      "gap": "articleListing is neither required for index pages nor restricted from other page archetypes."
+    },
+    {
+      "id": "article.full",
+      "collection": "articles",
+      "discriminator": {
+        "field": "contentMode",
+        "value": "full"
+      },
+      "routePolicy": "required",
+      "contentOwner": "layout",
+      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "editorCapabilities": [
+        "compose-layout",
+        "manage-editorial-metadata",
+        "manage-taxonomy",
+        "manage-seo",
+        "preview",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
+      "implementationStatus": "partial",
+      "gap": "A full article can be published without a body because layout is not conditionally required."
+    },
+    {
+      "id": "article.listing-metadata",
+      "collection": "articles",
+      "discriminator": {
+        "field": "contentMode",
+        "value": "listing"
+      },
+      "routePolicy": "forbidden",
+      "contentOwner": "listing-metadata-only",
+      "allowedTopLevelBlocks": [],
+      "editorCapabilities": ["manage-editorial-metadata", "manage-taxonomy", "draft"],
+      "implementationStatus": "blocked",
+      "gap": "Imported listing-only records currently receive published internal paths and are linked from Insights, producing empty detail pages. Production must either import a full body, use an explicit external destination, create a redirect, or keep the record non-routable."
+    },
+    {
+      "id": "learning-video.public-detail",
+      "collection": "learning-videos",
+      "discriminator": null,
+      "routePolicy": "required",
+      "contentOwner": "video-metadata-and-managed-media",
+      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "editorCapabilities": [
+        "compose-layout",
+        "manage-video",
+        "manage-taxonomy",
+        "manage-seo",
+        "preview",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
+      "implementationStatus": "blocked",
+      "gap": "The 15 listing-linked learning videos have no Payload collection or frontend route owner."
+    },
+    {
+      "id": "hub.public-page",
+      "collection": "hubs",
+      "discriminator": {
+        "field": "contentMode",
+        "value": "page"
+      },
+      "routePolicy": "required",
+      "contentOwner": "layout-and-structured-market-data",
+      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "editorCapabilities": [
+        "compose-layout",
+        "manage-market-relationships",
+        "manage-seo",
+        "preview",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
+      "implementationStatus": "partial",
+      "gap": "Public-page hubs do not conditionally require a path; their layout may rely on the renderer fallback rather than an explicit archetype contract."
+    },
+    {
+      "id": "hub.map-only",
+      "collection": "hubs",
+      "discriminator": {
+        "field": "contentMode",
+        "value": "map-only"
+      },
+      "routePolicy": "forbidden",
+      "contentOwner": "structured-market-data",
+      "allowedTopLevelBlocks": [],
+      "editorCapabilities": ["manage-market-relationships", "draft", "publish", "schedule-publish"],
+      "implementationStatus": "partial",
+      "gap": "The importer omits paths, but the schema does not prevent an editor from assigning a public path or layout to a map-only hub."
+    },
+    {
+      "id": "venue.structured-record",
+      "collection": "venues",
+      "discriminator": {
+        "field": "contentMode",
+        "value": "relationship-only"
+      },
+      "routePolicy": "forbidden",
+      "contentOwner": "structured-market-data",
+      "allowedTopLevelBlocks": [],
+      "editorCapabilities": ["manage-market-relationships", "draft", "publish", "schedule-publish"],
+      "implementationStatus": "blocked",
+      "gap": "The target contentMode discriminator does not exist yet, so dependency-only venue records cannot be distinguished from the 66 public venue details."
+    },
+    {
+      "id": "venue.public-detail",
+      "collection": "venues",
+      "discriminator": {
+        "field": "contentMode",
+        "value": "page"
+      },
+      "routePolicy": "required",
+      "contentOwner": "layout-and-structured-market-data",
+      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "editorCapabilities": [
+        "compose-layout",
+        "manage-market-relationships",
+        "manage-seo",
+        "preview",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
+      "implementationStatus": "blocked",
+      "gap": "The 66 listing-linked venues currently have no path, SEO, layout, preview, or frontend detail renderer."
+    },
+    {
+      "id": "index.venue",
+      "collection": "venues",
+      "discriminator": null,
+      "routePolicy": "required",
+      "contentOwner": "derived-collection-index",
+      "allowedTopLevelBlocks": [],
+      "editorCapabilities": ["configure-listing", "manage-seo", "preview"],
+      "implementationStatus": "blocked",
+      "gap": "The virtual /venue/ archive has an approved collection route owner but no target frontend route or index configuration."
+    },
+    {
+      "id": "index.market-coverage",
+      "collection": "hubs",
+      "discriminator": null,
+      "routePolicy": "required",
+      "contentOwner": "derived-collection-index",
+      "allowedTopLevelBlocks": [],
+      "editorCapabilities": ["configure-listing", "manage-seo", "preview"],
+      "implementationStatus": "blocked",
+      "gap": "The virtual /market-coverage/ archive has an approved collection route owner but no target frontend route or index configuration."
+    }
+  ],
+  "legacyLayoutDispositions": [
+    {
+      "scope": "page-top-level",
+      "source": "hero",
+      "disposition": "map",
+      "targets": ["trayportHero"],
+      "reason": "Preserve the page proposition, media, and actions in the managed hero block."
+    },
+    {
+      "scope": "page-top-level",
+      "source": "columns",
+      "disposition": "consolidate",
+      "targets": ["contentSection"],
+      "reason": "Normalize legacy columns and nested components to the constrained responsive section model."
+    },
+    {
+      "scope": "page-top-level",
+      "source": "single",
+      "disposition": "consolidate",
+      "targets": ["contentSection"],
+      "reason": "Represent a legacy single-column section as one twelve-column content section."
+    },
+    {
+      "scope": "article-top-level",
+      "source": "media",
+      "disposition": "consolidate",
+      "targets": ["contentSection", "media"],
+      "reason": "Wrap article media in a reading-width content section."
+    },
+    {
+      "scope": "article-top-level",
+      "source": "paragraph",
+      "disposition": "consolidate",
+      "targets": ["contentSection", "richText"],
+      "reason": "Wrap article copy in a reading-width content section."
+    },
+    {
+      "scope": "article-top-level",
+      "source": "divider",
+      "disposition": "consolidate",
+      "targets": ["contentSection", "divider"],
+      "reason": "Preserve the semantic separation inside the article reading column."
+    },
+    {
+      "scope": "article-top-level",
+      "source": "buttons",
+      "disposition": "consolidate",
+      "targets": ["contentSection", "actions"],
+      "reason": "Normalize article calls to action into the shared action component."
+    },
+    {
+      "scope": "article-top-level",
+      "source": "index-point",
+      "disposition": "consolidate",
+      "targets": ["contentSection", "heading"],
+      "reason": "Preserve article section navigation anchors and headings."
+    },
+    {
+      "scope": "article-top-level",
+      "source": "form",
+      "disposition": "consolidate",
+      "targets": ["contentSection", "form"],
+      "observedCount": 16,
+      "reason": "Wrap article forms in a reading-width content section and map them to the same first-party form semantics used by conversion pages."
+    },
+    {
+      "scope": "article-top-level",
+      "source": "header",
+      "disposition": "consolidate",
+      "targets": ["contentSection", "heading"],
+      "observedCount": 42,
+      "reason": "Wrap article headings in a reading-width content section while preserving their supported semantic level."
+    },
+    {
+      "scope": "article-top-level",
+      "source": "post-content",
+      "disposition": "consolidate",
+      "targets": ["contentSection", "richText"],
+      "observedCount": 4,
+      "reason": "Convert the legacy post-content payload to Lexical rich text inside a reading-width content section."
+    },
+    {
+      "scope": "article-top-level",
+      "source": "table",
+      "disposition": "consolidate",
+      "targets": ["contentSection", "dataTable"],
+      "observedCount": 1,
+      "reason": "Wrap the structured article table in a reading-width content section and preserve headers, rows, and caption."
+    },
+    {
+      "scope": "component",
+      "source": "header",
+      "disposition": "map",
+      "targets": ["heading"],
+      "reason": "Preserve heading text and supported semantic levels."
+    },
+    {
+      "scope": "component",
+      "source": "subheader",
+      "disposition": "consolidate",
+      "targets": ["heading"],
+      "reason": "Normalize visual subheaders to the controlled heading component."
+    },
+    {
+      "scope": "component",
+      "source": "preheader",
+      "disposition": "consolidate",
+      "targets": ["heading"],
+      "reason": "Normalize preheaders to heading eyebrow content."
+    },
+    {
+      "scope": "component",
+      "source": "paragraph",
+      "disposition": "map",
+      "targets": ["richText"],
+      "reason": "Convert supported HTML to Payload Lexical JSON."
+    },
+    {
+      "scope": "component",
+      "source": "buttons",
+      "disposition": "map",
+      "targets": ["actions"],
+      "reason": "Normalize supported button styles and destinations."
+    },
+    {
+      "scope": "component",
+      "source": "image",
+      "disposition": "map",
+      "targets": ["media"],
+      "reason": "Resolve WordPress attachments through the media collection."
+    },
+    {
+      "scope": "component",
+      "source": "videos",
+      "disposition": "consolidate",
+      "targets": ["media"],
+      "reason": "Resolve reusable local video records through the shared media component."
+    },
+    {
+      "scope": "component",
+      "source": "features",
+      "disposition": "map",
+      "targets": ["featureList"],
+      "reason": "Preserve feature items while constraining their presentation variant."
+    },
+    {
+      "scope": "component",
+      "source": "stats",
+      "disposition": "map",
+      "targets": ["statistics"],
+      "reason": "Preserve structured values, labels, and descriptions."
+    },
+    {
+      "scope": "component",
+      "source": "faqs",
+      "disposition": "map",
+      "targets": ["faq"],
+      "reason": "Preserve structured questions and answers."
+    },
+    {
+      "scope": "component",
+      "source": "people",
+      "disposition": "consolidate",
+      "targets": ["entityList"],
+      "reason": "Flatten reusable people records into the shared entity-list shape."
+    },
+    {
+      "scope": "component",
+      "source": "products",
+      "disposition": "consolidate",
+      "targets": ["entityList"],
+      "reason": "Flatten reusable product records into the shared entity-list shape."
+    },
+    {
+      "scope": "component",
+      "source": "clients",
+      "disposition": "consolidate",
+      "targets": ["entityList"],
+      "reason": "Flatten reusable client records into the shared entity-list shape."
+    },
+    {
+      "scope": "component",
+      "source": "timeline",
+      "disposition": "map",
+      "targets": ["timeline"],
+      "reason": "Preserve ordered milestone content."
+    },
+    {
+      "scope": "component",
+      "source": "table",
+      "disposition": "map",
+      "targets": ["dataTable"],
+      "reason": "Preserve tabular headers, rows, and caption."
+    },
+    {
+      "scope": "component",
+      "source": "gallery",
+      "disposition": "map",
+      "targets": ["gallery"],
+      "reason": "Resolve gallery attachments into managed media relationships."
+    },
+    {
+      "scope": "component",
+      "source": "divider",
+      "disposition": "map",
+      "targets": ["divider"],
+      "reason": "Preserve content separation without legacy presentation settings."
+    },
+    {
+      "scope": "component",
+      "source": "connections",
+      "disposition": "consolidate",
+      "targets": ["marketCoverage"],
+      "reason": "Render editorial map configuration from Payload-owned hub and region relationships."
+    },
+    {
+      "scope": "component",
+      "source": "charts-new",
+      "disposition": "split",
+      "targets": ["dataChart", "app.market_volume_monthly"],
+      "reason": "Keep chart configuration in Payload and move market facts to application PostgreSQL."
+    },
+    {
+      "scope": "component",
+      "source": "column",
+      "disposition": "structure",
+      "targets": ["contentSection.columns"],
+      "reason": "Normalize a nested legacy column as structural contentSection column data rather than rendering a presentational wrapper block."
+    },
+    {
+      "scope": "component",
+      "source": "form",
+      "disposition": "map",
+      "targets": ["form"],
+      "reason": "Map page and article forms to first-party form semantics; HubSpot is not retained."
+    },
+    {
+      "scope": "component",
+      "source": "checklist",
+      "disposition": "map",
+      "targets": ["checklist"],
+      "reason": "Preserve checklist items as a typed accessible list."
+    },
+    {
+      "scope": "component",
+      "source": "lifecycle",
+      "disposition": "map",
+      "targets": ["lifecycle"],
+      "reason": "Preserve lifecycle records and ordering in a managed component."
+    },
+    {
+      "scope": "component",
+      "source": "market-matrix",
+      "disposition": "map",
+      "targets": ["marketMatrix"],
+      "reason": "Replace legacy market-matrix rendering with an interactive component backed by managed public hub and venue route owners."
+    },
+    {
+      "scope": "component",
+      "source": "office",
+      "disposition": "map",
+      "targets": ["office"],
+      "reason": "Preserve structured office address and contact semantics without legacy template coupling."
+    },
+    {
+      "scope": "component",
+      "source": "markets-map",
+      "disposition": "map",
+      "targets": ["marketsMap"],
+      "reason": "Replace the legacy map with a managed interactive view of regions and routable hubs."
+    },
+    {
+      "scope": "component",
+      "source": "regions",
+      "disposition": "map",
+      "targets": ["regions"],
+      "reason": "Preserve the curated region listing through managed region and hub relationships."
+    },
+    {
+      "scope": "component",
+      "source": "icon",
+      "disposition": "omit",
+      "targets": [],
+      "reason": "The decorative legacy icon is presentation-only and is selected by the target component."
+    },
+    {
+      "scope": "shortcode",
+      "source": "wcc_category_list",
+      "disposition": "map",
+      "targets": ["cookiePreferences"],
+      "reason": "Replace [wcc_category_list] with a first-party consent-category component; arbitrary shortcode execution remains excluded."
+    },
+    {
+      "scope": "taxonomy",
+      "source": "category",
+      "disposition": "map",
+      "targets": ["article-categories"],
+      "reason": "Preserve article classification used by listings."
+    },
+    {
+      "scope": "taxonomy",
+      "source": "lh-category",
+      "disposition": "consolidate",
+      "targets": ["learning-videos.categories"],
+      "reason": "Preserve Learning Hub discovery classification as managed category values owned by learning-videos without retaining a generic WordPress taxonomy collection."
+    },
+    {
+      "scope": "taxonomy",
+      "source": "asset-class",
+      "disposition": "map",
+      "targets": ["asset-classes"],
+      "reason": "Preserve market classification and market-data lookup relationships."
+    },
+    {
+      "scope": "taxonomy",
+      "source": "venue-type",
+      "disposition": "map",
+      "targets": ["venue-types"],
+      "reason": "Preserve venue grouping used by hub connectivity."
+    },
+    {
+      "scope": "taxonomy",
+      "source": "region",
+      "disposition": "map",
+      "targets": ["regions"],
+      "reason": "Preserve map grouping and region relationships."
+    },
+    {
+      "scope": "taxonomy",
+      "source": "post_tag",
+      "disposition": "omit",
+      "targets": [],
+      "reason": "Tags are not used by the agreed frontend discovery model."
+    },
+    {
+      "scope": "taxonomy",
+      "source": "product-feature",
+      "disposition": "consolidate",
+      "targets": ["featureList"],
+      "reason": "Feature semantics are absorbed into typed feature blocks rather than retained as a public taxonomy."
+    },
+    {
+      "scope": "taxonomy",
+      "source": "software-category",
+      "disposition": "omit",
+      "targets": [],
+      "reason": "The reachable terms classify only the dependency-only Joule product record and do not drive target navigation, filtering, rendering, or route ownership."
+    }
+  ],
+  "derivedMappings": [
+    {
+      "id": "insights-listing-block",
+      "sourceCondition": "WordPress page legacyId 9248",
+      "targets": ["page.content-index", "articleListing"],
+      "reason": "The listing is a target-system behavior derived from the Insights index archetype."
+    },
+    {
+      "id": "map-only-hubs",
+      "sourceCondition": "Scoped map-hub records other than the public German Power root",
+      "targets": ["hub.map-only"],
+      "reason": "Map markers are normalized as non-routable structured hub records."
+    },
+    {
+      "id": "article-listing-metadata",
+      "sourceCondition": "Insights listing records without an extracted article body",
+      "targets": ["article.listing-metadata"],
+      "reason": "This is a PoC migration state, not an acceptable public production detail-page state."
+    },
+    {
+      "id": "venue-index-route",
+      "sourceCondition": "Virtual WordPress archive /venue/",
+      "targets": ["index.venue", "venues"],
+      "reason": "The target frontend owns the virtual index while each listed venue owns its public detail route."
+    },
+    {
+      "id": "market-coverage-index-route",
+      "sourceCondition": "Virtual WordPress archive /market-coverage/",
+      "targets": ["index.market-coverage", "hubs"],
+      "reason": "The target frontend owns the virtual index while each listed public hub owns its detail route."
+    },
+    {
+      "id": "learning-video-route-ownership",
+      "sourceCondition": "Published learning-hub-video records selected by the learning-hub listing",
+      "targets": ["learning-video.public-detail", "learning-videos"],
+      "reason": "Every listed learning video must resolve to a complete Payload-owned public detail route."
+    }
+  ],
+  "collectionOwnership": [
+    {
+      "resource": "pages",
+      "kind": "payload-collection",
+      "systemOfRecord": "payload",
+      "domainOwner": "editorial",
+      "routeNamespace": "public-site",
+      "contentResponsibility": "Homepage, marketing, product, landing, legal, conversion, interactive, and content-index page composition."
+    },
+    {
+      "resource": "articles",
+      "kind": "payload-collection",
+      "systemOfRecord": "payload",
+      "domainOwner": "editorial",
+      "routeNamespace": "public-site",
+      "contentResponsibility": "Insight metadata, taxonomy, listing behavior, and complete public article bodies."
+    },
+    {
+      "resource": "hubs",
+      "kind": "payload-collection",
+      "systemOfRecord": "payload",
+      "domainOwner": "market-coverage-editorial",
+      "routeNamespace": "public-site",
+      "contentResponsibility": "Public market pages and non-routable market-map markers."
+    },
+    {
+      "resource": "venues",
+      "kind": "payload-collection",
+      "systemOfRecord": "payload",
+      "domainOwner": "market-coverage-editorial",
+      "routeNamespace": "public-site",
+      "contentResponsibility": "Structured broker, exchange, and clearing-house records plus complete public venue detail routes."
+    },
+    {
+      "resource": "learning-videos",
+      "kind": "payload-collection",
+      "systemOfRecord": "payload",
+      "domainOwner": "editorial",
+      "routeNamespace": "public-site",
+      "contentResponsibility": "Learning-hub video metadata, managed media, taxonomy, SEO, and complete public detail routes."
+    },
+    {
+      "resource": "media",
+      "kind": "payload-collection",
+      "systemOfRecord": "payload-and-object-storage",
+      "domainOwner": "editorial",
+      "routeNamespace": null,
+      "contentResponsibility": "Asset metadata, accessibility metadata, derivatives, and object-storage references."
+    },
+    {
+      "resource": "article-categories",
+      "kind": "payload-collection",
+      "systemOfRecord": "payload",
+      "domainOwner": "editorial",
+      "routeNamespace": null,
+      "contentResponsibility": "Article discovery classification."
+    },
+    {
+      "resource": "asset-classes",
+      "kind": "payload-collection",
+      "systemOfRecord": "payload",
+      "domainOwner": "market-coverage-editorial",
+      "routeNamespace": null,
+      "contentResponsibility": "Editorial market classification and application-data lookup identity."
+    },
+    {
+      "resource": "venue-types",
+      "kind": "payload-collection",
+      "systemOfRecord": "payload",
+      "domainOwner": "market-coverage-editorial",
+      "routeNamespace": null,
+      "contentResponsibility": "Venue grouping for hub connectivity."
+    },
+    {
+      "resource": "regions",
+      "kind": "payload-collection",
+      "systemOfRecord": "payload",
+      "domainOwner": "market-coverage-editorial",
+      "routeNamespace": null,
+      "contentResponsibility": "Editorial map grouping and default map configuration."
+    },
+    {
+      "resource": "navigation",
+      "kind": "payload-global",
+      "systemOfRecord": "payload",
+      "domainOwner": "editorial",
+      "routeNamespace": null,
+      "contentResponsibility": "Primary navigation, dropdowns, utility links, and primary action."
+    },
+    {
+      "resource": "footer",
+      "kind": "payload-global",
+      "systemOfRecord": "payload",
+      "domainOwner": "editorial",
+      "routeNamespace": null,
+      "contentResponsibility": "Footer columns, legal links, marks, and copyright."
+    },
+    {
+      "resource": "site-settings",
+      "kind": "payload-global",
+      "systemOfRecord": "payload",
+      "domainOwner": "editorial",
+      "routeNamespace": null,
+      "contentResponsibility": "Brand, default SEO, contact, social, and notices."
+    },
+    {
+      "resource": "redirects",
+      "kind": "payload-plugin-collection",
+      "systemOfRecord": "payload",
+      "domainOwner": "editorial",
+      "routeNamespace": "public-site",
+      "contentResponsibility": "Explicit URL continuity when a managed public route changes or legacy content is consolidated."
+    },
+    {
+      "resource": "users",
+      "kind": "payload-auth-collection",
+      "systemOfRecord": "payload",
+      "domainOwner": "administration",
+      "routeNamespace": null,
+      "contentResponsibility": "CMS authentication and administrator/editor roles."
+    },
+    {
+      "resource": "legacySource",
+      "kind": "payload-field-group",
+      "systemOfRecord": "migration-pipeline",
+      "domainOwner": "migration",
+      "routeNamespace": null,
+      "contentResponsibility": "Stable source identity, content hash, original URL, and source timestamps; read-only in the admin UI."
+    },
+    {
+      "resource": "app.market_volume_monthly",
+      "kind": "application-postgres-table",
+      "systemOfRecord": "application-postgres",
+      "domainOwner": "market-data-pipeline",
+      "routeNamespace": null,
+      "contentResponsibility": "Normalized monthly market facts; never edited through Payload."
+    }
+  ],
+  "editorCapabilities": [
+    {
+      "resourceGroup": "routable-content",
+      "resources": ["pages", "articles", "hubs", "learning-videos"],
+      "administrator": [
+        "create",
+        "read",
+        "update",
+        "delete",
+        "draft",
+        "publish",
+        "schedule-publish",
+        "preview",
+        "read-versions"
+      ],
+      "editor": [
+        "create",
+        "read",
+        "update",
+        "draft",
+        "publish",
+        "schedule-publish",
+        "preview",
+        "read-versions"
+      ],
+      "public": ["read-published"]
+    },
+    {
+      "resourceGroup": "versioned-market-records",
+      "resources": ["venues"],
+      "administrator": [
+        "create",
+        "read",
+        "update",
+        "delete",
+        "draft",
+        "publish",
+        "schedule-publish",
+        "preview",
+        "read-versions"
+      ],
+      "editor": [
+        "create",
+        "read",
+        "update",
+        "draft",
+        "publish",
+        "schedule-publish",
+        "preview",
+        "read-versions"
+      ],
+      "public": ["read-published"]
+    },
+    {
+      "resourceGroup": "taxonomies",
+      "resources": ["article-categories", "asset-classes", "venue-types", "regions"],
+      "administrator": ["create", "read", "update", "delete"],
+      "editor": ["create", "read", "update"],
+      "public": ["read"]
+    },
+    {
+      "resourceGroup": "media",
+      "resources": ["media"],
+      "administrator": ["create", "read", "update", "delete"],
+      "editor": ["create", "read", "update"],
+      "public": ["read"]
+    },
+    {
+      "resourceGroup": "site-configuration",
+      "resources": ["navigation", "footer", "site-settings"],
+      "administrator": ["read", "update", "draft", "publish", "schedule-publish", "read-versions"],
+      "editor": ["read", "update", "draft", "publish", "schedule-publish", "read-versions"],
+      "public": ["read-published"]
+    },
+    {
+      "resourceGroup": "redirects",
+      "resources": ["redirects"],
+      "administrator": ["create", "read", "update", "delete"],
+      "editor": ["create", "read", "update"],
+      "public": ["read"]
+    },
+    {
+      "resourceGroup": "users",
+      "resources": ["users"],
+      "administrator": ["create", "read", "update", "delete", "unlock", "manage-roles"],
+      "editor": ["read-self", "update-self"],
+      "public": []
+    },
+    {
+      "resourceGroup": "application-market-data",
+      "resources": ["app.market_volume_monthly"],
+      "administrator": [],
+      "editor": [],
+      "public": ["read-through-frontend"]
+    }
+  ],
+  "validationGates": [
+    {
+      "id": "contract-schema-valid",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "passing",
+      "enforcement": "vitest",
+      "assertion": "The versioned content-architecture document parses against its Zod contract.",
+      "evidence": [
+        "migration/mappings/contentArchitecture.ts",
+        "tests/int/content-architecture-contract.int.spec.ts"
+      ],
+      "remediation": null
+    },
+    {
+      "id": "block-schema-renderer-totality",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "passing",
+      "enforcement": "vitest",
+      "assertion": "Every currently implemented top-level and nested Payload block slug has one renderer branch, and importer-emitted block types belong to the implemented library. Planned production blocks are validated separately.",
+      "evidence": [
+        "src/blocks/Trayport/config.ts",
+        "src/blocks/Trayport/components.ts",
+        "src/components/Trayport/BlockRenderer.tsx",
+        "tests/int/content-architecture-contract.int.spec.ts"
+      ],
+      "remediation": null
+    },
+    {
+      "id": "legacy-layout-disposition-totality",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "passing",
+      "enforcement": "contract-vitest",
+      "assertion": "Every observed page, article, component, taxonomy, and supported shortcode semantic has a target disposition. Implemented importer coverage and planned target coverage are distinguished explicitly.",
+      "evidence": [
+        "migration/transform/blocks.ts",
+        "migration/transform/index.ts",
+        "migration/mappings/content-architecture.v1.json",
+        "tests/int/content-architecture-contract.int.spec.ts"
+      ],
+      "remediation": null
+    },
+    {
+      "id": "production-source-scope-complete",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "passing",
+      "enforcement": "production-inventory-verification",
+      "assertion": "A reproducible production inventory proves the approved 296 public routes: 51 page documents, two virtual indexes, 90 posts, 66 venues, 72 hubs, and 15 learning videos, with FAQ included and Commodities Report excluded.",
+      "evidence": [
+        "migration/scopes/production.ts",
+        "migration/inventory/contracts.ts",
+        "migration/inventory/discover.ts",
+        "migration/inventory/report.ts",
+        "migration/mappings/content-architecture.v1.json",
+        "tests/int/production-inventory.int.spec.ts",
+        "docs/content-architecture/inventory-summary.json",
+        "docs/content-architecture/verification.json",
+        "docs/content-architecture/layout-coverage.json",
+        "docs/content-architecture/route-manifest.csv"
+      ],
+      "remediation": null
+    },
+    {
+      "id": "cross-collection-route-uniqueness",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "blocked",
+      "enforcement": "not-implemented",
+      "assertion": "One canonical public path can be owned by at most one route owner across pages, articles, hubs, venues, learning videos, virtual indexes, and redirects.",
+      "evidence": [
+        "src/fields/contentPath.ts",
+        "src/app/(frontend)/contentRoute.tsx",
+        "docs/architecture.md"
+      ],
+      "remediation": "Add a shared route registry or cross-collection validation and reject conflicting create, update, publish, redirect, and migration operations. Remove reliance on pages-before-articles-before-hubs resolver precedence."
+    },
+    {
+      "id": "archetype-discriminator-invariants",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "blocked",
+      "enforcement": "not-implemented",
+      "assertion": "Page, article, hub, venue, learning-video, and virtual-index archetypes enforce route policy, required fields, and allowed blocks or derived-route behavior.",
+      "evidence": [
+        "src/collections/Pages/index.ts",
+        "src/collections/Articles.ts",
+        "src/collections/Hubs.ts",
+        "src/collections/Venues.ts",
+        "migration/mappings/content-architecture.v1.json"
+      ],
+      "remediation": "Add the approved page types, venue modes, learning-video owner, virtual-index configuration, conditional field requirements, and publication hooks; mirror constraints in the admin UI and importer."
+    },
+    {
+      "id": "article-detail-content-ownership",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "blocked",
+      "enforcement": "not-implemented",
+      "assertion": "Every published internal article listing destination owns a complete Payload body; metadata-only records are non-routable or have an explicit external destination or redirect.",
+      "evidence": [
+        "migration/transform/index.ts",
+        "src/components/Trayport/ArticleListingClient.tsx",
+        "src/components/Trayport/ContentViews.tsx"
+      ],
+      "remediation": "Extract and transform every in-scope article body, or add an explicit destination model and prevent listing-only records from owning internal published paths."
+    },
+    {
+      "id": "listing-detail-route-ownership",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "blocked",
+      "enforcement": "not-implemented",
+      "assertion": "Every listing-linked article, hub, venue, and learning video resolves to one complete managed public route owner, while dependency-only records remain non-routable.",
+      "evidence": [
+        "migration/mappings/content-architecture.v1.json",
+        "src/collections/Articles.ts",
+        "src/collections/Hubs.ts",
+        "src/collections/Venues.ts",
+        "src/app/(frontend)/contentRoute.tsx"
+      ],
+      "remediation": "Migrate complete bodies and route metadata for 90 posts, 72 hubs, 66 venues, and 15 learning videos; implement the learning-videos owner and venue detail renderer; validate every listing destination against the shared route registry."
+    },
+    {
+      "id": "production-block-catalogue-implemented",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "blocked",
+      "enforcement": "contract-only",
+      "assertion": "Structural column handling and the form, checklist, lifecycle, market-matrix, office, markets-map, regions, and cookie-preferences targets have Payload schemas, importer mappings, renderers, and behavior tests.",
+      "evidence": [
+        "migration/mappings/content-architecture.v1.json",
+        "migration/transform/blocks.ts",
+        "src/blocks/Trayport/components.ts",
+        "src/components/Trayport/BlockRenderer.tsx"
+      ],
+      "remediation": "Implement each planned catalogue entry end to end. Form handling must be first-party and support both page and article source layouts; [wcc_category_list] must become explicit consent-category behavior rather than generic shortcode execution."
+    },
+    {
+      "id": "managed-internal-link-integrity",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "blocked",
+      "enforcement": "not-implemented",
+      "assertion": "Internal links in navigation, actions, feature lists, entity lists, and rich text are managed references or are validated against the shared route namespace; path changes create or require redirects.",
+      "evidence": [
+        "src/fields/navigationLink.ts",
+        "src/fields/actions.ts",
+        "src/blocks/Trayport/components.ts",
+        "migration/transform/blocks.ts"
+      ],
+      "remediation": "Reuse a managed link field for CTA-bearing blocks, preserve internal source references during transformation, validate rich-text links, and integrate redirect creation with route changes."
+    },
+    {
+      "id": "editor-controls-have-runtime-effect",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "blocked",
+      "enforcement": "not-implemented",
+      "assertion": "Every editor-visible control changes validated frontend behavior or is removed from the schema.",
+      "evidence": [
+        "src/blocks/Trayport/components.ts",
+        "src/components/Trayport/BlockRenderer.tsx"
+      ],
+      "remediation": "Make marketCoverage.regions constrain the hub query, make dataChart.dataType select the correct dataset and rendering, implement embed.poster behavior, and add field-level behavior tests."
+    },
+    {
+      "id": "editor-role-capability-enforcement",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "partial",
+      "enforcement": "payload-access-and-integration-tests",
+      "assertion": "Editors can author and publish in-scope content but cannot delete content, manage users or roles, or mutate migration provenance; administrators retain destructive and account controls.",
+      "evidence": [
+        "src/access/roles.ts",
+        "src/fields/legacySource.ts",
+        "tests/int/content-models.int.spec.ts"
+      ],
+      "remediation": "Extend access tests across globals, redirects, media, taxonomies, publish operations, versions, and direct API attempts to mutate provenance."
+    },
+    {
+      "id": "migration-relationship-resolution",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "passing",
+      "enforcement": "migration-validation",
+      "assertion": "The load resolves every legacy relationship token or fails with an explicit unresolved-reference report.",
+      "evidence": [
+        "migration/load/index.ts",
+        "migration/validate/index.ts",
+        "tests/int/imported-content.int.spec.ts"
+      ],
+      "remediation": null
+    },
+    {
+      "id": "migration-idempotency",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "passing",
+      "enforcement": "migration-validation",
+      "assertion": "Re-running a migration upserts by stable source identity and content hash without duplicating records.",
+      "evidence": [
+        "src/fields/legacySource.ts",
+        "migration/load/index.ts",
+        "tests/int/imported-content.int.spec.ts"
+      ],
+      "remediation": null
+    },
+    {
+      "id": "market-data-storage-boundary",
+      "requiredFor": "production",
+      "severity": "blocker",
+      "status": "passing",
+      "enforcement": "schema-and-migration-validation",
+      "assertion": "Payload stores editorial chart configuration only; imported market facts are loaded transactionally into app.market_volume_monthly.",
+      "evidence": [
+        "migration/sql/001_market_volume_monthly.sql",
+        "migration/load/marketData.ts",
+        "src/blocks/Trayport/components.ts",
+        "src/components/Trayport/marketData.ts"
+      ],
+      "remediation": null
+    },
+    {
+      "id": "content-review-queue-cleared",
+      "requiredFor": "production",
+      "severity": "warning",
+      "status": "partial",
+      "enforcement": "migration-report-and-manual-review",
+      "assertion": "Missing media, fallback alt text, stale links, legacy host rewrites, SEO normalization, and curated exclusions have explicit decisions before launch.",
+      "evidence": [
+        "migration/transform/index.ts",
+        "migration/work/<run-id>/reports/content-review.json"
+      ],
+      "remediation": "Turn launch-critical review categories into configurable failure thresholds and record reviewer disposition alongside each item."
+    }
+  ]
+}

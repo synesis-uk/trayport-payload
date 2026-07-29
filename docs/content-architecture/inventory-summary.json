@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "scope": "production",
+  "source": {
+    "home": "http://trayport.local/",
+    "site": "http://trayport.local/wp/",
+    "tablePrefix": "wp_",
+    "wordpressVersion": "7.0.2",
+    "acfVersion": "6.8.5",
+    "frontPageId": 1898
+  },
+  "counts": {
+    "directAuthoredRouteStrings": 54,
+    "directPublicRoutes": 53,
+    "listingRoutes": 243,
+    "routes": 296,
+    "dependencies": 718,
+    "redirects": 50,
+    "exclusions": 1,
+    "issues": 267,
+    "unknownArchetypes": 0,
+    "unavailableMedia": 105
+  },
+  "verification": {
+    "status": "passed",
+    "failures": []
+  },
+  "hashes": {
+    "snapshot": "978fbe3b6447871e531a1be4fc0f70699aed66303218e6050412e5e23ed87c00",
+    "inventory": "8e870a83f989d6d4315313fac7b3755ce807c48118066d39f99abda100dd9c7e",
+    "ndjson": "4b8c368709c84523c94a0151542c10a33ba5df739e0ed6c3d21194f56f5e95ff",
+    "routeManifest": "423e677af9abd888ef7ee25d39e0c0d40d5823a6ee271b02b98a486023ff5df9",
+    "layoutCoverage": "061097e0710c8a63b440d4148f45c17557dca8df78f0ed9a08348768ed1e758b",
+    "verification": "3d1a07cc78d5ebfb87d5a496b8424eb23491b737a665775172fd8dcd07c832de"
+  },
+  "artifacts": {
+    "sourceSnapshot": "source-snapshot.json",
+    "inventory": "production-inventory.json",
+    "ndjson": "production-inventory.ndjson",
+    "routeManifest": "route-manifest.csv",
+    "layoutCoverage": "layout-coverage.json",
+    "verification": "verification.json"
+  }
+}

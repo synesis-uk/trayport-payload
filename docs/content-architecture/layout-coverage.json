@@ -1,0 +1,2636 @@
+{
+  "schemaVersion": 1,
+  "scope": "production",
+  "summary": {
+    "reachableNodes": 453,
+    "layoutOccurrences": 2325,
+    "layouts": 40,
+    "unknownLayouts": 0,
+    "taxonomies": 8,
+    "unknownTaxonomies": 0
+  },
+  "authoritativeFields": [
+    {
+      "field": "all-acf-fields",
+      "nodes": 312,
+      "legacyIds": [
+        752,
+        753,
+        754,
+        811,
+        843,
+        844,
+        845,
+        1394,
+        1861,
+        1862,
+        1863,
+        1864,
+        1865,
+        1866,
+        1883,
+        1884,
+        2471,
+        2472,
+        2487,
+        2488,
+        2490,
+        2491,
+        2492,
+        2493,
+        2494,
+        2495,
+        2496,
+        2497,
+        2498,
+        2499,
+        2500,
+        2501,
+        2502,
+        2503,
+        2504,
+        2505,
+        2506,
+        2507,
+        2508,
+        2509,
+        2510,
+        2511,
+        2512,
+        2513,
+        2514,
+        2515,
+        2516,
+        2517,
+        2518,
+        2519,
+        2521,
+        2522,
+        2523,
+        2524,
+        2525,
+        2527,
+        2528,
+        2529,
+        2530,
+        2531,
+        2532,
+        2533,
+        2535,
+        2536,
+        2538,
+        2539,
+        2540,
+        2542,
+        2543,
+        2561,
+        2563,
+        2570,
+        2571,
+        2667,
+        2668,
+        2670,
+        3055,
+        3097,
+        3098,
+        3099,
+        3109,
+        3116,
+        3117,
+        3197,
+        3314,
+        3315,
+        3316,
+        3317,
+        3318,
+        3320,
+        3321,
+        3322,
+        3323,
+        3325,
+        3326,
+        3327,
+        3328,
+        3329,
+        3330,
+        3331,
+        3332,
+        3333,
+        3334,
+        3335,
+        3336,
+        3337,
+        3338,
+        3339,
+        3340,
+        3341,
+        3342,
+        3343,
+        3345,
+        3347,
+        3348,
+        3349,
+        3350,
+        3351,
+        3352,
+        3353,
+        3355,
+        3356,
+        3357,
+        3360,
+        3361,
+        3362,
+        3363,
+        3364,
+        3365,
+        3366,
+        3368,
+        3369,
+        3370,
+        3371,
+        3372,
+        3373,
+        3374,
+        3376,
+        3377,
+        3378,
+        3379,
+        3380,
+        3381,
+        3610,
+        3838,
+        3862,
+        3881,
+        3889,
+        3890,
+        4026,
+        4052,
+        4055,
+        4056,
+        4057,
+        4071,
+        4127,
+        4145,
+        4146,
+        4208,
+        4209,
+        4210,
+        4211,
+        4212,
+        4213,
+        4214,
+        4374,
+        4381,
+        4382,
+        4442,
+        4443,
+        4444,
+        4445,
+        4446,
+        4447,
+        4522,
+        4837,
+        4839,
+        4841,
+        4843,
+        4846,
+        4848,
+        4849,
+        4850,
+        5604,
+        6358,
+        6776,
+        6777,
+        6800,
+        7065,
+        7665,
+        7745,
+        7813,
+        7814,
+        7815,
+        7816,
+        7817,
+        7818,
+        7819,
+        7820,
+        7821,
+        7822,
+        7823,
+        7824,
+        7825,
+        7826,
+        7827,
+        7828,
+        7829,
+        7830,
+        7831,
+        7832,
+        7833,
+        7835,
+        8080,
+        8291,
+        8293,
+        8370,
+        8450,
+        8452,
+        8454,
+        8458,
+        8461,
+        8463,
+        8465,
+        8520,
+        8542,
+        8550,
+        8561,
+        8562,
+        8563,
+        8564,
+        8565,
+        8566,
+        8567,
+        8569,
+        8570,
+        8571,
+        8572,
+        8606,
+        8607,
+        8608,
+        8609,
+        8611,
+        8613,
+        8614,
+        8615,
+        8616,
+        8618,
+        8619,
+        8620,
+        8621,
+        8669,
+        8670,
+        8672,
+        8673,
+        8675,
+        8696,
+        8764,
+        8765,
+        8766,
+        8767,
+        8768,
+        9071,
+        9253,
+        9263,
+        9752,
+        9778,
+        9780,
+        9888,
+        9890,
+        10234,
+        10337,
+        10395,
+        10485,
+        10487,
+        10489,
+        10542,
+        10565,
+        10609,
+        10615,
+        10617,
+        10630,
+        10633,
+        10635,
+        10636,
+        10637,
+        10638,
+        10639,
+        10640,
+        10643,
+        10644,
+        10645,
+        10647,
+        10648,
+        10680,
+        10683,
+        10684,
+        10686,
+        10687,
+        10749,
+        10751,
+        10752,
+        10753,
+        11232,
+        11233,
+        11241,
+        11440,
+        11529,
+        11655,
+        11676,
+        11681,
+        11684
+      ]
+    },
+    {
+      "field": "sections",
+      "nodes": 92,
+      "legacyIds": [
+        4803,
+        7296,
+        7302,
+        7305,
+        7573,
+        8213,
+        8271,
+        8796,
+        8839,
+        9012,
+        9018,
+        9021,
+        9031,
+        9041,
+        9045,
+        9051,
+        9070,
+        9079,
+        9094,
+        9115,
+        9134,
+        9264,
+        9288,
+        9303,
+        9315,
+        9340,
+        9345,
+        9351,
+        9360,
+        9418,
+        9422,
+        9428,
+        9436,
+        9445,
+        9447,
+        9451,
+        9457,
+        9465,
+        9469,
+        9480,
+        9483,
+        9492,
+        9496,
+        9501,
+        9508,
+        9512,
+        9515,
+        9517,
+        9555,
+        9557,
+        9561,
+        9566,
+        9568,
+        9570,
+        9572,
+        9574,
+        9670,
+        9761,
+        9812,
+        10020,
+        10030,
+        10070,
+        10077,
+        10080,
+        10093,
+        10098,
+        10103,
+        10105,
+        10118,
+        10293,
+        10307,
+        10324,
+        10368,
+        10402,
+        10439,
+        10554,
+        10763,
+        10790,
+        10817,
+        10960,
+        10968,
+        10974,
+        10976,
+        11026,
+        11041,
+        11051,
+        11078,
+        11203,
+        11465,
+        11553,
+        11555,
+        11694
+      ]
+    },
+    {
+      "field": "sections_new",
+      "nodes": 49,
+      "legacyIds": [
+        34,
+        1898,
+        1924,
+        1926,
+        1928,
+        1930,
+        1932,
+        1934,
+        1936,
+        1938,
+        1940,
+        1942,
+        2203,
+        2205,
+        2209,
+        2211,
+        2213,
+        2215,
+        2221,
+        2231,
+        2235,
+        2357,
+        2359,
+        3311,
+        4028,
+        4031,
+        4737,
+        5277,
+        5920,
+        5981,
+        5983,
+        6340,
+        6773,
+        6888,
+        7390,
+        7541,
+        7585,
+        7589,
+        7609,
+        9244,
+        9246,
+        9248,
+        9786,
+        9852,
+        10125,
+        10140,
+        10490,
+        11135,
+        11475
+      ]
+    }
+  ],
+  "templates": [
+    {
+      "template": "layouts/article.blade.php",
+      "classification": "explicit-template",
+      "nodes": 2,
+      "authoritativeFields": [
+        "sections"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "legacyIds": [
+        4803,
+        7573
+      ]
+    },
+    {
+      "template": "layouts/articles-list.blade.php",
+      "classification": "explicit-template",
+      "nodes": 4,
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "legacyIds": [
+        2235,
+        9244,
+        9246,
+        9248
+      ]
+    },
+    {
+      "template": "layouts/cookie-consent.blade.php",
+      "classification": "explicit-template",
+      "nodes": 1,
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "legacyIds": [
+        7589
+      ]
+    },
+    {
+      "template": "layouts/default-new.blade.php",
+      "classification": "explicit-template",
+      "nodes": 42,
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "legacyIds": [
+        34,
+        1898,
+        1924,
+        1926,
+        1928,
+        1930,
+        1932,
+        1934,
+        1936,
+        1938,
+        1940,
+        1942,
+        2203,
+        2205,
+        2209,
+        2211,
+        2213,
+        2215,
+        2221,
+        2357,
+        2359,
+        4028,
+        4031,
+        4737,
+        5277,
+        5920,
+        5981,
+        5983,
+        6340,
+        6773,
+        6888,
+        7390,
+        7541,
+        7585,
+        7609,
+        9786,
+        9852,
+        10125,
+        10140,
+        10490,
+        11135,
+        11475
+      ]
+    },
+    {
+      "template": "layouts/learning-hub-home.blade.php",
+      "classification": "explicit-template",
+      "nodes": 1,
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "legacyIds": [
+        3311
+      ]
+    },
+    {
+      "template": "layouts/market-matrix.blade.php",
+      "classification": "explicit-template",
+      "nodes": 1,
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "legacyIds": [
+        2231
+      ]
+    },
+    {
+      "template": "post-type-default:clients",
+      "classification": "post-type-default",
+      "nodes": 89,
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "targetOwners": [
+        "unresolved"
+      ],
+      "legacyIds": [
+        3097,
+        3098,
+        3099,
+        4442,
+        4443,
+        4444,
+        4445,
+        4446,
+        4447,
+        7745,
+        7813,
+        7814,
+        7815,
+        7816,
+        7817,
+        7818,
+        7819,
+        7820,
+        7821,
+        7822,
+        7823,
+        7824,
+        7825,
+        7826,
+        7827,
+        7828,
+        7829,
+        7830,
+        7831,
+        7832,
+        7833,
+        7835,
+        8080,
+        8550,
+        8561,
+        8562,
+        8563,
+        8564,
+        8565,
+        8566,
+        8567,
+        8569,
+        8570,
+        8571,
+        8572,
+        8606,
+        8607,
+        8608,
+        8609,
+        8611,
+        8613,
+        8614,
+        8615,
+        8616,
+        8618,
+        8619,
+        8620,
+        8621,
+        8764,
+        8765,
+        8766,
+        8767,
+        8768,
+        10234,
+        10542,
+        10609,
+        10615,
+        10617,
+        10630,
+        10633,
+        10635,
+        10636,
+        10637,
+        10638,
+        10639,
+        10640,
+        10643,
+        10644,
+        10645,
+        10647,
+        10648,
+        10680,
+        10683,
+        10684,
+        10686,
+        10687,
+        11440,
+        11529,
+        11655
+      ]
+    },
+    {
+      "template": "post-type-default:company-data",
+      "classification": "post-type-default",
+      "nodes": 4,
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "targetOwners": [
+        "unresolved"
+      ],
+      "legacyIds": [
+        4846,
+        4848,
+        4849,
+        4850
+      ]
+    },
+    {
+      "template": "post-type-default:features",
+      "classification": "post-type-default",
+      "nodes": 2,
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "targetOwners": [
+        "unresolved"
+      ],
+      "legacyIds": [
+        3197,
+        3881
+      ]
+    },
+    {
+      "template": "post-type-default:hub",
+      "classification": "post-type-default",
+      "nodes": 72,
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "targetOwners": [
+        "hubs"
+      ],
+      "legacyIds": [
+        2471,
+        2472,
+        2487,
+        2488,
+        2490,
+        2491,
+        2492,
+        2493,
+        2494,
+        2495,
+        2496,
+        2497,
+        2498,
+        2499,
+        2500,
+        2501,
+        2502,
+        2503,
+        2504,
+        2505,
+        2506,
+        2507,
+        2508,
+        2509,
+        2510,
+        2511,
+        2512,
+        2513,
+        2514,
+        2519,
+        3314,
+        3315,
+        3316,
+        3317,
+        3318,
+        3320,
+        3321,
+        3322,
+        3323,
+        3325,
+        3326,
+        3327,
+        3328,
+        3329,
+        3330,
+        3331,
+        3332,
+        3333,
+        3334,
+        3335,
+        3336,
+        3337,
+        3338,
+        3339,
+        3340,
+        3341,
+        3342,
+        3343,
+        3345,
+        4071,
+        4522,
+        6776,
+        6777,
+        6800,
+        8520,
+        8542,
+        8670,
+        8696,
+        10565,
+        10749,
+        10751,
+        10752
+      ]
+    },
+    {
+      "template": "post-type-default:learning-hub-video",
+      "classification": "post-type-default",
+      "nodes": 15,
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "targetOwners": [
+        "learning-videos"
+      ],
+      "legacyIds": [
+        3862,
+        3889,
+        3890,
+        8370,
+        8450,
+        8452,
+        8454,
+        8458,
+        8461,
+        8463,
+        8465,
+        9752,
+        11676,
+        11681,
+        11684
+      ]
+    },
+    {
+      "template": "post-type-default:lifecycle",
+      "classification": "post-type-default",
+      "nodes": 12,
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "targetOwners": [
+        "unresolved"
+      ],
+      "legacyIds": [
+        4026,
+        4208,
+        4209,
+        4210,
+        4211,
+        4212,
+        4213,
+        4214,
+        10337,
+        10485,
+        10489,
+        11241
+      ]
+    },
+    {
+      "template": "post-type-default:office",
+      "classification": "post-type-default",
+      "nodes": 4,
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "targetOwners": [
+        "unresolved"
+      ],
+      "legacyIds": [
+        4052,
+        4055,
+        4056,
+        4057
+      ]
+    },
+    {
+      "template": "post-type-default:people",
+      "classification": "post-type-default",
+      "nodes": 20,
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "targetOwners": [
+        "unresolved"
+      ],
+      "legacyIds": [
+        2561,
+        2563,
+        2570,
+        2571,
+        2667,
+        2668,
+        2670,
+        4145,
+        4146,
+        4837,
+        4839,
+        4841,
+        4843,
+        8291,
+        8293,
+        9071,
+        9253,
+        10395,
+        11232,
+        11233
+      ]
+    },
+    {
+      "template": "post-type-default:post",
+      "classification": "post-type-default",
+      "nodes": 90,
+      "authoritativeFields": [
+        "sections"
+      ],
+      "targetOwners": [
+        "articles"
+      ],
+      "legacyIds": [
+        7296,
+        7302,
+        7305,
+        8213,
+        8271,
+        8796,
+        8839,
+        9012,
+        9018,
+        9021,
+        9031,
+        9041,
+        9045,
+        9051,
+        9070,
+        9079,
+        9094,
+        9115,
+        9134,
+        9264,
+        9288,
+        9303,
+        9315,
+        9340,
+        9345,
+        9351,
+        9360,
+        9418,
+        9422,
+        9428,
+        9436,
+        9445,
+        9447,
+        9451,
+        9457,
+        9465,
+        9469,
+        9480,
+        9483,
+        9492,
+        9496,
+        9501,
+        9508,
+        9512,
+        9515,
+        9517,
+        9555,
+        9557,
+        9561,
+        9566,
+        9568,
+        9570,
+        9572,
+        9574,
+        9670,
+        9761,
+        9812,
+        10020,
+        10030,
+        10070,
+        10077,
+        10080,
+        10093,
+        10098,
+        10103,
+        10105,
+        10118,
+        10293,
+        10307,
+        10324,
+        10368,
+        10402,
+        10439,
+        10554,
+        10763,
+        10790,
+        10817,
+        10960,
+        10968,
+        10974,
+        10976,
+        11026,
+        11041,
+        11051,
+        11078,
+        11203,
+        11465,
+        11553,
+        11555,
+        11694
+      ]
+    },
+    {
+      "template": "post-type-default:product",
+      "classification": "post-type-default",
+      "nodes": 15,
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "targetOwners": [
+        "unresolved"
+      ],
+      "legacyIds": [
+        752,
+        753,
+        754,
+        811,
+        1861,
+        1862,
+        1863,
+        1864,
+        1865,
+        1866,
+        1883,
+        1884,
+        5604,
+        9890,
+        10487
+      ]
+    },
+    {
+      "template": "post-type-default:region",
+      "classification": "post-type-default",
+      "nodes": 3,
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "targetOwners": [
+        "unresolved"
+      ],
+      "legacyIds": [
+        843,
+        844,
+        845
+      ]
+    },
+    {
+      "template": "post-type-default:stats-group",
+      "classification": "post-type-default",
+      "nodes": 2,
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "targetOwners": [
+        "unresolved"
+      ],
+      "legacyIds": [
+        3055,
+        3838
+      ]
+    },
+    {
+      "template": "post-type-default:venue",
+      "classification": "post-type-default",
+      "nodes": 66,
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "targetOwners": [
+        "venues"
+      ],
+      "legacyIds": [
+        1394,
+        2515,
+        2516,
+        2517,
+        2518,
+        2521,
+        2522,
+        2523,
+        2524,
+        2525,
+        2527,
+        2528,
+        2529,
+        2530,
+        2531,
+        2532,
+        2533,
+        2535,
+        2536,
+        2538,
+        2539,
+        2540,
+        2542,
+        2543,
+        3347,
+        3348,
+        3349,
+        3350,
+        3351,
+        3352,
+        3353,
+        3355,
+        3356,
+        3357,
+        3360,
+        3361,
+        3362,
+        3363,
+        3364,
+        3365,
+        3366,
+        3368,
+        3369,
+        3370,
+        3371,
+        3372,
+        3373,
+        3374,
+        3376,
+        3377,
+        3378,
+        3379,
+        3380,
+        3381,
+        4374,
+        4381,
+        4382,
+        7065,
+        8669,
+        8672,
+        8673,
+        8675,
+        9263,
+        9778,
+        9780,
+        10753
+      ]
+    },
+    {
+      "template": "post-type-default:videos",
+      "classification": "post-type-default",
+      "nodes": 8,
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "targetOwners": [
+        "unresolved"
+      ],
+      "legacyIds": [
+        3109,
+        3116,
+        3117,
+        3610,
+        4127,
+        6358,
+        7665,
+        9888
+      ]
+    }
+  ],
+  "layouts": [
+    {
+      "layout": "buttons",
+      "scope": "article-top-level",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "actions",
+        "contentSection"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 57,
+      "routeCount": 42,
+      "postTypes": [
+        "page",
+        "post"
+      ],
+      "targetOwners": [
+        "articles",
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections"
+      ],
+      "sampleLegacyIds": [
+        4803,
+        7296,
+        7573,
+        8271,
+        8796,
+        8839,
+        9012,
+        9018,
+        9021,
+        9031,
+        9041,
+        9045
+      ]
+    },
+    {
+      "layout": "divider",
+      "scope": "article-top-level",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "contentSection",
+        "divider"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 197,
+      "routeCount": 68,
+      "postTypes": [
+        "page",
+        "post"
+      ],
+      "targetOwners": [
+        "articles",
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections"
+      ],
+      "sampleLegacyIds": [
+        4803,
+        7296,
+        7302,
+        7305,
+        8213,
+        8796,
+        8839,
+        9051,
+        9070,
+        9079,
+        9094,
+        9115
+      ]
+    },
+    {
+      "layout": "form",
+      "scope": "article-top-level",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "contentSection",
+        "form"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 16,
+      "routeCount": 15,
+      "postTypes": [
+        "post"
+      ],
+      "targetOwners": [
+        "articles"
+      ],
+      "authoritativeFields": [
+        "sections"
+      ],
+      "sampleLegacyIds": [
+        10030,
+        10077,
+        10080,
+        10093,
+        10098,
+        10103,
+        10118,
+        10960,
+        10968,
+        10974,
+        11026,
+        11041
+      ]
+    },
+    {
+      "layout": "header",
+      "scope": "article-top-level",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "contentSection",
+        "heading"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 42,
+      "routeCount": 31,
+      "postTypes": [
+        "page",
+        "post"
+      ],
+      "targetOwners": [
+        "articles",
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections"
+      ],
+      "sampleLegacyIds": [
+        4803,
+        7296,
+        7573,
+        8271,
+        8839,
+        9012,
+        9018,
+        9021,
+        9031,
+        9041,
+        9045,
+        9070
+      ]
+    },
+    {
+      "layout": "index-point",
+      "scope": "article-top-level",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "contentSection",
+        "heading"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 171,
+      "routeCount": 53,
+      "postTypes": [
+        "page",
+        "post"
+      ],
+      "targetOwners": [
+        "articles",
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections"
+      ],
+      "sampleLegacyIds": [
+        4803,
+        7296,
+        7302,
+        7305,
+        7573,
+        8213,
+        8271,
+        8796,
+        8839,
+        9051,
+        9070,
+        9079
+      ]
+    },
+    {
+      "layout": "media",
+      "scope": "article-top-level",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "contentSection",
+        "media"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 78,
+      "routeCount": 66,
+      "postTypes": [
+        "post"
+      ],
+      "targetOwners": [
+        "articles"
+      ],
+      "authoritativeFields": [
+        "sections"
+      ],
+      "sampleLegacyIds": [
+        8213,
+        8796,
+        8839,
+        9012,
+        9018,
+        9021,
+        9031,
+        9041,
+        9045,
+        9051,
+        9070,
+        9079
+      ]
+    },
+    {
+      "layout": "paragraph",
+      "scope": "article-top-level",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "contentSection",
+        "richText"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 295,
+      "routeCount": 92,
+      "postTypes": [
+        "page",
+        "post"
+      ],
+      "targetOwners": [
+        "articles",
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections"
+      ],
+      "sampleLegacyIds": [
+        4803,
+        7296,
+        7302,
+        7305,
+        7573,
+        8213,
+        8271,
+        8796,
+        8839,
+        9012,
+        9018,
+        9021
+      ]
+    },
+    {
+      "layout": "post-content",
+      "scope": "article-top-level",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "contentSection",
+        "richText"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 4,
+      "routeCount": 1,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections"
+      ],
+      "sampleLegacyIds": [
+        4803
+      ]
+    },
+    {
+      "layout": "table",
+      "scope": "article-top-level",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "contentSection",
+        "dataTable"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 1,
+      "routeCount": 1,
+      "postTypes": [
+        "post"
+      ],
+      "targetOwners": [
+        "articles"
+      ],
+      "authoritativeFields": [
+        "sections"
+      ],
+      "sampleLegacyIds": [
+        10790
+      ]
+    },
+    {
+      "layout": "buttons",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "actions"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 60,
+      "routeCount": 33,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1898,
+        1924,
+        1926,
+        1928,
+        1930,
+        1932,
+        1934,
+        1936,
+        1938,
+        1940,
+        1942,
+        2205
+      ]
+    },
+    {
+      "layout": "charts-new",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "split",
+      "targets": [
+        "app.market_volume_monthly",
+        "dataChart"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 7,
+      "routeCount": 4,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1898,
+        1938,
+        5981,
+        5983
+      ]
+    },
+    {
+      "layout": "checklist",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "checklist"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 2,
+      "routeCount": 2,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1928,
+        1930
+      ]
+    },
+    {
+      "layout": "clients",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "entityList"
+      ],
+      "dynamicDependencyPostTypes": [
+        "clients"
+      ],
+      "occurrences": 8,
+      "routeCount": 3,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1898,
+        1940,
+        10490
+      ]
+    },
+    {
+      "layout": "column",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "structure",
+      "targets": [
+        "contentSection.columns"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 378,
+      "routeCount": 43,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        34,
+        1898,
+        1924,
+        1926,
+        1928,
+        1930,
+        1932,
+        1934,
+        1936,
+        1938,
+        1940,
+        1942
+      ]
+    },
+    {
+      "layout": "connections",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "marketCoverage"
+      ],
+      "dynamicDependencyPostTypes": [
+        "hub",
+        "region",
+        "venue"
+      ],
+      "occurrences": 12,
+      "routeCount": 8,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1898,
+        1938,
+        2203,
+        2209,
+        2221,
+        5981,
+        5983,
+        6773
+      ]
+    },
+    {
+      "layout": "divider",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "divider"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 27,
+      "routeCount": 12,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        34,
+        1898,
+        1926,
+        1930,
+        1942,
+        2213,
+        2215,
+        2221,
+        5981,
+        5983,
+        7390,
+        10490
+      ]
+    },
+    {
+      "layout": "faqs",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "faq"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 12,
+      "routeCount": 11,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1924,
+        1926,
+        1938,
+        1942,
+        2221,
+        6340,
+        7609,
+        9786,
+        10125,
+        10140,
+        11475
+      ]
+    },
+    {
+      "layout": "features",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "featureList"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 61,
+      "routeCount": 27,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1898,
+        1924,
+        1926,
+        1928,
+        1930,
+        1932,
+        1934,
+        1936,
+        1938,
+        1940,
+        1942,
+        2203
+      ]
+    },
+    {
+      "layout": "form",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "form"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 8,
+      "routeCount": 7,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        34,
+        1926,
+        1930,
+        2213,
+        4031,
+        6340,
+        7541
+      ]
+    },
+    {
+      "layout": "gallery",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "gallery"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 5,
+      "routeCount": 4,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1928,
+        1936,
+        2203,
+        11475
+      ]
+    },
+    {
+      "layout": "header",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "heading"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 266,
+      "routeCount": 41,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1898,
+        1924,
+        1926,
+        1928,
+        1930,
+        1932,
+        1934,
+        1936,
+        1938,
+        1940,
+        1942,
+        2203
+      ]
+    },
+    {
+      "layout": "icon",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "omit",
+      "targets": [],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 3,
+      "routeCount": 1,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1898
+      ]
+    },
+    {
+      "layout": "image",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "media"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 61,
+      "routeCount": 31,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1898,
+        1924,
+        1926,
+        1928,
+        1930,
+        1932,
+        1934,
+        1936,
+        1938,
+        1940,
+        1942,
+        2205
+      ]
+    },
+    {
+      "layout": "lifecycle",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "lifecycle"
+      ],
+      "dynamicDependencyPostTypes": [
+        "lifecycle"
+      ],
+      "occurrences": 1,
+      "routeCount": 1,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        4028
+      ]
+    },
+    {
+      "layout": "market-matrix",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "marketMatrix"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 1,
+      "routeCount": 1,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        2211
+      ]
+    },
+    {
+      "layout": "markets-map",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "marketsMap"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 5,
+      "routeCount": 5,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        2211,
+        2221,
+        5920,
+        5981,
+        5983
+      ]
+    },
+    {
+      "layout": "office",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "office"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 12,
+      "routeCount": 3,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        34,
+        2205,
+        4031
+      ]
+    },
+    {
+      "layout": "paragraph",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "richText"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 185,
+      "routeCount": 44,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        34,
+        1898,
+        1924,
+        1926,
+        1928,
+        1930,
+        1932,
+        1934,
+        1936,
+        1938,
+        1940,
+        1942
+      ]
+    },
+    {
+      "layout": "people",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "entityList"
+      ],
+      "dynamicDependencyPostTypes": [
+        "people"
+      ],
+      "occurrences": 2,
+      "routeCount": 2,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        2203,
+        11475
+      ]
+    },
+    {
+      "layout": "preheader",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "heading"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 37,
+      "routeCount": 19,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1898,
+        1924,
+        1926,
+        1928,
+        1930,
+        1934,
+        1936,
+        1938,
+        1940,
+        2209,
+        2211,
+        2213
+      ]
+    },
+    {
+      "layout": "products",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "entityList"
+      ],
+      "dynamicDependencyPostTypes": [
+        "product"
+      ],
+      "occurrences": 10,
+      "routeCount": 10,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1924,
+        1926,
+        1928,
+        1930,
+        1936,
+        1938,
+        1940,
+        1942,
+        2359,
+        6340
+      ]
+    },
+    {
+      "layout": "regions",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "regions"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 3,
+      "routeCount": 3,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        2221,
+        5981,
+        5983
+      ]
+    },
+    {
+      "layout": "stats",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "statistics"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 2,
+      "routeCount": 2,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        2203,
+        2211
+      ]
+    },
+    {
+      "layout": "subheader",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "heading"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 56,
+      "routeCount": 23,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        34,
+        1898,
+        1926,
+        1928,
+        1930,
+        1932,
+        1934,
+        1938,
+        1940,
+        1942,
+        2203,
+        2213
+      ]
+    },
+    {
+      "layout": "table",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "dataTable"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 2,
+      "routeCount": 2,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1924,
+        1934
+      ]
+    },
+    {
+      "layout": "timeline",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "timeline"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 1,
+      "routeCount": 1,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        2203
+      ]
+    },
+    {
+      "layout": "videos",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "media"
+      ],
+      "dynamicDependencyPostTypes": [
+        "videos"
+      ],
+      "occurrences": 2,
+      "routeCount": 2,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1898,
+        9786
+      ]
+    },
+    {
+      "layout": "columns",
+      "scope": "page-top-level",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "contentSection"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 158,
+      "routeCount": 43,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        34,
+        1898,
+        1924,
+        1926,
+        1928,
+        1930,
+        1932,
+        1934,
+        1936,
+        1938,
+        1940,
+        1942
+      ]
+    },
+    {
+      "layout": "hero",
+      "scope": "page-top-level",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "trayportHero"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 37,
+      "routeCount": 37,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        34,
+        1898,
+        1924,
+        1926,
+        1928,
+        1930,
+        1932,
+        1934,
+        1936,
+        1938,
+        1940,
+        1942
+      ]
+    },
+    {
+      "layout": "single",
+      "scope": "page-top-level",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "contentSection"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 40,
+      "routeCount": 24,
+      "postTypes": [
+        "page"
+      ],
+      "targetOwners": [
+        "pages"
+      ],
+      "authoritativeFields": [
+        "sections_new"
+      ],
+      "sampleLegacyIds": [
+        1898,
+        1924,
+        1926,
+        1928,
+        1930,
+        1938,
+        1940,
+        1942,
+        2209,
+        2211,
+        2221,
+        2359
+      ]
+    }
+  ],
+  "unknownLayouts": [],
+  "taxonomies": [
+    {
+      "taxonomy": "asset-class",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "asset-classes"
+      ],
+      "terms": 12,
+      "occurrences": 157,
+      "roles": [
+        "referenced-term"
+      ],
+      "sampleLegacyIds": [
+        21,
+        22,
+        25,
+        26,
+        27,
+        88,
+        89,
+        90,
+        108,
+        109,
+        114,
+        192
+      ]
+    },
+    {
+      "taxonomy": "category",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "article-categories"
+      ],
+      "terms": 3,
+      "occurrences": 90,
+      "roles": [
+        "referenced-term"
+      ],
+      "sampleLegacyIds": [
+        111,
+        119,
+        120
+      ]
+    },
+    {
+      "taxonomy": "lh-category",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "learning-videos.categories"
+      ],
+      "terms": 11,
+      "occurrences": 31,
+      "roles": [
+        "referenced-term"
+      ],
+      "sampleLegacyIds": [
+        85,
+        86,
+        121,
+        122,
+        123,
+        124,
+        125,
+        127,
+        128,
+        131,
+        132
+      ]
+    },
+    {
+      "taxonomy": "post_tag",
+      "classification": "contract-disposition",
+      "disposition": "omit",
+      "targets": [],
+      "terms": 73,
+      "occurrences": 158,
+      "roles": [
+        "referenced-term"
+      ],
+      "sampleLegacyIds": [
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145
+      ]
+    },
+    {
+      "taxonomy": "product-feature",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "featureList"
+      ],
+      "terms": 16,
+      "occurrences": 36,
+      "roles": [
+        "referenced-term"
+      ],
+      "sampleLegacyIds": [
+        91,
+        92,
+        93,
+        94,
+        95,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103
+      ]
+    },
+    {
+      "taxonomy": "region",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "regions"
+      ],
+      "terms": 4,
+      "occurrences": 105,
+      "roles": [
+        "referenced-term"
+      ],
+      "sampleLegacyIds": [
+        29,
+        30,
+        31,
+        133
+      ]
+    },
+    {
+      "taxonomy": "software-category",
+      "classification": "contract-disposition",
+      "disposition": "omit",
+      "targets": [],
+      "terms": 3,
+      "occurrences": 3,
+      "roles": [
+        "referenced-term"
+      ],
+      "sampleLegacyIds": [
+        35,
+        36,
+        40
+      ]
+    },
+    {
+      "taxonomy": "venue-type",
+      "classification": "contract-disposition",
+      "disposition": "map",
+      "targets": [
+        "venue-types"
+      ],
+      "terms": 3,
+      "occurrences": 47,
+      "roles": [
+        "referenced-term"
+      ],
+      "sampleLegacyIds": [
+        41,
+        42,
+        43
+      ]
+    }
+  ],
+  "unknownTaxonomies": []
+}

@@ -2,11 +2,11 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose
 PNPM := corepack pnpm
-MIGRATION := TMPDIR=$${TMPDIR:-/tmp} $(PNPM) exec tsx migration/cli.ts
+MIGRATION := TMPDIR=/tmp $(PNPM) exec tsx migration/cli.ts
 
 .DEFAULT_GOAL := help
 
-.PHONY: build db-shell dev doctor down help import-dry-run import-extract import-load import-poc import-preflight import-transform import-validate install lint logs migrate setup status storage-init test test-setup typecheck up
+.PHONY: build content-inventory db-shell dev doctor down help import-dry-run import-extract import-load import-poc import-preflight import-transform import-validate install lint logs migrate setup status storage-init test test-setup typecheck up
 
 help:
 	@echo "Trayport web local commands"
@@ -25,6 +25,7 @@ help:
 	@echo "  make lint          Run ESLint"
 	@echo "  make test-setup    Install the Playwright Chromium browser"
 	@echo "  make test          Run the repository test suite"
+	@echo "  make content-inventory  Inventory the production scope from local WordPress"
 	@echo "  make import-poc    Extract, validate, and publish the scoped WordPress content"
 	@echo "  make import-dry-run  Validate the latest transformed run without writing Payload"
 	@echo "  make doctor        Show required tool versions"
@@ -76,6 +77,9 @@ test:
 
 test-setup: install
 	$(PNPM) exec playwright install chromium
+
+content-inventory:
+	$(MIGRATION) inventory --scope production
 
 import-preflight: up
 	$(MIGRATION) preflight
