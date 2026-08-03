@@ -9,14 +9,18 @@ import { ArticleCategories } from './collections/ArticleCategories'
 import { Articles } from './collections/Articles'
 import { AssetClasses } from './collections/AssetClasses'
 import { Hubs } from './collections/Hubs'
+import { LearningVideoCategories } from './collections/LearningVideoCategories'
+import { LearningVideos } from './collections/LearningVideos'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Regions } from './collections/Regions'
+import { RouteRegistry } from './collections/RouteRegistry'
 import { Users } from './collections/Users'
 import { Venues } from './collections/Venues'
 import { VenueTypes } from './collections/VenueTypes'
 import { Footer } from './globals/Footer'
 import { Navigation } from './globals/Navigation'
+import { RouteIndexes } from './globals/RouteIndexes'
 import { SiteSettings } from './globals/SiteSettings'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
@@ -84,15 +88,18 @@ export default buildConfig({
     Articles,
     Hubs,
     Venues,
+    LearningVideos,
     Media,
     ArticleCategories,
+    LearningVideoCategories,
     AssetClasses,
     VenueTypes,
     Regions,
     Users,
+    RouteRegistry,
   ],
   cors: [getServerSideURL()].filter(Boolean),
-  globals: [Navigation, Footer, SiteSettings],
+  globals: [Navigation, Footer, SiteSettings, RouteIndexes],
   graphQL: {
     disable: true,
   },

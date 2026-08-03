@@ -25,7 +25,10 @@ const documentStatus = (doc: unknown): RoutableDocument['_status'] => {
   return (doc as RoutableDocument)._status
 }
 
-export const revalidateRoutableContent = (tag: string): CollectionAfterChangeHook => {
+export const revalidateRoutableContent = (
+  tag: string,
+  relatedPaths: string[] = [],
+): CollectionAfterChangeHook => {
   return ({ context, doc, previousDoc, req: { payload } }) => {
     if (context.disableRevalidate) {
       return doc
@@ -48,13 +51,19 @@ export const revalidateRoutableContent = (tag: string): CollectionAfterChangeHoo
       revalidatePath(previousPath)
     }
 
+    for (const relatedPath of relatedPaths) {
+      revalidatePath(relatedPath)
+    }
     revalidateTag(tag, 'max')
 
     return doc
   }
 }
 
-export const revalidateDeletedRoutableContent = (tag: string): CollectionAfterDeleteHook => {
+export const revalidateDeletedRoutableContent = (
+  tag: string,
+  relatedPaths: string[] = [],
+): CollectionAfterDeleteHook => {
   return ({ context, doc }) => {
     if (context.disableRevalidate) {
       return doc
@@ -66,6 +75,9 @@ export const revalidateDeletedRoutableContent = (tag: string): CollectionAfterDe
       revalidatePath(path)
     }
 
+    for (const relatedPath of relatedPaths) {
+      revalidatePath(relatedPath)
+    }
     revalidateTag(tag, 'max')
 
     return doc

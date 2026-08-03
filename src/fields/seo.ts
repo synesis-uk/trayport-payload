@@ -1,5 +1,9 @@
 import type { GroupField } from 'payload'
 
+import { normalizeContentPath, validateContentPath } from './contentPath'
+
+const canonicalError = 'Use a normalized root-relative path or a complete HTTP(S) URL.'
+
 export const seoField = (): GroupField => ({
   name: 'meta',
   type: 'group',
@@ -30,7 +34,32 @@ export const seoField = (): GroupField => ({
       name: 'canonicalURL',
       type: 'text',
       admin: {
-        description: 'Only set this when the canonical URL differs from this page.',
+        description:
+          'Only set this when the canonical URL differs from this page. Use a root-relative path or a complete HTTP(S) URL.',
+      },
+      validate: (value: string | null | undefined) => {
+        const canonical = value?.trim()
+        if (!canonical) return true
+        if (/^\/(?!\/)/.test(canonical)) {
+          return normalizeContentPath(canonical) === canonical &&
+            validateContentPath(canonical) === true
+            ? true
+            : canonicalError
+        }
+
+        try {
+          const parsed = new URL(canonical)
+          return (
+            (['http:', 'https:'].includes(parsed.protocol) &&
+              !parsed.username &&
+              !parsed.password &&
+              !parsed.hash &&
+              !/[\s\\\u0000-\u001F\u007F]/u.test(canonical)) ||
+            canonicalError
+          )
+        } catch {
+          return canonicalError
+        }
       },
     },
     {

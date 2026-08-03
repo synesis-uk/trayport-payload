@@ -21,6 +21,9 @@ than recreating dormant WordPress administration structures.
 These six routes are the implemented frontend slice. The verified production
 source corpus contains 296 canonical routes; those routes are inventoried and
 classified, but they are not all imported or rendered by this frontend yet.
+The deterministic production target plan describes 294 future/current Payload
+document owners and two virtual indexes, but it is planning evidence rather than
+proof that the other 288 planned documents have been migrated or remediated.
 
 The Insights page is backed by all 39 published source records. The connectivity
 view uses 50 imported hubs and 55 locations. German Power uses its 21 live venue
@@ -29,12 +32,22 @@ relationships.
 ## Architecture
 
 - Next.js 16 serves the public site and Payload admin.
-- Payload 3 owns pages, articles, hubs, venues, taxonomies, navigation, footer,
-  site settings, media metadata, drafts, previews, roles, and publishing.
+- Payload 3 owns pages, articles, hubs, venues, learning videos and their
+  categories, taxonomies, navigation, footer, site settings, virtual-index
+  configuration, media metadata, drafts, previews, roles, and publishing.
 - PostgreSQL 16 stores Payload data and the separate
-  `app.market_volume_monthly` application table.
+  `app.market_volume_monthly` application table. A protected `route-registry`
+  collection uses a PostgreSQL unique path constraint and transaction-aware
+  hooks to reserve one canonical owner across content, redirects, and virtual
+  routes.
 - MinIO provides S3-compatible media storage locally.
 - Mailpit captures local SMTP traffic.
+
+The public catch-all resolves the route registry first, then loads only the
+claimed document, redirect, or virtual index. Draft claims are visible only in
+authenticated Administrator/Editor preview sessions. The content sitemap is
+generated from published content and virtual claims, so non-routable records
+and redirect sources are excluded.
 
 See [docs/architecture.md](docs/architecture.md) for the content boundary and
 migration flow, and [docs/design-direction.md](docs/design-direction.md) for the
@@ -111,6 +124,15 @@ Run the production-scope inventory independently:
 make content-inventory
 ```
 
+That command also emits and verifies the deterministic full-production target
+plan. Its run directory contains `production-target-plan.json`,
+`production-target-plan.ndjson`, `target-plan-verification.json`, and
+`target-plan-summary.json`. The equivalent direct command is:
+
+```bash
+TMPDIR=/tmp corepack pnpm exec tsx migration/cli.ts inventory --scope production
+```
+
 The proof-of-concept import stages are also available individually:
 
 ```bash
@@ -135,6 +157,11 @@ canonical owners. Per-run output is written to
 `migration/work/inventory/<run-id>/`; sanitized retained evidence lives in
 [`docs/content-architecture`](docs/content-architecture/README.md).
 
+The generated target plan is deterministic implementation input. Running it
+does not expand the PoC importer: the loaded and rendered source slice remains
+the six routes listed above, and the full 296-route import, body remediation,
+media/link review, and parity validation remain future work.
+
 The importer is idempotent. Re-running it against unchanged source data must
 produce no Payload or market-data writes.
 
@@ -146,8 +173,22 @@ account becomes an administrator.
 - Administrators manage users, roles, destructive actions, and migration
   provenance.
 - Editors create and update content, media, navigation, and site configuration.
-- Pages, articles, and public hubs support drafts, live preview, scheduled
-  publishing, and route-aware revalidation.
+- Pages, full articles, public hubs, public venues, and learning videos support
+  drafts, authenticated live preview, scheduled publishing, and route-aware
+  revalidation.
+- Authenticated and subscriber learning videos remain draft-only until identity
+  checks and protected media delivery are implemented.
+- Hub `map-only`, venue `relationship-only`, and article `listing` records are
+  structured data only: publication hooks forbid public paths and layouts.
+- The `route-indexes` global controls headings, introductions, and SEO for the
+  virtual `/venue/` and `/market-coverage/` routes.
+- Publishing validates the 17 runtime archetypes. Conversion and interactive
+  market-matrix pages can be drafted but cannot publish until their planned
+  first-party production blocks exist.
+- A changed published path keeps its current public claim while the draft path
+  is reserved; publication requires redirect confirmation and creates the
+  redirect in the same transaction. Scheduled changes retain approval only for
+  the exact old/new path pair.
 - WordPress provenance is optional, so editors can create native Payload content
   without migration fields.
 
@@ -207,7 +248,9 @@ reports as migration evidence.
 Before a migration release, rerun `make content-inventory` against the approved
 source and review any diff from the retained architecture baseline. A passing
 scope inventory proves source closure only; it does not clear the separate
-schema, importer, rendering, media, link, or content-review gates.
+importer, rendering, block, media, link, role, or content-review gates.
+Production readiness remains blocked even though cross-collection route
+uniqueness and archetype publication invariants now pass.
 
 The proof-of-concept runtime image is web-only. Run `corepack pnpm payload
 migrate` from a source checkout or a dedicated migration image/job before

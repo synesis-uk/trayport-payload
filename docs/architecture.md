@@ -28,9 +28,15 @@ Payload collections:
   body.
 - `hubs`: German Power plus the minimal hub-marker records used by the
   connectivity map.
-- `venues`: the venue summaries and relationships rendered by German Power.
+- `venues`: public-page or relationship-only venue records used by market
+  coverage and connectivity.
+- `learning-videos`: routable learning details with managed/external media and
+  an explicit access mode.
+- `learning-video-categories`: the managed Learning Hub filter taxonomy.
 - `media`: normalized WordPress attachments and accessibility review metadata.
 - Taxonomies for article categories, asset classes, venue types, and regions.
+- `route-registry`: a protected, hook-managed table of content, redirect, and
+  virtual claims. CMS/API clients cannot write it directly.
 
 Payload globals:
 
@@ -38,6 +44,8 @@ Payload globals:
   WordPress menu.
 - `footer`: footer columns, legal links, and certification marks.
 - `site-settings`: brand, contact, social, default SEO, and notices.
+- `route-indexes`: headings, introductions, and SEO for the virtual `/venue/`
+  and `/market-coverage/` indexes.
 
 Application PostgreSQL:
 
@@ -70,23 +78,53 @@ Deliberately excluded from the proof of concept:
 Generated run data and reports live under `migration/work/` and are ignored by
 Git. Source WordPress data is never changed by the importer.
 
-## Follow-on production hardening
+`make content-inventory` performs the separate production discovery pass and
+also emits `production-target-plan.json`, its NDJSON form, a verification
+report, and a summary under `migration/work/inventory/<run-id>/`. The plan
+deterministically accounts for 296 routes, but it is planning evidence only.
+The importer and rendered acceptance slice in this repository still cover the
+six representative source routes; the other production documents have not been
+loaded or content-remediated.
+
+## Routable-content foundation
 
 The proof of concept applies migrations from a source checkout before starting
 the standalone application. A production container release should add a
 separate migration job or migration-capable image rather than attempting schema
 changes in the web process.
 
-Paths are unique within each routable collection. Before opening unrestricted
-page creation to a larger editorial team, add a shared route registry or
-cross-collection validation so a page, article, and hub cannot claim the same
-path. The current resolver intentionally keeps the deterministic precedence
-used by the proof of concept.
+One normalized path is now owned through a shared Payload `route-registry`
+collection backed by a PostgreSQL unique constraint. Collection and redirect
+hooks write claims with the originating Payload request, so a conflicting claim
+rolls back the document mutation in the same transaction. Published documents
+retain a published claim while a changed draft path receives a reserved claim.
+Publishing the change requires confirmation and atomically replaces the old
+content claim with a redirect.
+
+The 17 contract archetypes are represented at runtime. Publication hooks
+enforce discriminators, route-required/route-forbidden modes, root ownership,
+top-level block allowlists, minimum content, learning-video media, venue detail
+content, and content-index listing behavior. Conversion and interactive
+market-matrix pages remain intentionally unpublishable until their planned
+production blocks are implemented.
+
+The Next.js catch-all is registry-first; collection precedence is no longer a
+route ownership mechanism. It renders pages, full articles, public hubs,
+public venues, learning videos, redirects, and the CMS-configured virtual
+indexes. Published content and virtual claims feed the content sitemap.
 
 ## Publication workflow
 
 Administrators and editors can create and update content. Only administrators
 manage users, roles, destructive collection actions, and migration metadata.
-Routable content supports drafts, scheduled publication, live preview, and
-on-demand route revalidation. Imported source metadata is optional, so
-Payload-native content can be created normally after the migration.
+Routable content supports drafts, scheduled publication, authenticated live
+preview, and on-demand route and sitemap revalidation. Preview requires both
+the configured preview secret and an authenticated Administrator or Editor;
+only then may the frontend resolve reserved draft claims. Imported source
+metadata is optional, so Payload-native content can be created normally after
+the migration.
+
+This foundation clears the cross-collection uniqueness and runtime archetype
+invariant gates. It does not imply production readiness: complete 296-route
+content ownership, planned blocks, managed-link validation, editor-control
+parity, and broader role coverage are still outstanding.

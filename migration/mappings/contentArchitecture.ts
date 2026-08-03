@@ -24,6 +24,12 @@ const approvedRouteOwnerSchema = z.object({
   ownership: z.enum(['payload-document', 'derived-collection-route']),
 })
 
+const approvedManagedTaxonomySchema = z.object({
+  sourceTaxonomy: z.string().min(1),
+  targetCollection: z.string().min(1),
+  count: z.number().int().positive(),
+})
+
 const approvedScopeExceptionSchema = z.object({
   id: z.string().min(1),
   legacyId: z.number().int().positive(),
@@ -127,6 +133,7 @@ export const contentArchitectureContractSchema = z
       publicRouteTotal: z.number().int().positive(),
       inventoryEvidenceStatus: z.enum(['pending', 'verified']),
       reachableTermSubtypes: z.array(z.string().min(1)).min(1),
+      managedTaxonomies: z.array(approvedManagedTaxonomySchema).min(1),
       routeOwners: z.array(approvedRouteOwnerSchema).min(1),
       requiredIncludes: z.array(approvedScopeExceptionSchema),
       requiredExclusions: z.array(approvedScopeExceptionSchema),
@@ -220,6 +227,47 @@ export const contentArchitectureContractSchema = z
       }
     }
 
+    const duplicateManagedTaxonomy = duplicate(
+      contract.approvedProductionScope.managedTaxonomies.map(
+        ({ sourceTaxonomy }) => sourceTaxonomy,
+      ),
+    )
+    if (duplicateManagedTaxonomy) {
+      context.addIssue({
+        code: 'custom',
+        message: `Duplicate approved managed taxonomy: ${duplicateManagedTaxonomy}`,
+        path: ['approvedProductionScope', 'managedTaxonomies'],
+      })
+    }
+    const reachableTermSubtypes = new Set(contract.approvedProductionScope.reachableTermSubtypes)
+    const taxonomyDispositions = new Map(
+      contract.legacyLayoutDispositions
+        .filter(({ scope }) => scope === 'taxonomy')
+        .map((disposition) => [disposition.source, disposition]),
+    )
+    for (const managedTaxonomy of contract.approvedProductionScope.managedTaxonomies) {
+      if (!reachableTermSubtypes.has(managedTaxonomy.sourceTaxonomy)) {
+        context.addIssue({
+          code: 'custom',
+          message: `Managed taxonomy is not a reachable term subtype: ${managedTaxonomy.sourceTaxonomy}`,
+          path: ['approvedProductionScope', 'managedTaxonomies', managedTaxonomy.sourceTaxonomy],
+        })
+      }
+      const disposition = taxonomyDispositions.get(managedTaxonomy.sourceTaxonomy)
+      if (
+        !disposition ||
+        (disposition.disposition !== 'map' && disposition.disposition !== 'consolidate') ||
+        disposition.targets.length !== 1 ||
+        disposition.targets[0] !== managedTaxonomy.targetCollection
+      ) {
+        context.addIssue({
+          code: 'custom',
+          message: `Managed taxonomy ${managedTaxonomy.sourceTaxonomy} must map to ${managedTaxonomy.targetCollection} in its taxonomy disposition.`,
+          path: ['approvedProductionScope', 'managedTaxonomies', managedTaxonomy.sourceTaxonomy],
+        })
+      }
+    }
+
     const duplicateRouteOwner = duplicate(
       contract.approvedProductionScope.routeOwners.map(({ id }) => id),
     )
@@ -276,6 +324,15 @@ export const contentArchitectureContractSchema = z
     }
 
     const ownedResources = new Set(contract.collectionOwnership.map(({ resource }) => resource))
+    for (const managedTaxonomy of contract.approvedProductionScope.managedTaxonomies) {
+      if (!ownedResources.has(managedTaxonomy.targetCollection)) {
+        context.addIssue({
+          code: 'custom',
+          message: `Managed taxonomy target is not declared in collectionOwnership: ${managedTaxonomy.targetCollection}`,
+          path: ['approvedProductionScope', 'managedTaxonomies', managedTaxonomy.sourceTaxonomy],
+        })
+      }
+    }
     for (const owner of contract.approvedProductionScope.routeOwners) {
       if (!ownedResources.has(owner.targetOwner)) {
         context.addIssue({

@@ -1,267 +1,11 @@
 // @vitest-environment node
 
-import {
-  type RuntimeInventoryNode,
-  type RuntimeInventorySeed,
-  type RuntimeInventorySnapshot,
-} from '../../migration/inventory/contracts'
 import { discoverProductionInventory } from '../../migration/inventory/discover'
 import { buildInventoryArtifacts, buildLayoutCoverage } from '../../migration/inventory/report'
 import { contentArchitectureContract } from '../../migration/mappings/contentArchitecture'
 import { productionScope } from '../../migration/scopes/production'
+import { inventorySeed, productionFixture } from '../fixtures/productionInventory'
 import { describe, expect, it } from 'vitest'
-
-const node = (
-  legacyId: number,
-  postType: string,
-  path: string | null,
-  overrides: Partial<RuntimeInventoryNode> = {},
-): RuntimeInventoryNode => ({
-  legacyId,
-  postType,
-  postTypePublic: !['redirect'].includes(postType),
-  status: 'publish',
-  title: `${postType} ${legacyId}`,
-  slug: path?.split('/').filter(Boolean).at(-1) || `${postType}-${legacyId}`,
-  path,
-  template: '',
-  authoritativeField: postType === 'post' ? 'sections' : 'all-acf-fields',
-  references: [],
-  listingSelectors: [],
-  componentLayouts: [],
-  redirect: null,
-  ...overrides,
-})
-
-const seed = (
-  origin: RuntimeInventorySeed['origin'],
-  sourcePath: string,
-  url: string,
-  postId: number | null,
-  overrides: Partial<RuntimeInventorySeed> = {},
-): RuntimeInventorySeed => ({
-  origin,
-  kind: 'link',
-  sourcePath,
-  label: url,
-  url,
-  target: '',
-  postId,
-  menuBlockCount: null,
-  ...overrides,
-})
-
-const productionFixture = (): RuntimeInventorySnapshot => {
-  const explicitPages = [
-    node(1898, 'page', '/', {
-      authoritativeField: 'sections_new',
-      template: 'layouts/default-new.blade.php',
-    }),
-    node(1924, 'page', '/products/joule/', {
-      authoritativeField: 'sections_new',
-      template: 'layouts/default-new.blade.php',
-    }),
-    node(4031, 'page', '/request-a-demo/', {
-      authoritativeField: 'sections_new',
-      template: 'layouts/default-new.blade.php',
-    }),
-    node(34, 'page', '/contact/', {
-      authoritativeField: 'sections_new',
-      template: 'layouts/default-new.blade.php',
-    }),
-    node(7609, 'page', '/resources/faqs/', {
-      authoritativeField: 'sections_new',
-      template: 'layouts/default-new.blade.php',
-    }),
-  ]
-  const additionalPageIDs = [10140, ...Array.from({ length: 45 }, (_, index) => 3001 + index)]
-  const additionalPages = additionalPageIDs.map((legacyId, index) =>
-    node(
-      legacyId,
-      'page',
-      legacyId === 10140
-        ? '/products/eod-file/'
-        : index === 10
-          ? '/privacy/'
-          : `/page-${index + 1}/`,
-      {
-        authoritativeField: 'sections_new',
-        template:
-          index === 1
-            ? 'layouts/articles-list.blade.php'
-            : index === 2
-              ? 'layouts/learning-hub-home.blade.php'
-              : index === 3
-                ? 'layouts/market-matrix.blade.php'
-                : index === 10
-                  ? 'layouts/cookie-consent.blade.php'
-                  : 'layouts/default-new.blade.php',
-        componentLayouts: [
-          {
-            layout: 'hero',
-            scope: 'page-top-level',
-            sourcePath: `posts.${legacyId}.acf.sections_new[0]`,
-          },
-        ],
-      },
-    ),
-  )
-  const referenceOwner = additionalPages[4]
-  referenceOwner.references = [
-    {
-      kind: 'post',
-      intent: 'link',
-      legacyId: 9999,
-      taxonomy: null,
-      url: 'https://www.trayport.com/reference-only/',
-      sourcePath: `posts.${referenceOwner.legacyId}.acf.sections_new[0].button`,
-    },
-    {
-      kind: 'post',
-      intent: 'dependency',
-      legacyId: 9997,
-      taxonomy: null,
-      url: null,
-      sourcePath: `posts.${referenceOwner.legacyId}.acf.related`,
-    },
-    {
-      kind: 'term',
-      intent: 'dependency',
-      legacyId: 91,
-      taxonomy: 'category',
-      url: null,
-      sourcePath: `posts.${referenceOwner.legacyId}.taxonomies.category`,
-    },
-  ]
-
-  const pages = [...explicitPages, ...additionalPages]
-  const pageSeeds = additionalPages.map((page, index) =>
-    seed(
-      index % 2 ? 'footer' : 'navigation',
-      `options.${index % 2 ? 'footer_new' : 'dropdown'}[${index}]`,
-      page.legacyId === 10140 ? '/products/end-of-day-eod-file/' : page.path || '/',
-      page.legacyId === 10140 ? null : page.legacyId,
-    ),
-  )
-  const posts = Array.from({ length: 90 }, (_, index) =>
-    node(20_000 + index, 'post', `/insights/article-${index + 1}/`, {
-      authoritativeField: 'sections',
-      componentLayouts: [
-        {
-          layout: 'paragraph',
-          scope: 'article-top-level',
-          sourcePath: `posts.${20_000 + index}.acf.sections[0]`,
-        },
-      ],
-    }),
-  )
-  const venues = Array.from({ length: 66 }, (_, index) =>
-    node(30_000 + index, 'venue', `/venue/venue-${index + 1}/`),
-  )
-  const hubs = Array.from({ length: 72 }, (_, index) =>
-    node(40_000 + index, 'hub', `/market-coverage/hub-${index + 1}/`),
-  )
-  const learningVideos = Array.from({ length: 15 }, (_, index) =>
-    node(50_000 + index, 'learning-hub-video', `/resources/learning-hub/video-${index + 1}/`),
-  )
-  const redirects = Array.from({ length: 50 }, (_, index) =>
-    node(60_000 + index, 'redirect', null, {
-      redirect: {
-        from: `/old-${index + 1}/`,
-        to: `/new-${index + 1}/`,
-        type: '301',
-      },
-    }),
-  )
-
-  return {
-    schemaVersion: 1,
-    source: {
-      home: 'http://trayport.local/',
-      site: 'http://trayport.local/',
-      tablePrefix: 'wp_',
-      wordpressVersion: '6.8.1',
-      acfVersion: '6.4.2',
-      frontPageId: 1898,
-    },
-    navigationCandidates: [
-      ...pageSeeds.filter(({ origin }) => origin === 'navigation'),
-      seed('navigation', 'options.dropdown.venue', '/venue/', null),
-      seed('navigation', 'options.dropdown.marketCoverage', '/market-coverage/', null),
-      seed('navigation', 'options.dropdown.commodities', '/resources/commodities-report/', 2233),
-      seed('navigation', 'options.dropdown.ignored.for_page', '/ignored-parent/', 8888, {
-        kind: 'dropdown-root',
-        menuBlockCount: 2,
-      }),
-    ],
-    footerCandidates: [
-      ...pageSeeds.filter(({ origin }) => origin === 'footer'),
-      seed('footer', 'options.footer_new.careers', '/?page_id=2207', 2207),
-    ],
-    nodes: [
-      ...pages,
-      ...posts,
-      ...venues,
-      ...hubs,
-      ...learningVideos,
-      ...redirects,
-      node(2233, 'page', '/resources/commodities-report/'),
-      node(2207, 'page', '/', { status: 'private' }),
-      node(8888, 'page', '/ignored-parent/'),
-      node(9999, 'page', '/reference-only/', {
-        references: [
-          {
-            kind: 'post',
-            intent: 'dependency',
-            legacyId: 9998,
-            taxonomy: null,
-            url: null,
-            sourcePath: 'posts.9999.acf.must-not-traverse',
-          },
-        ],
-        componentLayouts: [
-          {
-            layout: 'must-not-reach-coverage',
-            scope: 'component',
-            sourcePath: 'posts.9999.acf.must-not-reach-coverage',
-          },
-        ],
-      }),
-      node(9998, 'page', '/reference-child/'),
-      node(9997, 'clients', null, {
-        postTypePublic: false,
-        references: [
-          {
-            kind: 'media',
-            intent: 'dependency',
-            legacyId: 777,
-            taxonomy: null,
-            url: null,
-            sourcePath: 'posts.9997.acf.logo',
-          },
-        ],
-      }),
-    ],
-    media: [
-      {
-        legacyId: 777,
-        title: 'Dependency media',
-        mimeType: 'image/svg+xml',
-        url: 'http://trayport.local/wp-content/uploads/dependency.svg',
-        relativePath: 'dependency.svg',
-        available: true,
-      },
-    ],
-    terms: [
-      {
-        legacyId: 91,
-        taxonomy: 'category',
-        name: 'News',
-        slug: 'news',
-      },
-    ],
-  }
-}
 
 describe('production WordPress inventory', () => {
   it('discovers the approved route closure and keeps non-route links terminal', () => {
@@ -322,16 +66,25 @@ describe('production WordPress inventory', () => {
     expect(coverage.unknownLayouts).toEqual([])
     expect(coverage.layouts.some(({ layout }) => layout === 'must-not-reach-coverage')).toBe(false)
     expect(coverage.unknownTaxonomies).toEqual([])
-    expect(coverage.taxonomies).toEqual([
-      expect.objectContaining({
-        taxonomy: 'category',
-        classification: 'contract-disposition',
-        disposition: 'map',
-        targets: ['article-categories'],
-        terms: 1,
-        occurrences: 1,
-      }),
-    ])
+    expect(coverage.taxonomies).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taxonomy: 'category',
+          classification: 'contract-disposition',
+          disposition: 'map',
+          targets: ['article-categories'],
+          terms: 3,
+          occurrences: 3,
+        }),
+        expect.objectContaining({
+          taxonomy: 'lh-category',
+          classification: 'contract-disposition',
+          disposition: 'consolidate',
+          terms: 11,
+          occurrences: 11,
+        }),
+      ]),
+    )
   })
 
   it('emits byte-for-byte deterministic reports and passes the production drift gate', () => {
@@ -360,7 +113,12 @@ describe('production WordPress inventory', () => {
   it('treats unresolved global routes and non-contract archetypes as release drift', () => {
     const snapshot = productionFixture()
     snapshot.navigationCandidates.push(
-      seed('navigation', 'options.dropdown.unresolved', '/missing-navigation-destination/', null),
+      inventorySeed(
+        'navigation',
+        'options.dropdown.unresolved',
+        '/missing-navigation-destination/',
+        null,
+      ),
     )
     const typoScope = {
       ...productionScope,

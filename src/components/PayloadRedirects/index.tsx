@@ -2,7 +2,6 @@ import configPromise from '@payload-config'
 import { notFound, redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 
-import type { Article, Hub, Page } from '@/payload-types'
 import { getCachedRedirects } from '@/utilities/getRedirects'
 
 interface Props {
@@ -10,7 +9,9 @@ interface Props {
   url: string
 }
 
-type RedirectDocument = Article | Hub | Page
+type RedirectDocument = {
+  path?: string | null
+}
 
 export const PayloadRedirects = async ({ disableNotFound, url }: Props) => {
   const redirects = await getCachedRedirects()()

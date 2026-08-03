@@ -2505,7 +2505,7 @@
       "classification": "contract-disposition",
       "disposition": "consolidate",
       "targets": [
-        "learning-videos.categories"
+        "learning-video-categories"
       ],
       "terms": 11,
       "occurrences": 31,

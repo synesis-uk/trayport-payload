@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import { sourceRecordSchema, type SourcePost, type SourceRecord } from '../contracts/v1'
 import { migrationConfig } from '../lib/config'
+import { pocScope, type PocRoot } from '../scopes/poc'
 import { validateTransformed } from '../validate'
 import {
   asArray,
@@ -12,12 +13,28 @@ import {
   contentHash,
   finalizeTarget,
   legacyRef,
+  liveSourceURL,
   mediaToken,
   sourceURL,
 } from './helpers'
 import { htmlToLexical, htmlToPlainText } from './lexical'
 import { mapArticleLayout, mapPageLayout, type ReusableLookup } from './blocks'
 import type { TargetRecord, TransformCoverage } from './types'
+
+const pocRootByLegacyId = new Map<number, PocRoot>(
+  pocScope.roots.map((root) => [root.legacyId, root]),
+)
+
+const pageTypeByArchetype = {
+  'page.homepage': 'homepage',
+  'page.standard': 'standard',
+  'page.product': 'product',
+  'page.landing': 'landing',
+  'page.legal': 'legal',
+  'page.conversion': 'conversion',
+  'page.interactive-market-matrix': 'interactive',
+  'page.content-index': 'index',
+} as const
 
 const resolveRunId = (requested?: string): string => {
   if (requested) return requested
@@ -113,12 +130,17 @@ const mapPost = (
 ): TargetRecord | null => {
   if (post.postType === 'page') {
     const isInsights = post.legacyId === 9248
+    const root = pocRootByLegacyId.get(post.legacyId)
+    const pageType =
+      root && root.archetype in pageTypeByArchetype
+        ? pageTypeByArchetype[root.archetype as keyof typeof pageTypeByArchetype]
+        : 'standard'
     const data = {
       title: post.title,
       path: post.path || `/${post.slug}/`,
       layout: mapPageLayout(post.acf, coverage, { appendArticleListing: isInsights }, reusables),
       publishedAt: post.publishedAt,
-      pageType: isInsights ? 'index' : post.legacyId === 1924 ? 'product' : 'standard',
+      pageType,
       meta: seoFrom(post),
       _status: post.status === 'publish' ? 'published' : 'draft',
     }
@@ -126,6 +148,13 @@ const mapPost = (
   }
 
   if (post.postType === 'post') {
+    const root = pocRootByLegacyId.get(post.legacyId)
+    const isFullArticle = root?.archetype === 'article.full'
+    if (!isFullArticle && !post.path) {
+      throw new Error(
+        `Listing-only WordPress article ${post.legacyId} has no source path for its live-site destination.`,
+      )
+    }
     const categories = (post.taxonomies.category || []).map((id) =>
       legacyRef('article-category', id),
     )
@@ -141,17 +170,18 @@ const mapPost = (
     const data = {
       title: articleTitle || post.title,
       slug: post.slug,
-      path: post.path || `/insights/${post.slug}/`,
+      path: isFullArticle ? post.path || `/insights/${post.slug}/` : null,
+      externalDestination: isFullArticle ? null : liveSourceURL(post.path),
       excerpt: post.excerpt,
       heroMedia: mediaToken(post.featuredMediaId),
       publishedAt: normalizedDisplayDate,
       location: asString(post.acf.location),
       categories,
       articleType: post.legacyId === 9351 ? 'webinar' : 'insight',
-      contentMode: post.scopeRole === 'root' ? 'full' : 'listing',
+      contentMode: isFullArticle ? 'full' : 'listing',
       featured: isFeatured,
       featuredOrder: isFeatured ? post.featuredOrder : null,
-      layout: post.scopeRole === 'root' ? mapArticleLayout(post.acf.sections, coverage) : [],
+      layout: isFullArticle ? mapArticleLayout(post.acf.sections, coverage) : [],
       meta: seoFrom(post),
       _status: post.status === 'publish' ? 'published' : 'draft',
     }
@@ -215,6 +245,8 @@ const mapPost = (
     const data = {
       title: post.title,
       slug: post.slug,
+      path: null,
+      contentMode: 'relationship-only',
       summary: asString(post.acf.display_name) || post.title,
       website: asString(post.acf.website),
       venueTypes: venueType ? [venueType] : [],
@@ -230,9 +262,10 @@ const mapPost = (
 
 const termCollection: Record<
   string,
-  'article-categories' | 'asset-classes' | 'venue-types' | 'regions'
+  'article-categories' | 'learning-video-categories' | 'asset-classes' | 'venue-types' | 'regions'
 > = {
   category: 'article-categories',
+  'lh-category': 'learning-video-categories',
   'asset-class': 'asset-classes',
   'venue-type': 'venue-types',
   region: 'regions',
@@ -492,7 +525,9 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
         title: record.name,
         slug: record.slug,
         description: record.description,
-        displayOrder: Number(asString(record.acf.display_order)) || 0,
+        ...(target === 'regions'
+          ? {}
+          : { displayOrder: Number(asString(record.acf.display_order)) || 0 }),
         ...(target === 'regions' ? { code: asString(record.acf.code) } : {}),
       }
       targets.push(

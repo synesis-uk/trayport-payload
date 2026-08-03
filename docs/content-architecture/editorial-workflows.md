@@ -27,14 +27,18 @@ Publication validates:
 
 - the page type’s required blocks and fields;
 - global path ownership;
-- internal links and media;
-- first-party form behavior for a conversion page;
-- consent behavior for a cookie/legal page;
-- managed relationships for an interactive page; and
+- learning/video media where applicable; and
 - the singleton/root rule for the homepage.
 
-Changing a published path must reserve the new path and create or require an
-approved redirect from the old path.
+Conversion and interactive market-matrix pages can be composed and previewed as
+drafts, but the current publication guard rejects them until the planned
+first-party form and market-matrix blocks exist. Cookie/legal consent behavior
+and complete managed-link validation remain production work under separate
+gates.
+
+Changing a published path keeps the old route live and reserves the new draft
+path. Publishing requires the editor to confirm the redirect; the new content
+claim and old-path redirect are then written in the same transaction.
 
 ## Create or update an article
 
@@ -67,41 +71,47 @@ Editors choose `page` or `map-only`.
 
 ### Venue
 
-Editors choose `page` or `relationship-only`.
+Editors choose `page` or `relationship-only` using `contentMode`.
 
 - A public-detail venue requires a unique path, detail presentation, SEO,
-  contact/about data as applicable, classifications, and connectivity.
+  classifications, and connectivity. Publication requires managed description
+  or layout content.
 - A relationship-only venue is available to hub components but cannot own a
-  detail route.
+  detail route or layout.
 
 ### Indexes and interactive components
 
-Editors configure index headings, summaries, SEO, filters/order, and map/matrix
-presentation through collection-scoped settings. Child cards come from
-published public-detail records. A map, matrix, or index must never link a
-relationship-only record.
+Editors configure index eyebrow, title, introduction, and SEO in the versioned
+`route-indexes` global. Those groups back the system-owned `/venue/` and
+`/market-coverage/` claims; they are not editable page documents. Child cards
+come from published `page`-mode venues or hubs. A map, matrix, or index must
+never link a relationship-only record.
 
 Market chart presentation is editable in Payload. Raw monthly facts are not;
 they are maintained through the application-data import.
 
 ## Manage Learning Hub content
 
-For each Learning Hub video, editors manage:
+The implemented `learning-videos` collection lets editors manage:
 
-- title and short/full description;
+- title and summary;
 - canonical watch path;
 - video/file or validated external source;
-- poster, caption/transcript, and order;
-- product/category/tag associations used by the live experience;
-- access policy;
+- managed `learning-video-categories`;
+- `public`, `authenticated`, or `subscriber` access mode;
 - supporting content and SEO; and
 - draft, preview, publication, and scheduling.
 
-Preview must show both an allowed and restricted visitor state. The access
-policy governs protected content/actions; it does not accidentally create an
-empty or missing public route.
+Publication currently requires `public` access mode, a reserved path, and
+managed or external video media. Editors can prepare and preview
+`authenticated` or `subscriber` records as drafts, but cannot publish them.
+Real identity/subscription authorization and protected asset delivery remain
+production work.
 
-The Learning Hub index is generated from published video records.
+Poster, caption/transcript, full description, ordering, and complete
+product/tag relationships are still production-parity requirements. All 15
+source details and their 11 managed Learning Hub categories still need the full
+production import and review.
 
 ## Manage navigation, footer, and settings
 
@@ -140,7 +150,9 @@ For an internal destination, choose a managed content reference. Use a custom
 URL only for an external destination or a deliberate protocol such as `mailto:`
 or `tel:`. Choose a media/file reference for downloads.
 
-The editor sees validation for:
+The shared route registry currently validates path ownership and prevents a
+redirect source from shadowing content, virtual routes, or another redirect.
+The production editor experience must additionally validate:
 
 - source-host absolute URLs that should be internal references;
 - broken relative/scheme-less URLs;
@@ -154,9 +166,14 @@ Redirect tasks:
 
 1. Enter or receive the normalized old path.
 2. Choose a managed current destination or validated external URL.
-3. Select permanent or temporary status.
-4. Validate that the source is not an active route and the destination resolves.
-5. Publish the rule and verify one-hop behavior.
+3. Validate that the source is not an active route.
+4. Publish the rule and verify one-hop behavior.
+
+For a content path change, editors use the document’s confirmation control
+instead of creating the redirect separately. The route registry swaps claims
+and creates the old-path redirect atomically. For scheduled publication, check
+the confirmation before scheduling; Payload retains approval only for that
+exact old/new path pair. Changing the draft path again requires fresh approval.
 
 The imported redirect review must resolve the duplicate `/on-demand/` source,
 the missing `/third-party/` target, the private `/careers/` target, stale
@@ -180,10 +197,12 @@ accepted, replaced, or removed.
 
 ## First-party forms
 
-Conversion and Event content can use a typed first-party form. Editors configure
-approved fields, labels, required state, consent copy, success behavior, and
-submission routing. The platform supplies server validation, spam protection,
-rate limiting, safe storage/delivery, error states, and audit behavior.
+The typed first-party form is a planned production workflow for conversion and
+Event content. Once implemented, editors will configure approved fields,
+labels, required state, consent copy, success behavior, and submission routing.
+The platform must supply server validation, spam protection, rate limiting,
+safe storage/delivery, error states, and audit behavior. Until then, conversion
+pages remain draft-only.
 
 HubSpot fields, IDs, and admin screens are not migrated. Arbitrary embeds are
 not a substitute for the approved form behavior.
@@ -191,19 +210,27 @@ not a substitute for the approved form behavior.
 ## Preview, publishing, and rollback
 
 Preview uses the draft version and the real target renderer at configured
-mobile, tablet, and desktop breakpoints. It includes representative listing,
-navigation, access-policy, form, and interactive states.
+mobile, tablet, and desktop breakpoints. The preview endpoint requires the
+configured preview secret plus an authenticated Administrator or Editor
+session. Only authenticated draft mode may resolve reserved route claims.
+Unauthenticated visitors continue to resolve published claims only.
 
 Publishing:
 
 - runs archetype and route validation;
-- checks managed links/relationships;
+- checks the implemented content/media invariants;
 - writes the published version;
 - triggers route, listing, sitemap, and global revalidation as applicable; and
 - records a version that can be restored.
 
 A restored version is revalidated under current rules; rollback cannot
 reintroduce a conflicting path or unresolved target.
+
+The public root/catch-all resolver queries the route registry before loading a
+document, redirect, or virtual index. The content sitemap likewise selects only
+published `content` and `virtual` claims, excluding redirect sources and
+non-routable structured records, then resolves each owner so stale claims and
+records marked `noIndex` are omitted.
 
 ## Migration and review workflow
 
@@ -231,11 +258,25 @@ The production content import follows a repeatable pipeline:
    fallbacks, stale links, exclusions, SEO differences, forms, gated video, and
    interactive behavior.
 
-Run the first three stages with `make content-inventory`. Generated inventory
-and migration evidence belongs under ignored run output except for the
-deliberately retained sanitized [summary](inventory-summary.json),
-[verification](verification.json), [layout coverage](layout-coverage.json), and
-[route manifest](route-manifest.csv). Editors do not maintain those artifacts.
+Run stages 2 and 3 with `make content-inventory` after the WordPress source
+container is available. This inventory command validates the source site
+identity, but it does not run stage 1 or prove the uploads, Payload database,
+and object-storage preflight checks; run `make import-preflight` before the
+extract/load pipeline. The inventory command also generates
+`production-target-plan.json`, its NDJSON representation,
+`target-plan-verification.json`, and `target-plan-summary.json` beneath
+`migration/work/inventory/<run-id>/`. Generated inventory and migration evidence
+belongs under ignored run output except for the deliberately retained sanitized
+[summary](inventory-summary.json), [verification](verification.json),
+[layout coverage](layout-coverage.json), and [route manifest](route-manifest.csv).
+Inventory run IDs are immutable and cannot be reused; `latest-run.txt` advances
+only after both inventory and target-plan verification pass. Editors do not
+maintain those artifacts.
+
+The target plan is deterministic planning evidence: it classifies six Payload
+documents as PoC-ready, 288 as plan-only, and two virtual indexes as
+system-ready. It does not load those 288 documents. The actual imported and
+rendered acceptance slice remains the six representative routes.
 
 ## Launch validation
 
@@ -255,4 +296,7 @@ Editorial launch approval requires:
   evidence.
 
 These are production gates, not conditions for calling the architecture design
-milestone complete.
+milestone complete. Cross-collection uniqueness and the 17 runtime archetype
+invariants now pass; production readiness remains blocked by complete article
+bodies, complete listing-linked route ownership, planned blocks, managed links,
+editor-control effects, and full editor-role enforcement.

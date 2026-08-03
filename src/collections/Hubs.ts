@@ -6,8 +6,11 @@ import { contentPathField } from '@/fields/contentPath'
 import { coordinatesField } from '@/fields/coordinates'
 import { createLegacySourceField } from '@/fields/legacySource'
 import { publishedAtField } from '@/fields/publishedAt'
+import { confirmPathRedirectField } from '@/fields/routeControls'
 import { seoField } from '@/fields/seo'
 import { trayportSlugField } from '@/fields/slug'
+import { validateRoutableDocument } from '@/routing/archetypes'
+import { releaseRoutableRoute, syncRoutableRoute } from '@/routing/registry'
 import { generateContentPreviewPath } from '@/utilities/generateContentPreviewPath'
 
 import {
@@ -92,6 +95,7 @@ export const Hubs: CollectionConfig = {
               name: 'layout',
               type: 'blocks',
               admin: {
+                condition: (_data, siblingData) => siblingData?.contentMode === 'page',
                 initCollapsed: true,
               },
               blocks: trayportLayoutBlocks,
@@ -269,13 +273,26 @@ export const Hubs: CollectionConfig = {
       ],
     },
     trayportSlugField(),
-    contentPathField({ required: false }),
+    contentPathField({
+      condition: (_data, siblingData) => siblingData?.contentMode === 'page',
+      required: false,
+    }),
+    confirmPathRedirectField({
+      condition: (_data, siblingData) => siblingData?.contentMode === 'page',
+    }),
     publishedAtField(),
     createLegacySourceField(),
   ],
   hooks: {
-    afterChange: [revalidateRoutableContent('hubs-sitemap')],
-    afterDelete: [revalidateDeletedRoutableContent('hubs-sitemap')],
+    beforeChange: [validateRoutableDocument('hubs')],
+    afterChange: [
+      syncRoutableRoute('hubs'),
+      revalidateRoutableContent('content-sitemap', ['/market-coverage/']),
+    ],
+    afterDelete: [
+      releaseRoutableRoute('hubs'),
+      revalidateDeletedRoutableContent('content-sitemap', ['/market-coverage/']),
+    ],
   },
   versions: {
     drafts: {

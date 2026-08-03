@@ -6,31 +6,34 @@ An archetype defines who owns a public route, which content is required, which
 blocks or structured fields are allowed, and what editors can do. It is not
 just a label for a WordPress template.
 
-The machine-readable contract currently defines 17 target archetypes. Their
-classification is an architecture decision; several still require schema,
-importer, or frontend enforcement before production.
+The machine-readable contract defines 17 target archetypes, and the runtime
+registry contains the same 17 IDs. Payload integration tests now prove their
+discriminators, required/forbidden route policies, top-level block policies,
+publication guards, virtual claims, and cross-collection collision behavior.
+This passing runtime gate is narrower than production parity: planned blocks
+and the remaining 288 plan-only documents are still incomplete.
 
 ## Target archetypes
 
 | Archetype | Owner | Route policy | Body/behavior owner | Current state |
 | --- | --- | --- | --- | --- |
-| `page.homepage` | `pages` | Required; exactly `/` | Layout | Blocked: root ownership and singleton rule are not enforced |
-| `page.standard` | `pages` | Required | Layout | Partial: discriminator and allowed blocks are not enforced |
-| `page.product` | `pages` | Required | Layout | Partial: product invariant is not enforced |
-| `page.landing` | `pages` | Required | Layout | Partial: landing invariant is not enforced |
-| `page.legal` | `pages` | Required | Layout and policy semantics | Blocked: legal rules and cookie-category behavior are absent |
-| `page.conversion` | `pages` | Required | Layout and first-party form | Blocked: form behavior is absent |
-| `page.interactive-market-matrix` | `pages` | Required | Layout and managed market relationships | Blocked: component and complete destinations are absent |
-| `page.content-index` | `pages` | Required | Layout plus generated listing | Blocked: listing block placement is not enforced |
-| `article.full` | `articles` | Required | Complete article layout | Partial: a full article can publish without a body |
-| `article.listing-metadata` | `articles` | Forbidden | Listing metadata only | Blocked: current PoC can expose empty internal details |
-| `learning-video.public-detail` | `learning-videos` | Required | Video metadata, media, access policy, SEO | Blocked: collection and route owner are absent |
-| `hub.public-page` | `hubs` | Required | Layout and structured market data | Partial: path and body rules are not conditional |
-| `hub.map-only` | `hubs` | Forbidden | Structured market data | Partial: schema can still assign a path/layout |
-| `venue.structured-record` | `venues` | Forbidden | Structured market data | Blocked: `contentMode` is absent |
-| `venue.public-detail` | `venues` | Required | Detail layout and structured market data | Blocked: path, SEO, layout, preview, and renderer are absent |
-| `index.venue` | `venues` | Required virtual `/venue/` | Derived collection index | Blocked: route and index configuration are absent |
-| `index.market-coverage` | `hubs` | Required virtual `/market-coverage/` | Derived collection index | Blocked: route and index configuration are absent |
+| `page.homepage` | `pages` | Required; exactly `/` | Layout | Passing: only this type may claim `/` |
+| `page.standard` | `pages` | Required | Layout | Passing runtime route/block invariant |
+| `page.product` | `pages` | Required | Layout | Passing runtime route/block invariant |
+| `page.landing` | `pages` | Required | Layout | Passing runtime route/block invariant |
+| `page.legal` | `pages` | Required | Layout and policy semantics | Passing route/block baseline; production consent component remains planned |
+| `page.conversion` | `pages` | Required | Layout and first-party form | Passing guard: draftable but publication is denied until the planned form exists |
+| `page.interactive-market-matrix` | `pages` | Required | Layout and managed market relationships | Passing guard: draftable but publication is denied until the planned matrix exists |
+| `page.content-index` | `pages` | Required | Layout plus generated listing | Passing: publication requires `articleListing`, which is forbidden on other page types |
+| `article.full` | `articles` | Required | Complete article layout | Passing: publication requires a path and non-empty allowed layout |
+| `article.listing-metadata` | `articles` | Forbidden | Listing metadata only | Passing: path and layout are forbidden |
+| `learning-video.public-detail` | `learning-videos` | Required | Video metadata, media, access policy, SEO | Passing guard: public media may publish; restricted modes remain drafts until protected delivery exists |
+| `hub.public-page` | `hubs` | Required | Layout and structured market data | Passing runtime route/block invariant |
+| `hub.map-only` | `hubs` | Forbidden | Structured market data | Passing: path and layout are forbidden |
+| `venue.structured-record` | `venues` | Forbidden | Structured market data | Passing: `relationship-only` mode forbids path and layout |
+| `venue.public-detail` | `venues` | Required | Detail layout and structured market data | Passing: `page` mode has route, preview, renderer, SEO, and minimum-detail validation |
+| `index.venue` | System claim; `route-indexes` config; `venues` query | Required virtual `/venue/` | Derived collection index | Passing: system claim and CMS configuration are implemented |
+| `index.market-coverage` | System claim; `route-indexes` config; `hubs` query | Required virtual `/market-coverage/` | Derived collection index | Passing: system claim and CMS configuration are implemented |
 
 “Forbidden” means the record may be publicly readable as data for a managed
 component, but it cannot claim a standalone public path or appear as an
@@ -61,13 +64,12 @@ conversion page; the presence and purpose of a form does.
 
 ## Count ownership
 
-The direct-page archetypes collectively own the 51 Payload page documents. The
-source template footprint for those documents is fixed in
+The direct-page archetypes collectively target the 51 Payload page documents.
+The source template footprint for those documents is fixed in
 [scope.md](scope.md#page-document-footprint). The retained inventory verifies
-that all 51 source routes receive a known archetype candidate. Final `pageType`
-assignment and target publication invariants remain enforced by the blocked
-archetype-discriminator gate; inventory classification alone does not implement
-them.
+that all 51 source routes receive a known archetype candidate. Runtime
+`pageType` and publication invariants now pass, but the production importer has
+not yet transformed and loaded all 51 documents.
 
 The remaining route ownership is explicit:
 
@@ -96,46 +98,54 @@ The target public route namespace is shared by:
 - the two derived virtual indexes; and
 - redirect sources.
 
-One normalized path may have exactly one owner. Normalization lowercases the
-host for comparison, removes source hosts, removes query/fragment presentation
-data where safe, collapses duplicate slashes, and applies the target trailing
-slash policy.
+One normalized path has exactly one registry row. Path normalization removes
+query/fragment presentation data, collapses duplicate slashes, and applies the
+trailing-slash policy. Absolute URLs, protocol-relative values, dot segments,
+encoded separators, backslashes, control characters, and whitespace are
+rejected within path segments rather than reinterpreted as local aliases.
+PostgreSQL uniquely indexes `route-registry.path`; hooks write claims with the
+originating Payload request so a collision rolls back the content or redirect
+mutation in the same transaction.
 
-The frontend must resolve through an explicit route registry or equivalent
-cross-collection lookup. Resolver order is not ownership. The current
-pages-before-articles-before-hubs fallback must not be used to mask a
-collision.
+The frontend now resolves the registry before loading a collection document.
+There is no pages-before-articles-before-hubs ownership fallback. Public
+requests see only `published` claims; authenticated draft preview can also see
+`reserved` claims.
 
-Path changes must reserve the new route atomically and either create or require
-a redirect from the former public path. A redirect cannot shadow a current
-content owner, virtual index, or another redirect.
+When an already-published document changes path, its former claim remains
+published and the draft path is reserved. Publication requires explicit
+redirect confirmation, then atomically publishes the new claim and creates a
+redirect claim for the old path. A redirect cannot shadow content, a virtual
+index, or another redirect. Scheduled changes persist approval on the reserved
+claim for the exact old/new path pair, so later path edits cannot reuse stale
+approval.
 
-The two virtual indexes are frontend routes backed by collection queries and
-index configuration. They are not fake Payload page documents and do not
-duplicate their child route owners.
+The two virtual indexes are system-owned claims backed by collection queries
+and the versioned `route-indexes` Payload global. They are not fake page
+documents and do not duplicate child route owners.
 
 ## Publication invariants
 
-Before an archetype can publish:
+The implemented publication hook enforces:
 
 - required route owners have a normalized, globally unique path;
-- forbidden-route records have no path, canonical metadata, sitemap entry, or
-  public detail link;
+- forbidden-route records have no path or layout and therefore receive no
+  route claim, sitemap entry, or public detail link;
 - the homepage is the sole owner of `/`;
-- a full article has a complete body;
+- a full article has a non-empty allowed layout;
 - every content index uses only the listing behavior allowed for that index;
-- a conversion page has a valid first-party form and consent configuration;
-- a legal cookie page uses the explicit consent-category component, never a
-  generic shortcode;
-- a public hub or venue has the required structured relationships and complete
-  detail presentation;
-- a Learning Hub detail has playable managed/external media, required metadata,
-  and an explicit access policy;
-- internal references resolve to published owners or an approved redirect; and
-- every editor-visible setting is supported by frontend behavior.
+- conversion and interactive-market-matrix pages cannot publish while their
+  required production blocks are absent;
+- a public venue has managed description or layout content;
+- a publishable Learning Hub detail has public access mode, playable
+  managed/external media, and required metadata; and
+- imported and native writes use the same route/discriminator rules.
 
-The importer and Payload publish hooks must apply the same rules. An importer
-must not be able to create a document state that the CMS would reject.
+Production still requires the planned form, cookie-consent, and market-matrix
+components, complete managed-link validation, and verification that every
+editor-visible setting affects the frontend. Those requirements remain under
+their separate non-passing gates; the passing archetype gate does not claim
+they are complete.
 
 ## Listing behavior
 
@@ -152,19 +162,26 @@ page-body data.
 - Featured content is an editorial field on the child, not a duplicate page
   relationship unless a curated override is explicitly required.
 
-Every card with an internal link is checked against the route registry. There
-must be no published listing card whose only destination is an empty or
-forbidden route.
+The production target requires every internal listing destination to resolve
+through the route registry. Complete validation of all 243 listing-linked
+children is not yet implemented, so the listing-detail and managed-link gates
+remain blocked.
 
 ## Access policy is separate from route existence
 
-The current Learning Hub renders 15 public watch paths while applying
+The live source Learning Hub renders 15 public watch paths while applying
 permissions to the underlying content. In the target model, route ownership and
 access policy are separate fields:
 
 - route ownership decides whether the canonical detail exists;
 - access policy decides whether the full media, transcript, or gated action is
   available to the current visitor.
+
+The current renderer proves the public-versus-restricted presentation state in
+draft preview. Publication validation permits only `public` access mode;
+`authenticated` and `subscriber` records remain drafts until
+identity/subscription authorization and protected asset delivery are
+implemented and verified.
 
 Private WordPress records are not imported as additional public routes merely
 to reproduce a legacy permission mechanism.

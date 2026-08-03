@@ -25,7 +25,7 @@ help:
 	@echo "  make lint          Run ESLint"
 	@echo "  make test-setup    Install the Playwright Chromium browser"
 	@echo "  make test          Run the repository test suite"
-	@echo "  make content-inventory  Inventory the production scope from local WordPress"
+	@echo "  make content-inventory  Inventory production and emit the verified target plan"
 	@echo "  make import-poc    Extract, validate, and publish the scoped WordPress content"
 	@echo "  make import-dry-run  Validate the latest transformed run without writing Payload"
 	@echo "  make doctor        Show required tool versions"

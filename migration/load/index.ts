@@ -35,6 +35,7 @@ const referenceKindForTarget: Partial<Record<TargetCollection, LegacyReference['
   media: 'media',
   venues: 'venue',
   'article-categories': 'article-category',
+  'learning-video-categories': 'learning-video-category',
   'asset-classes': 'asset-class',
   'venue-types': 'venue-type',
   regions: 'region',
@@ -42,6 +43,7 @@ const referenceKindForTarget: Partial<Record<TargetCollection, LegacyReference['
 
 const loadPriority: Record<TargetRecord['target'], number> = {
   'article-categories': 10,
+  'learning-video-categories': 10,
   'asset-classes': 10,
   'venue-types': 10,
   regions: 10,
@@ -50,6 +52,7 @@ const loadPriority: Record<TargetRecord['target'], number> = {
   pages: 40,
   articles: 40,
   hubs: 40,
+  'learning-videos': 40,
   global: 50,
 }
 
@@ -112,6 +115,38 @@ const resolveTokens = (
   return value
 }
 
+const isoInstantPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/
+
+const resolvePayloadData = (
+  record: TargetRecord,
+  ids: Map<string, number | string>,
+  unresolved: Set<string>,
+): Record<string, unknown> => {
+  const data = resolveTokens(record.data, ids, unresolved) as Record<string, unknown>
+
+  // These fields are migration transport/evidence, not Payload schema fields.
+  // Keep accepting older transformed runs while ensuring ignored input cannot
+  // make every idempotency check look changed forever.
+  if (record.target === 'media') delete data.source
+  if (record.target === 'regions') delete data.displayOrder
+
+  return data
+}
+
+const comparableScalar = (current: unknown, desired: unknown): unknown => {
+  if (
+    typeof current === 'string' &&
+    typeof desired === 'string' &&
+    isoInstantPattern.test(current) &&
+    isoInstantPattern.test(desired) &&
+    Date.parse(current) === Date.parse(desired)
+  ) {
+    return desired
+  }
+
+  return current
+}
+
 const comparableProjection = (current: unknown, desired: unknown): unknown => {
   if (Array.isArray(desired)) {
     if (!Array.isArray(current)) return current
@@ -131,10 +166,10 @@ const comparableProjection = (current: unknown, desired: unknown): unknown => {
     )
   }
 
-  return current
+  return comparableScalar(current, desired)
 }
 
-const isEquivalentPayloadData = (current: unknown, desired: unknown): boolean =>
+export const isEquivalentPayloadData = (current: unknown, desired: unknown): boolean =>
   JSON.stringify(comparableProjection(current, desired)) === JSON.stringify(desired)
 
 const safeSourceFile = (record: TargetRecord): string | undefined => {
@@ -279,7 +314,7 @@ export const load = async (options: LoadOptions = {}): Promise<void> => {
       }
 
       const unresolved = new Set<string>()
-      const data = resolveTokens(record.data, ids, unresolved) as Record<string, unknown>
+      const data = resolvePayloadData(record, ids, unresolved)
       data.legacySource = record.legacy
       if ('_status' in data && !options.publish) {
         data._status = 'draft'
@@ -316,15 +351,8 @@ export const load = async (options: LoadOptions = {}): Promise<void> => {
 
     // Second pass: every selected relationship must now resolve.
     for (const record of targets) {
-      if (
-        record.target !== 'global' &&
-        !changedRecords.has(`${record.target}:${record.legacy.legacyId}`)
-      ) {
-        continue
-      }
-
       const unresolved = new Set<string>()
-      const data = resolveTokens(record.data, ids, unresolved) as Record<string, unknown>
+      const data = resolvePayloadData(record, ids, unresolved)
       if (unresolved.size) {
         report.unresolved.push(...unresolved)
         continue
@@ -367,6 +395,12 @@ export const load = async (options: LoadOptions = {}): Promise<void> => {
       if ('_status' in data && !options.publish) {
         data._status = 'draft'
       }
+      const desiredStatus = '_status' in data ? data._status : undefined
+      const statusMatches = desiredStatus === undefined || existing._status === desiredStatus
+      if (statusMatches && isEquivalentPayloadData(existing, data)) {
+        continue
+      }
+
       await payload.update({
         collection: record.target,
         id: existing.id,
@@ -375,6 +409,12 @@ export const load = async (options: LoadOptions = {}): Promise<void> => {
         draft: data._status === 'draft',
         overrideAccess: true,
       })
+      const recordKey = `${record.target}:${record.legacy.legacyId}`
+      if (!changedRecords.has(recordKey)) {
+        report.unchanged -= 1
+        report.updated += 1
+        changedRecords.add(recordKey)
+      }
     }
 
     report.unresolved = [...new Set(report.unresolved)].sort()

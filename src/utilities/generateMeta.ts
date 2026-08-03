@@ -1,11 +1,28 @@
 import type { Metadata } from 'next'
 
-import type { Article, Hub, Media, Page, SiteSetting } from '@/payload-types'
+import type { Media, SiteSetting } from '@/payload-types'
 
 import { getServerSideURL } from './getURL'
 import { mergeOpenGraph } from './mergeOpenGraph'
 
-type ContentDocument = Partial<Article> | Partial<Hub> | Partial<Page>
+type ContentDocument = {
+  excerpt?: string | null
+  heroMedia?: Media | number | null
+  intro?: string | null
+  logo?: Media | number | null
+  meta?: {
+    canonicalURL?: string | null
+    description?: string | null
+    image?: Media | number | null
+    noFollow?: boolean | null
+    noIndex?: boolean | null
+    title?: string | null
+  } | null
+  path?: string | null
+  summary?: string | null
+  title?: string | null
+  video?: Media | number | null
+}
 
 const absoluteURL = (value?: string | null) => {
   if (!value) return undefined
@@ -13,9 +30,13 @@ const absoluteURL = (value?: string | null) => {
   return new URL(value, getServerSideURL()).toString()
 }
 
-const getImageURL = (image?: Media | number | null) => {
+const getImageURL = (image?: Media | number | null, posterOnly = false): string | undefined => {
   if (!image || typeof image !== 'object') return undefined
-  return absoluteURL(image.sizes?.og?.url || image.url)
+  const poster = typeof image.poster === 'object' ? image.poster : null
+  const posterURL = poster ? getImageURL(poster) : undefined
+  if (posterOnly || image.mimeType?.startsWith('video/')) return posterURL
+  if (image.mimeType && !image.mimeType.startsWith('image/')) return undefined
+  return absoluteURL(image.sizes?.og?.url || image.url) || posterURL
 }
 
 const withSuffix = (title: string, suffix: string) => {
@@ -40,16 +61,19 @@ export const generateMeta = async ({
   const title = withSuffix(plainTitle, suffix)
   const description = trimmed(
     doc.meta?.description ||
-      ('summary' in doc ? doc.summary : undefined) ||
-      ('excerpt' in doc ? doc.excerpt : undefined) ||
+      doc.summary ||
+      doc.intro ||
+      doc.excerpt ||
       settings?.defaultSEO?.description,
   )
   const image =
     getImageURL(doc.meta?.image) ||
     getImageURL(settings?.defaultSEO?.image) ||
-    getImageURL('heroMedia' in doc ? doc.heroMedia : undefined)
+    getImageURL(doc.heroMedia) ||
+    getImageURL(doc.logo) ||
+    getImageURL(doc.video, true)
   const path = trimmed(typeof doc.path === 'string' ? doc.path : undefined) || '/'
-  const canonical = trimmed(doc.meta?.canonicalURL) || path
+  const canonical = absoluteURL(trimmed(doc.meta?.canonicalURL) || path)
 
   return {
     alternates: {
@@ -61,7 +85,7 @@ export const generateMeta = async ({
       images: image ? [{ url: image }] : undefined,
       title,
       type: 'website',
-      url: absoluteURL(path),
+      url: canonical,
     }),
     robots:
       doc.meta?.noIndex || doc.meta?.noFollow

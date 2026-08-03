@@ -197,6 +197,7 @@ describe.sequential('Trayport content models', () => {
 
     const venue = await payload.create({
       collection: 'venues',
+      context: mutationContext,
       data: {
         slug: `venue-${stamp}`,
         title: 'Native venue',
@@ -209,6 +210,7 @@ describe.sequential('Trayport content models', () => {
     track(() =>
       payload.delete({
         collection: 'venues',
+        context: mutationContext,
         id: venue.id,
         overrideAccess: true,
       }),

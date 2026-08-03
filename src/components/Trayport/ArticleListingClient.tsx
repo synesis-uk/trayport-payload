@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, Search } from 'lucide-react'
+import { ArrowRight, ExternalLink, Search } from 'lucide-react'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 
@@ -36,6 +36,128 @@ const ArticleImage = ({ article, priority = false }: { article: Article; priorit
     )}
   </div>
 )
+
+const articleDestination = (article: Article): { external: boolean; href: string } | null => {
+  if (article.contentMode === 'full' && article.path) {
+    return { external: false, href: article.path }
+  }
+  if (article.externalDestination) {
+    return { external: true, href: article.externalDestination }
+  }
+  return null
+}
+
+const ArticleCard = ({ article, lead }: { article: Article; lead: boolean }) => {
+  const destination = articleDestination(article)
+  const className = [
+    'trayport-article-card',
+    lead ? 'is-lead' : '',
+    destination ? '' : 'is-unavailable',
+  ]
+    .filter(Boolean)
+    .join(' ')
+  const content = (
+    <>
+      <ArticleImage article={article} priority={lead} />
+      <div className="trayport-article-card__body">
+        <p className="trayport-article-card__meta">
+          <span>{categoryTitle(article)}</span>
+          <time dateTime={article.publishedAt || undefined}>
+            {formattedDate(article.publishedAt)}
+          </time>
+        </p>
+        <h4>{article.title}</h4>
+        {lead && article.excerpt ? <p>{article.excerpt}</p> : null}
+        {destination ? (
+          <span className="trayport-inline-link">
+            {destination.external ? 'View insight' : 'Read insight'}
+            {destination.external ? (
+              <ExternalLink aria-hidden size={16} />
+            ) : (
+              <ArrowRight aria-hidden size={16} />
+            )}
+          </span>
+        ) : (
+          <span className="trayport-article-card__status">Detail migration in progress</span>
+        )}
+      </div>
+    </>
+  )
+
+  if (!destination) {
+    return (
+      <article className={className} data-route-status="non-routable">
+        {content}
+      </article>
+    )
+  }
+  if (destination.external) {
+    return (
+      <a className={className} href={destination.href} rel="noopener noreferrer" target="_blank">
+        {content}
+      </a>
+    )
+  }
+  return (
+    <Link className={className} href={destination.href}>
+      {content}
+    </Link>
+  )
+}
+
+const ArticleRow = ({ article }: { article: Article }) => {
+  const destination = articleDestination(article)
+  const content = (
+    <>
+      <p className="trayport-article-row__meta">
+        <time dateTime={article.publishedAt || undefined}>
+          {formattedDate(article.publishedAt)}
+        </time>
+        <span>{categoryTitle(article)}</span>
+      </p>
+      <h3>{article.title}</h3>
+      <span className="trayport-article-row__action">
+        {destination
+          ? destination.external
+            ? 'View insight'
+            : 'Read insight'
+          : 'Detail migration in progress'}
+      </span>
+      {destination?.external ? (
+        <ExternalLink aria-hidden size={18} />
+      ) : destination ? (
+        <ArrowRight aria-hidden size={18} />
+      ) : (
+        <span aria-hidden className="trayport-article-row__pending" />
+      )}
+    </>
+  )
+
+  if (!destination) {
+    return (
+      <article className="trayport-article-row is-unavailable" data-route-status="non-routable">
+        {content}
+      </article>
+    )
+  }
+  if (destination.external) {
+    return (
+      <a
+        className="trayport-article-row"
+        href={destination.href}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        {content}
+      </a>
+    )
+  }
+  return (
+    <Link className="trayport-article-row" href={destination.href}>
+      {content}
+    </Link>
+  )
+}
 
 export const ArticleListingClient = ({
   articles,
@@ -106,26 +228,7 @@ export const ArticleListingClient = ({
           </div>
           <div className="trayport-featured-articles__grid">
             {featured.map((article, index) => (
-              <Link
-                className={index === 0 ? 'trayport-article-card is-lead' : 'trayport-article-card'}
-                href={article.path}
-                key={article.id}
-              >
-                <ArticleImage article={article} priority={index === 0} />
-                <div className="trayport-article-card__body">
-                  <p className="trayport-article-card__meta">
-                    <span>{categoryTitle(article)}</span>
-                    <time dateTime={article.publishedAt || undefined}>
-                      {formattedDate(article.publishedAt)}
-                    </time>
-                  </p>
-                  <h4>{article.title}</h4>
-                  {index === 0 && article.excerpt ? <p>{article.excerpt}</p> : null}
-                  <span className="trayport-inline-link">
-                    Read insight <ArrowRight aria-hidden size={16} />
-                  </span>
-                </div>
-              </Link>
+              <ArticleCard article={article} key={article.id} lead={index === 0} />
             ))}
           </div>
         </section>
@@ -191,19 +294,7 @@ export const ArticleListingClient = ({
 
       <div aria-live="polite" className="trayport-article-list">
         {list.length ? (
-          list.map((article) => (
-            <Link className="trayport-article-row" href={article.path} key={article.id}>
-              <p className="trayport-article-row__meta">
-                <time dateTime={article.publishedAt || undefined}>
-                  {formattedDate(article.publishedAt)}
-                </time>
-                <span>{categoryTitle(article)}</span>
-              </p>
-              <h3>{article.title}</h3>
-              <span className="trayport-article-row__action">Read insight</span>
-              <ArrowRight aria-hidden size={18} />
-            </Link>
-          ))
+          list.map((article) => <ArticleRow article={article} key={article.id} />)
         ) : (
           <p className="trayport-listing__empty">No insights match those filters.</p>
         )}

@@ -5,9 +5,18 @@ This directory is the human-readable companion to
 contract is the baseline for automated checks; these documents explain the
 approved production target, source evidence, editor tasks, and launch gates.
 
-The content-architecture milestone is complete. Production readiness remains
-blocked until the target schemas, route enforcement, full importer, and review
-gates described here pass.
+The content-architecture milestone is complete. The routable-content foundation
+is also implemented: a transaction-backed shared route registry and all 17
+runtime discriminator/publication invariants now pass their gates. Production
+readiness remains `blocked` because six blocker gates are still non-passing:
+complete article bodies, complete listing-linked route owners, the planned
+production block catalogue, managed internal links, editor-control runtime
+parity, and full editor-role capability enforcement.
+
+This status does not widen the delivered content slice. The current importer and
+frontend acceptance still cover six representative source routes. The verified
+296-route inventory and deterministic target plan describe the remaining work;
+they do not mean those documents have been imported, rendered, or reviewed.
 
 - [Scope and acceptance boundary](scope.md)
 - [Content and route archetypes](archetypes.md)
@@ -24,4 +33,20 @@ gates described here pass.
 The retained evidence is generated reproducibly from the local WordPress
 source; it is not hand-maintained. The larger reference-only source snapshot,
 inventory graph, and NDJSON remain under ignored `migration/work/` run output.
-They can be regenerated with `make content-inventory`.
+They can be regenerated with:
+
+```bash
+make content-inventory
+```
+
+The same run emits `production-target-plan.json`,
+`production-target-plan.ndjson`, `target-plan-verification.json`, and
+`target-plan-summary.json` under `migration/work/inventory/<run-id>/`. The
+equivalent direct command is:
+
+```bash
+TMPDIR=/tmp corepack pnpm exec tsx migration/cli.ts inventory --scope production
+```
+
+These target-plan artifacts are deterministic planning evidence only. The full
+296-route import, content remediation, and production review are not complete.

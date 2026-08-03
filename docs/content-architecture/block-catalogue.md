@@ -53,7 +53,19 @@ types and their dispositions, with zero unknown taxonomies.
 
 The current contract tests prove that every implemented block has a frontend
 renderer and that the current importer emits only configured implemented block
-types. They do not prove that the planned production catalogue is implemented.
+types. Payload publication tests also enforce the archetype-level top-block
+rules:
+
+- `page.content-index` may use `articleListing` and must include one to publish;
+- other page types, full articles, public hubs, public venues, and learning
+  videos are limited to `trayportHero` and `contentSection`;
+- article listing metadata, map-only hubs, and relationship-only venues cannot
+  own layout blocks; and
+- conversion and interactive market-matrix pages remain draft-only until their
+  planned blocks exist.
+
+These passing route/block invariants do not prove that the planned production
+catalogue is implemented.
 
 ## Planned production targets
 
@@ -72,6 +84,8 @@ types. They do not prove that the planned production catalogue is implemented.
 Each planned block is incomplete until its Payload schema, importer mapping,
 frontend renderer, accessibility behavior, and tests all exist. The `form`
 target must support both page and article sources without reinstating HubSpot.
+In particular, the publication guard deliberately prevents conversion and
+interactive pages from going live while `form` and `marketMatrix` are absent.
 
 ## Approved composed-page observations
 
@@ -217,7 +231,7 @@ records unless a separate route decision is approved.
 | Source taxonomy | Target disposition |
 | --- | --- |
 | `category` | Managed `article-categories` |
-| `lh-category` | Managed category values on `learning-videos.categories` for the live Learning Hub filter |
+| `lh-category` | Managed `learning-video-categories` related from `learning-videos` for the live Learning Hub filter |
 | `asset-class` | Managed `asset-classes` |
 | `venue-type` | Managed `venue-types` |
 | `region` | Managed `regions` |
@@ -261,4 +275,19 @@ Production block implementation passes only when:
   transform.
 
 The contract and retained inventory pass disposition totality for the observed
-source. The planned production targets still block implementation readiness.
+source, and the 17 runtime archetypes pass their current allowlist/publication
+invariants. The planned production targets still block
+`production-block-catalogue-implemented`; runtime rejection of unsupported
+publication is a safe invariant, not an implementation of the missing block.
+
+The production inventory command also emits a deterministic 296-route target
+plan:
+
+```bash
+make content-inventory
+```
+
+That plan records where these block transforms will be needed, but it is
+planning evidence only. The current imported/rendered acceptance slice remains
+six routes, and the other production bodies have not been transformed or
+content-remediated.

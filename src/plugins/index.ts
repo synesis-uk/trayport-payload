@@ -4,7 +4,12 @@ import type { Plugin } from 'payload'
 
 import { admins, adminsOrEditors } from '@/access/roles'
 import { anyone } from '@/access/anyone'
-import { revalidateRedirects } from '@/hooks/revalidateRedirects'
+import { revalidateDeletedRedirects, revalidateRedirects } from '@/hooks/revalidateRedirects'
+import {
+  normalizeRedirectSource,
+  releaseRedirectRoute,
+  syncRedirectRoute,
+} from '@/routing/registry'
 
 const s3StorageEnabled = Boolean(
   process.env.S3_ENDPOINT &&
@@ -15,7 +20,11 @@ const s3StorageEnabled = Boolean(
 
 export const plugins: Plugin[] = [
   redirectsPlugin({
-    collections: ['pages', 'articles', 'hubs'],
+    collections: ['pages', 'articles', 'hubs', 'venues', 'learning-videos'],
+    redirectTypeFieldOverride: {
+      defaultValue: '301',
+    },
+    redirectTypes: ['301', '302'],
     overrides: {
       access: {
         create: adminsOrEditors,
@@ -24,7 +33,9 @@ export const plugins: Plugin[] = [
         update: adminsOrEditors,
       },
       hooks: {
-        afterChange: [revalidateRedirects],
+        afterChange: [syncRedirectRoute, revalidateRedirects],
+        afterDelete: [releaseRedirectRoute, revalidateDeletedRedirects],
+        beforeValidate: [normalizeRedirectSource],
       },
     },
   }),

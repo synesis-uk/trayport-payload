@@ -8,6 +8,8 @@ import { productionScope } from '../scopes/production'
 import { runtimeInventorySnapshotSchema } from './contracts'
 import { discoverProductionInventory } from './discover'
 import { buildInventoryArtifacts } from './report'
+import { architectureContractHash, buildProductionTargetPlan } from '../plan/build'
+import { buildTargetPlanArtifacts } from '../plan/report'
 
 const safeRunId = (value: string): string => {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(value)) {
@@ -79,6 +81,10 @@ export type ProductionInventoryResult = {
   reportDir: string
   summary: ReturnType<typeof discoverProductionInventory>['summary']
   hashes: ReturnType<typeof buildInventoryArtifacts>['hashes']
+  targetPlan: {
+    summary: ReturnType<typeof buildProductionTargetPlan>['plan']['summary']
+    hashes: ReturnType<typeof buildTargetPlanArtifacts>['hashes']
+  }
 }
 
 export const inventoryProduction = (requestedRunId?: string): ProductionInventoryResult => {
@@ -87,6 +93,11 @@ export const inventoryProduction = (requestedRunId?: string): ProductionInventor
   const reportDir = path.resolve(inventoryWorkDir, runId)
   if (!reportDir.startsWith(`${inventoryWorkDir}${path.sep}`)) {
     throw new Error('Refusing to write inventory output outside the inventory work directory.')
+  }
+  if (fs.existsSync(reportDir)) {
+    throw new Error(
+      `Inventory run directory already exists; choose a new run ID to preserve immutable evidence: ${reportDir}`,
+    )
   }
 
   const snapshot = runtimeInventorySnapshotSchema.parse(readRuntimeSnapshot())
@@ -102,7 +113,8 @@ export const inventoryProduction = (requestedRunId?: string): ProductionInventor
   const inventory = discoverProductionInventory(snapshot, productionScope)
   const artifacts = buildInventoryArtifacts(inventory, snapshot, productionScope, snapshotHash)
 
-  fs.mkdirSync(reportDir, { recursive: true })
+  fs.mkdirSync(inventoryWorkDir, { recursive: true })
+  fs.mkdirSync(reportDir)
   fs.writeFileSync(path.join(reportDir, 'source-snapshot.json'), snapshotText)
   fs.writeFileSync(path.join(reportDir, 'production-inventory.json'), artifacts.inventoryText)
   fs.writeFileSync(path.join(reportDir, 'production-inventory.ndjson'), artifacts.ndjsonText)
@@ -110,15 +122,7 @@ export const inventoryProduction = (requestedRunId?: string): ProductionInventor
   fs.writeFileSync(path.join(reportDir, 'layout-coverage.json'), artifacts.layoutCoverageText)
   fs.writeFileSync(path.join(reportDir, 'verification.json'), artifacts.verificationText)
   fs.writeFileSync(path.join(reportDir, 'summary.json'), artifacts.summaryText)
-  fs.mkdirSync(inventoryWorkDir, { recursive: true })
-  fs.writeFileSync(path.join(inventoryWorkDir, 'latest-run.txt'), `${runId}\n`)
 
-  const result = {
-    runId,
-    reportDir,
-    summary: inventory.summary,
-    hashes: artifacts.hashes,
-  }
   if (artifacts.verification.status !== 'passed') {
     throw new Error(
       [
@@ -126,6 +130,51 @@ export const inventoryProduction = (requestedRunId?: string): ProductionInventor
         ...artifacts.verification.failures,
       ].join('\n'),
     )
+  }
+
+  const targetPlan = buildProductionTargetPlan(inventory, snapshot, {
+    sourceSnapshotHash: snapshotHash,
+    productionInventoryHash: artifacts.hashes.inventory,
+    architectureContractHash: architectureContractHash(),
+  })
+  const targetPlanArtifacts = buildTargetPlanArtifacts(targetPlan.plan, targetPlan.verification)
+  fs.writeFileSync(
+    path.join(reportDir, 'production-target-plan.json'),
+    targetPlanArtifacts.planText,
+  )
+  fs.writeFileSync(
+    path.join(reportDir, 'production-target-plan.ndjson'),
+    targetPlanArtifacts.ndjsonText,
+  )
+  fs.writeFileSync(
+    path.join(reportDir, 'target-plan-verification.json'),
+    targetPlanArtifacts.verificationText,
+  )
+  fs.writeFileSync(
+    path.join(reportDir, 'target-plan-summary.json'),
+    targetPlanArtifacts.summaryText,
+  )
+
+  if (targetPlan.verification.status !== 'passed') {
+    throw new Error(
+      [
+        `Production target-plan validation failed. Diagnostic reports were written to ${reportDir}.`,
+        ...targetPlan.verification.failures,
+      ].join('\n'),
+    )
+  }
+
+  fs.writeFileSync(path.join(inventoryWorkDir, 'latest-run.txt'), `${runId}\n`)
+
+  const result = {
+    runId,
+    reportDir,
+    summary: inventory.summary,
+    hashes: artifacts.hashes,
+    targetPlan: {
+      summary: targetPlan.plan.summary,
+      hashes: targetPlanArtifacts.hashes,
+    },
   }
   process.stdout.write(`${JSON.stringify({ ok: true, scope: 'production', ...result }, null, 2)}\n`)
   return result

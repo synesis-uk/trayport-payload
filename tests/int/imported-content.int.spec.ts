@@ -84,8 +84,8 @@ describe.sequential('post-import acceptance', () => {
     expect(review.altTextReview).toHaveLength(81)
   })
 
-  it('loads the four pages and all 39 published Insights records at their source identities', async () => {
-    const [pages, articles] = await Promise.all([
+  it('loads the four pages and 39 Insights records with their agreed route policies', async () => {
+    const [pages, articles, venues] = await Promise.all([
       payload.find({
         collection: 'pages',
         depth: 0,
@@ -104,11 +104,44 @@ describe.sequential('post-import acceptance', () => {
           and: [wordpressWhere, { _status: { equals: 'published' } }],
         },
       }),
+      payload.find({
+        collection: 'venues',
+        depth: 0,
+        limit: 100,
+        overrideAccess: true,
+        pagination: false,
+        where: wordpressWhere,
+      }),
     ])
 
     expect(pages.docs).toHaveLength(4)
     expect(articles.docs).toHaveLength(39)
     expect(articles.docs.filter(({ featured }) => featured)).toHaveLength(4)
+    expect(pages.docs.find(({ legacySource }) => legacySource?.legacyId === 1898)?.pageType).toBe(
+      'homepage',
+    )
+
+    const fullArticles = articles.docs.filter(({ contentMode }) => contentMode === 'full')
+    const listingArticles = articles.docs.filter(({ contentMode }) => contentMode === 'listing')
+    expect(fullArticles).toHaveLength(1)
+    expect(listingArticles).toHaveLength(38)
+    expect(fullArticles[0]?.path).toBe(
+      '/insights/on-demand-webinar-data-analytics-for-energy-traders/',
+    )
+    expect(listingArticles.every(({ path }) => path === null)).toBe(true)
+    expect(
+      listingArticles.every(
+        ({ externalDestination }) =>
+          typeof externalDestination === 'string' &&
+          externalDestination.startsWith('https://www.trayport.com/'),
+      ),
+    ).toBe(true)
+    expect(venues.docs).toHaveLength(21)
+    expect(
+      venues.docs.every(
+        ({ contentMode, path }) => contentMode === 'relationship-only' && path === null,
+      ),
+    ).toBe(true)
 
     const routableDocuments = [...pages.docs, ...articles.docs]
     for (const route of representativeRoutes.filter(({ legacyId }) => legacyId !== 2495)) {

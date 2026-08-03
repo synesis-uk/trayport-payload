@@ -13,15 +13,20 @@ test.describe('imported dynamic content', () => {
       featuredSection.getByRole('heading', { exact: true, name: 'Featured insights' }),
     ).toBeVisible()
 
-    const featuredCards = featuredSection.locator('a.trayport-article-card')
+    const featuredCards = featuredSection.locator('.trayport-article-card')
     await expect(featuredCards).toHaveCount(4)
     for (const [index, article] of featuredInsights.entries()) {
       const card = featuredCards.nth(index)
       await expect(card.getByRole('heading', { exact: true, name: article.title })).toBeVisible()
-      await expect(card).toHaveAttribute('href', article.path)
+      const href = await card.getAttribute('href')
+      expect(href).toBeTruthy()
+      const destination = new URL(href!)
+      expect(destination.hostname).toMatch(/^(www\.)?trayport\.com$/)
+      expect(destination.pathname).toBe(article.path)
+      await expect(card).toHaveAttribute('target', '_blank')
     }
 
-    const articleRows = page.locator('.trayport-article-list a.trayport-article-row')
+    const articleRows = page.locator('.trayport-article-list .trayport-article-row')
     await expect(articleRows).toHaveCount(12)
 
     for (let click = 0; click < 3; click += 1) {

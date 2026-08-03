@@ -6,6 +6,9 @@ import { redirect } from 'next/navigation'
 import { NextRequest } from 'next/server'
 
 import configPromise from '@payload-config'
+import { isAdminOrEditor } from '@/access/roles'
+import { normalizeContentPath } from '@/fields/contentPath'
+import { findRouteClaim } from '@/routing/registry'
 
 export type PreviewSearchParams = {
   path: string
@@ -28,8 +31,13 @@ export async function GET(req: NextRequest): Promise<Response> {
     return new Response('Insufficient search params', { status: 404 })
   }
 
-  if (!path.startsWith('/')) {
-    return new Response('This endpoint can only be used for relative previews', { status: 500 })
+  if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) {
+    return new Response('This endpoint can only be used for relative previews', { status: 400 })
+  }
+
+  const normalizedPath = normalizeContentPath(path)
+  if (typeof normalizedPath !== 'string' || !normalizedPath.startsWith('/')) {
+    return new Response('Invalid preview path', { status: 400 })
   }
 
   let user
@@ -47,14 +55,22 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   const draft = await draftMode()
 
-  if (!user) {
+  if (!isAdminOrEditor(user)) {
     draft.disable()
     return new Response('You are not allowed to preview this page', { status: 403 })
   }
 
-  // You can add additional checks here to see if the user is allowed to preview this page
+  const claim = await findRouteClaim({
+    draft: true,
+    path: normalizedPath,
+    payload,
+  })
+  if (!claim) {
+    draft.disable()
+    return new Response('No managed route exists for this preview path', { status: 404 })
+  }
 
   draft.enable()
 
-  redirect(path)
+  redirect(normalizedPath)
 }

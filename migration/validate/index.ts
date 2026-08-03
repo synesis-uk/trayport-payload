@@ -254,8 +254,24 @@ export const validateTransformed = (
   assert.equal(layoutCount('pages', 9248), 2)
   assert.equal(layoutCount('articles', 9351), 9)
   const articles = targets.filter(({ target }) => target === 'articles')
-  assert.equal(articles.filter(({ data }) => data.contentMode === 'full').length, 1)
-  assert.equal(articles.filter(({ data }) => data.contentMode === 'listing').length, 38)
+  const fullArticles = articles.filter(({ data }) => data.contentMode === 'full')
+  const listingArticles = articles.filter(({ data }) => data.contentMode === 'listing')
+  assert.equal(fullArticles.length, 1)
+  assert.equal(listingArticles.length, 38)
+  assert.equal(
+    fullArticles[0]?.data.path,
+    '/insights/on-demand-webinar-data-analytics-for-energy-traders/',
+  )
+  assert(
+    listingArticles.every(
+      ({ data }) =>
+        data.path === null &&
+        typeof data.externalDestination === 'string' &&
+        data.externalDestination.startsWith('https://www.trayport.com/') &&
+        data.externalDestination !== 'https://www.trayport.com/',
+    ),
+    'Listing-only articles must be non-routable and retain their live-site destination.',
+  )
 
   const german = targets.find(({ target, legacy }) => target === 'hubs' && legacy.legacyId === 2495)
   assert(german)
@@ -274,6 +290,7 @@ export const validateTransformed = (
   }
   const home = targets.find(({ target, legacy }) => target === 'pages' && legacy.legacyId === 1898)
   assert(home)
+  assert.equal(home.data.pageType, 'homepage')
   assert(!/"@type":"SearchAction"/.test(JSON.stringify(home.data.meta)))
   const joule = targets.find(({ target, legacy }) => target === 'pages' && legacy.legacyId === 1924)
   assert(joule)
@@ -306,6 +323,11 @@ export const validateTransformed = (
       const source = data.source as { originalURL?: string | null }
       return data.externalURL === source.originalURL
     }),
+  )
+  const venues = targets.filter(({ target }) => target === 'venues')
+  assert(
+    venues.every(({ data }) => data.contentMode === 'relationship-only' && data.path === null),
+    'Imported venues must remain relationship-only records without public paths.',
   )
 
   const navigation = targets.find(

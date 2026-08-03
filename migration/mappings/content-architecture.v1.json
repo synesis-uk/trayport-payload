@@ -72,6 +72,33 @@
       "software-category",
       "venue-type"
     ],
+    "managedTaxonomies": [
+      {
+        "sourceTaxonomy": "asset-class",
+        "targetCollection": "asset-classes",
+        "count": 12
+      },
+      {
+        "sourceTaxonomy": "category",
+        "targetCollection": "article-categories",
+        "count": 3
+      },
+      {
+        "sourceTaxonomy": "lh-category",
+        "targetCollection": "learning-video-categories",
+        "count": 11
+      },
+      {
+        "sourceTaxonomy": "region",
+        "targetCollection": "regions",
+        "count": 4
+      },
+      {
+        "sourceTaxonomy": "venue-type",
+        "targetCollection": "venue-types",
+        "count": 3
+      }
+    ],
     "routeOwners": [
       {
         "id": "page-documents",
@@ -311,8 +338,8 @@
         "publish",
         "schedule-publish"
       ],
-      "implementationStatus": "blocked",
-      "gap": "The homepage currently imports as a standard page; the schema does not reserve one homepage archetype or enforce ownership of the root route."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "page.standard",
@@ -332,8 +359,8 @@
         "publish",
         "schedule-publish"
       ],
-      "implementationStatus": "partial",
-      "gap": "The discriminator is descriptive only; block allowlists and minimum content are not schema-enforced."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "page.product",
@@ -353,8 +380,8 @@
         "publish",
         "schedule-publish"
       ],
-      "implementationStatus": "partial",
-      "gap": "The product archetype has no enforced product-specific content invariant."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "page.landing",
@@ -374,8 +401,8 @@
         "publish",
         "schedule-publish"
       ],
-      "implementationStatus": "partial",
-      "gap": "The landing archetype is available to editors but has no enforced layout contract."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "page.legal",
@@ -395,8 +422,8 @@
         "publish",
         "schedule-publish"
       ],
-      "implementationStatus": "blocked",
-      "gap": "Legal and policy templates are not represented by a dedicated schema invariant, and cookie-category shortcode semantics are not implemented."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "page.conversion",
@@ -417,8 +444,8 @@
         "publish",
         "schedule-publish"
       ],
-      "implementationStatus": "blocked",
-      "gap": "The first-party form block, submission storage/delivery, validation, consent, spam protection, and conversion-page invariant are not implemented."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "page.interactive-market-matrix",
@@ -439,8 +466,8 @@
         "publish",
         "schedule-publish"
       ],
-      "implementationStatus": "blocked",
-      "gap": "The market-matrix archetype and component are not present, and all referenced hub and venue destinations must become managed public route owners."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "page.content-index",
@@ -461,8 +488,8 @@
         "publish",
         "schedule-publish"
       ],
-      "implementationStatus": "blocked",
-      "gap": "articleListing is neither required for index pages nor restricted from other page archetypes."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "article.full",
@@ -484,8 +511,8 @@
         "publish",
         "schedule-publish"
       ],
-      "implementationStatus": "partial",
-      "gap": "A full article can be published without a body because layout is not conditionally required."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "article.listing-metadata",
@@ -498,8 +525,8 @@
       "contentOwner": "listing-metadata-only",
       "allowedTopLevelBlocks": [],
       "editorCapabilities": ["manage-editorial-metadata", "manage-taxonomy", "draft"],
-      "implementationStatus": "blocked",
-      "gap": "Imported listing-only records currently receive published internal paths and are linked from Insights, producing empty detail pages. Production must either import a full body, use an explicit external destination, create a redirect, or keep the record non-routable."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "learning-video.public-detail",
@@ -518,8 +545,8 @@
         "publish",
         "schedule-publish"
       ],
-      "implementationStatus": "blocked",
-      "gap": "The 15 listing-linked learning videos have no Payload collection or frontend route owner."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "hub.public-page",
@@ -540,8 +567,8 @@
         "publish",
         "schedule-publish"
       ],
-      "implementationStatus": "partial",
-      "gap": "Public-page hubs do not conditionally require a path; their layout may rely on the renderer fallback rather than an explicit archetype contract."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "hub.map-only",
@@ -554,8 +581,8 @@
       "contentOwner": "structured-market-data",
       "allowedTopLevelBlocks": [],
       "editorCapabilities": ["manage-market-relationships", "draft", "publish", "schedule-publish"],
-      "implementationStatus": "partial",
-      "gap": "The importer omits paths, but the schema does not prevent an editor from assigning a public path or layout to a map-only hub."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "venue.structured-record",
@@ -568,8 +595,8 @@
       "contentOwner": "structured-market-data",
       "allowedTopLevelBlocks": [],
       "editorCapabilities": ["manage-market-relationships", "draft", "publish", "schedule-publish"],
-      "implementationStatus": "blocked",
-      "gap": "The target contentMode discriminator does not exist yet, so dependency-only venue records cannot be distinguished from the 66 public venue details."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "venue.public-detail",
@@ -590,8 +617,8 @@
         "publish",
         "schedule-publish"
       ],
-      "implementationStatus": "blocked",
-      "gap": "The 66 listing-linked venues currently have no path, SEO, layout, preview, or frontend detail renderer."
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "index.venue",
@@ -600,9 +627,15 @@
       "routePolicy": "required",
       "contentOwner": "derived-collection-index",
       "allowedTopLevelBlocks": [],
-      "editorCapabilities": ["configure-listing", "manage-seo", "preview"],
-      "implementationStatus": "blocked",
-      "gap": "The virtual /venue/ archive has an approved collection route owner but no target frontend route or index configuration."
+      "editorCapabilities": [
+        "configure-index-copy",
+        "manage-seo",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
+      "implementationStatus": "passing",
+      "gap": null
     },
     {
       "id": "index.market-coverage",
@@ -611,9 +644,15 @@
       "routePolicy": "required",
       "contentOwner": "derived-collection-index",
       "allowedTopLevelBlocks": [],
-      "editorCapabilities": ["configure-listing", "manage-seo", "preview"],
-      "implementationStatus": "blocked",
-      "gap": "The virtual /market-coverage/ archive has an approved collection route owner but no target frontend route or index configuration."
+      "editorCapabilities": [
+        "configure-index-copy",
+        "manage-seo",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
+      "implementationStatus": "passing",
+      "gap": null
     }
   ],
   "legacyLayoutDispositions": [
@@ -919,8 +958,8 @@
       "scope": "taxonomy",
       "source": "lh-category",
       "disposition": "consolidate",
-      "targets": ["learning-videos.categories"],
-      "reason": "Preserve Learning Hub discovery classification as managed category values owned by learning-videos without retaining a generic WordPress taxonomy collection."
+      "targets": ["learning-video-categories"],
+      "reason": "Preserve Learning Hub discovery classification in a dedicated, non-routable managed collection related from learning-videos."
     },
     {
       "scope": "taxonomy",
@@ -1045,6 +1084,14 @@
       "contentResponsibility": "Learning-hub video metadata, managed media, taxonomy, SEO, and complete public detail routes."
     },
     {
+      "resource": "learning-video-categories",
+      "kind": "payload-collection",
+      "systemOfRecord": "payload",
+      "domainOwner": "editorial",
+      "routeNamespace": null,
+      "contentResponsibility": "Managed Learning Hub discovery classification related from learning videos."
+    },
+    {
       "resource": "media",
       "kind": "payload-collection",
       "systemOfRecord": "payload-and-object-storage",
@@ -1107,6 +1154,22 @@
       "domainOwner": "editorial",
       "routeNamespace": null,
       "contentResponsibility": "Brand, default SEO, contact, social, and notices."
+    },
+    {
+      "resource": "route-indexes",
+      "kind": "payload-global",
+      "systemOfRecord": "payload",
+      "domainOwner": "editorial",
+      "routeNamespace": null,
+      "contentResponsibility": "Managed headings, introductory copy, and SEO for the two system-owned collection indexes."
+    },
+    {
+      "resource": "route-registry",
+      "kind": "payload-collection",
+      "systemOfRecord": "payload-postgres",
+      "domainOwner": "route-infrastructure",
+      "routeNamespace": "public-site",
+      "contentResponsibility": "The authoritative normalized path claim for content, virtual indexes, draft reservations, and redirects."
     },
     {
       "resource": "redirects",
@@ -1196,7 +1259,13 @@
     },
     {
       "resourceGroup": "taxonomies",
-      "resources": ["article-categories", "asset-classes", "venue-types", "regions"],
+      "resources": [
+        "article-categories",
+        "learning-video-categories",
+        "asset-classes",
+        "venue-types",
+        "regions"
+      ],
       "administrator": ["create", "read", "update", "delete"],
       "editor": ["create", "read", "update"],
       "public": ["read"]
@@ -1210,10 +1279,17 @@
     },
     {
       "resourceGroup": "site-configuration",
-      "resources": ["navigation", "footer", "site-settings"],
+      "resources": ["navigation", "footer", "site-settings", "route-indexes"],
       "administrator": ["read", "update", "draft", "publish", "schedule-publish", "read-versions"],
       "editor": ["read", "update", "draft", "publish", "schedule-publish", "read-versions"],
       "public": ["read-published"]
+    },
+    {
+      "resourceGroup": "route-infrastructure",
+      "resources": ["route-registry"],
+      "administrator": ["read-derived"],
+      "editor": [],
+      "public": []
     },
     {
       "resourceGroup": "redirects",
@@ -1306,31 +1382,43 @@
       "id": "cross-collection-route-uniqueness",
       "requiredFor": "production",
       "severity": "blocker",
-      "status": "blocked",
-      "enforcement": "not-implemented",
+      "status": "passing",
+      "enforcement": "payload-transaction-hooks-postgres-unique-index-and-vitest",
       "assertion": "One canonical public path can be owned by at most one route owner across pages, articles, hubs, venues, learning videos, virtual indexes, and redirects.",
       "evidence": [
         "src/fields/contentPath.ts",
+        "src/collections/RouteRegistry.ts",
+        "src/routing/registry.ts",
         "src/app/(frontend)/contentRoute.tsx",
+        "src/database/migrations/20260730_002734_routable_content_foundation.ts",
+        "tests/int/route-registry.int.spec.ts",
         "docs/architecture.md"
       ],
-      "remediation": "Add a shared route registry or cross-collection validation and reject conflicting create, update, publish, redirect, and migration operations. Remove reliance on pages-before-articles-before-hubs resolver precedence."
+      "remediation": null
     },
     {
       "id": "archetype-discriminator-invariants",
       "requiredFor": "production",
       "severity": "blocker",
-      "status": "blocked",
-      "enforcement": "not-implemented",
+      "status": "passing",
+      "enforcement": "payload-publication-hooks-target-plan-validation-and-vitest",
       "assertion": "Page, article, hub, venue, learning-video, and virtual-index archetypes enforce route policy, required fields, and allowed blocks or derived-route behavior.",
       "evidence": [
         "src/collections/Pages/index.ts",
         "src/collections/Articles.ts",
         "src/collections/Hubs.ts",
         "src/collections/Venues.ts",
+        "src/collections/LearningVideos.ts",
+        "src/globals/RouteIndexes.ts",
+        "src/routing/archetypes.ts",
+        "migration/plan/build.ts",
+        "migration/plan/contracts.ts",
+        "migration/plan/report.ts",
+        "tests/int/archetype-invariants.int.spec.ts",
+        "tests/int/production-target-plan.int.spec.ts",
         "migration/mappings/content-architecture.v1.json"
       ],
-      "remediation": "Add the approved page types, venue modes, learning-video owner, virtual-index configuration, conditional field requirements, and publication hooks; mirror constraints in the admin UI and importer."
+      "remediation": null
     },
     {
       "id": "article-detail-content-ownership",
@@ -1344,7 +1432,7 @@
         "src/components/Trayport/ArticleListingClient.tsx",
         "src/components/Trayport/ContentViews.tsx"
       ],
-      "remediation": "Extract and transform every in-scope article body, or add an explicit destination model and prevent listing-only records from owning internal published paths."
+      "remediation": "Extend the production importer to extract and transform every in-scope article body or record an explicitly approved external/redirect destination. No plan-only listing may become an empty internal route."
     },
     {
       "id": "listing-detail-route-ownership",
@@ -1358,9 +1446,11 @@
         "src/collections/Articles.ts",
         "src/collections/Hubs.ts",
         "src/collections/Venues.ts",
+        "src/collections/LearningVideos.ts",
+        "src/components/Trayport/ContentViews.tsx",
         "src/app/(frontend)/contentRoute.tsx"
       ],
-      "remediation": "Migrate complete bodies and route metadata for 90 posts, 72 hubs, 66 venues, and 15 learning videos; implement the learning-videos owner and venue detail renderer; validate every listing destination against the shared route registry."
+      "remediation": "Populate the implemented owners with complete bodies, parity fields, and route metadata for all 90 posts, 72 hubs, 66 venues, and 15 learning videos; validate every listing destination against the shared route registry and approved access policy."
     },
     {
       "id": "production-block-catalogue-implemented",
@@ -1390,7 +1480,7 @@
         "src/blocks/Trayport/components.ts",
         "migration/transform/blocks.ts"
       ],
-      "remediation": "Reuse a managed link field for CTA-bearing blocks, preserve internal source references during transformation, validate rich-text links, and integrate redirect creation with route changes."
+      "remediation": "Reuse one managed link field for CTA-bearing blocks and all five content owner collections, preserve internal source references during transformation, validate rich-text links, and reject missing, private, chained, looped, or unsafe redirect destinations."
     },
     {
       "id": "editor-controls-have-runtime-effect",
@@ -1429,6 +1519,7 @@
       "evidence": [
         "migration/load/index.ts",
         "migration/validate/index.ts",
+        "tests/int/migration-safety.int.spec.ts",
         "tests/int/imported-content.int.spec.ts"
       ],
       "remediation": null
@@ -1443,6 +1534,7 @@
       "evidence": [
         "src/fields/legacySource.ts",
         "migration/load/index.ts",
+        "tests/int/migration-safety.int.spec.ts",
         "tests/int/imported-content.int.spec.ts"
       ],
       "remediation": null

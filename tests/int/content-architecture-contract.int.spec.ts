@@ -48,8 +48,6 @@ describe('production content-architecture contract', () => {
       ({ severity, status }) => severity === 'blocker' && status !== 'passing',
     )
     expect(blockers.map(({ id, status }) => ({ id, status }))).toEqual([
-      { id: 'cross-collection-route-uniqueness', status: 'blocked' },
-      { id: 'archetype-discriminator-invariants', status: 'blocked' },
       { id: 'article-detail-content-ownership', status: 'blocked' },
       { id: 'listing-detail-route-ownership', status: 'blocked' },
       { id: 'production-block-catalogue-implemented', status: 'blocked' },
@@ -179,12 +177,39 @@ describe('production content-architecture contract', () => {
     )
     expect(taxonomyDispositions['lh-category']).toEqual({
       disposition: 'consolidate',
-      targets: ['learning-videos.categories'],
+      targets: ['learning-video-categories'],
     })
     expect(taxonomyDispositions['software-category']).toEqual({
       disposition: 'omit',
       targets: [],
     })
+    expect(contentArchitectureContract.approvedProductionScope.managedTaxonomies).toEqual([
+      {
+        sourceTaxonomy: 'asset-class',
+        targetCollection: 'asset-classes',
+        count: 12,
+      },
+      {
+        sourceTaxonomy: 'category',
+        targetCollection: 'article-categories',
+        count: 3,
+      },
+      {
+        sourceTaxonomy: 'lh-category',
+        targetCollection: 'learning-video-categories',
+        count: 11,
+      },
+      {
+        sourceTaxonomy: 'region',
+        targetCollection: 'regions',
+        count: 4,
+      },
+      {
+        sourceTaxonomy: 'venue-type',
+        targetCollection: 'venue-types',
+        count: 3,
+      },
+    ])
 
     const contractWithoutLearningCategories = {
       ...rawContract,
@@ -194,6 +219,21 @@ describe('production content-architecture contract', () => {
     }
     expect(
       contentArchitectureContractSchema.safeParse(contractWithoutLearningCategories).success,
+    ).toBe(false)
+
+    const contractWithDivergentManagedTarget = {
+      ...rawContract,
+      approvedProductionScope: {
+        ...rawContract.approvedProductionScope,
+        managedTaxonomies: rawContract.approvedProductionScope.managedTaxonomies.map((taxonomy) =>
+          taxonomy.sourceTaxonomy === 'category'
+            ? { ...taxonomy, targetCollection: 'regions' }
+            : taxonomy,
+        ),
+      },
+    }
+    expect(
+      contentArchitectureContractSchema.safeParse(contractWithDivergentManagedTarget).success,
     ).toBe(false)
   })
 
@@ -319,7 +359,7 @@ describe('production content-architecture contract', () => {
           taxonomy: 'lh-category',
           classification: 'contract-disposition',
           disposition: 'consolidate',
-          targets: ['learning-videos.categories'],
+          targets: ['learning-video-categories'],
         }),
         expect.objectContaining({
           taxonomy: 'software-category',
@@ -378,6 +418,7 @@ describe('production content-architecture contract', () => {
       'hubs',
       'venues',
       'learning-videos',
+      'learning-video-categories',
       'media',
       'article-categories',
       'asset-classes',
@@ -386,6 +427,8 @@ describe('production content-architecture contract', () => {
       'navigation',
       'footer',
       'site-settings',
+      'route-indexes',
+      'route-registry',
       'redirects',
       'users',
       'app.market_volume_monthly',
@@ -407,7 +450,6 @@ describe('production content-architecture contract', () => {
     )
 
     expect(byID.get('article.listing-metadata')?.routePolicy).toBe('forbidden')
-    expect(byID.get('article.listing-metadata')?.implementationStatus).toBe('blocked')
     expect(byID.get('hub.map-only')?.routePolicy).toBe('forbidden')
     expect(byID.get('hub.public-page')?.routePolicy).toBe('required')
     expect(byID.get('venue.structured-record')?.routePolicy).toBe('forbidden')
@@ -423,7 +465,20 @@ describe('production content-architecture contract', () => {
       'index.market-coverage',
     ]) {
       expect(byID.get(id)?.routePolicy, id).toBe('required')
-      expect(byID.get(id)?.implementationStatus, id).toBe('blocked')
+    }
+    expect(
+      [...byID.values()].every(
+        ({ gap, implementationStatus }) => implementationStatus === 'passing' && gap === null,
+      ),
+    ).toBe(true)
+
+    for (const id of ['cross-collection-route-uniqueness', 'archetype-discriminator-invariants']) {
+      expect(
+        contentArchitectureContract.validationGates.find((gate) => gate.id === id),
+      ).toMatchObject({
+        status: 'passing',
+        remediation: null,
+      })
     }
   })
 })

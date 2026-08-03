@@ -71,3 +71,10 @@ export const mediaToken = (value: unknown): LegacyReference | null => legacyRef(
 
 export const sourceURL = (path: string | null): string =>
   new URL(path || '/', 'http://trayport.local').toString()
+
+export const liveSourceURL = (path: string | null): string => {
+  if (!path) {
+    throw new Error('Cannot build a live-site destination without a WordPress source path.')
+  }
+  return new URL(path, 'https://www.trayport.com').toString()
+}

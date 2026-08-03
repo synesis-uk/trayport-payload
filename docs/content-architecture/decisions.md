@@ -10,11 +10,11 @@
 | CA-004 | Use active ACF `dropdown` and `footer_new`, not classic WordPress menus | Accepted | Dropdown roots with `menu_block` remain non-link buttons |
 | CA-005 | Model semantic target archetypes instead of copying WordPress templates/admin types | Accepted | Target validation is based on page purpose and route behavior |
 | CA-006 | Read one authoritative body field per source archetype | Accepted | Stale `sections`, `page_content`, and cached/template output are not merged |
-| CA-007 | Give every public path one explicit owner across all collections, virtual indexes, and redirects | Accepted target; enforcement blocked | A shared route registry or equivalent cross-collection constraint is required |
+| CA-007 | Give every public path one explicit owner across all collections, virtual indexes, and redirects | Accepted and implemented; gate passing | Protected Payload registry writes share the owner transaction, and PostgreSQL uniquely constrains normalized paths |
 | CA-008 | Use a constrained typed block library and explicit source dispositions | Accepted | Unknown renderable layouts fail; arbitrary shortcodes/CSS controls do not migrate |
 | CA-009 | Generate listings from child collections | Accepted | Cards are not duplicated into page bodies; every linked child needs a complete owner |
-| CA-010 | Add routable venue and Learning Hub detail models for production | Accepted target; implementation blocked | The PoC’s structured-only venue and missing learning owner are insufficient |
-| CA-011 | Keep map-only hubs, relationship-only venues, and metadata-only articles non-routable | Accepted target; enforcement blocked | Data records cannot accidentally create empty details |
+| CA-010 | Add routable venue and Learning Hub detail models for production | Accepted; runtime foundation implemented | Venue page rendering and learning-video/category collections exist; all 66 + 15 production documents and parity fields still require import/remediation |
+| CA-011 | Keep map-only hubs, relationship-only venues, and metadata-only articles non-routable | Accepted and enforced; gate passing | Publication hooks forbid paths and layouts, preventing accidental empty details |
 | CA-012 | Store market facts in application PostgreSQL; store only editorial chart configuration in Payload | Accepted and baseline passing | `app.market_volume_monthly` is outside CMS editing |
 | CA-013 | Replace HubSpot/form-builder architecture with a typed first-party form | Accepted target; implementation blocked | Forms need validation, consent, spam protection, delivery/storage, and tests |
 | CA-014 | Replace cookie shortcode semantics with a first-party consent component | Accepted target; implementation blocked | Generic shortcode execution remains excluded |
@@ -35,6 +35,9 @@ The architecture milestone is complete because:
 - 17 target archetypes and their route policies are defined;
 - collection/global/application-data ownership is assigned;
 - implemented and planned block catalogues are separated;
+- all 17 runtime archetypes now have enforced route/discriminator publication
+  behavior, including deliberate publication denial for conversion and
+  interactive pages until their planned blocks exist;
 - editor tasks and role expectations are defined; and
 - production gates and known gaps are explicit and machine-validated.
 
@@ -52,8 +55,8 @@ of this documentation:
 | `block-schema-renderer-totality` | Passing for implemented baseline | Every implemented configured block has one renderer; importer emissions stay inside that library |
 | `legacy-layout-disposition-totality` | Passing as architecture classification | Every observed layout, reachable taxonomy, and supported shortcode semantic has a declared target disposition |
 | `production-source-scope-complete` | Passing | Generated inventory proves the exact 296 routes, inclusions/exclusions, and zero unknown or duplicate included route owners |
-| `cross-collection-route-uniqueness` | **Blocked** | One canonical owner across pages, articles, hubs, venues, learning videos, virtual indexes, and redirects |
-| `archetype-discriminator-invariants` | **Blocked** | Schema/importer/publish hooks enforce route policy, required fields, allowed blocks, and derived-index rules |
+| `cross-collection-route-uniqueness` | Passing | Transaction-backed registry hooks plus a PostgreSQL unique path index enforce one owner across content, virtual indexes, and redirects |
+| `archetype-discriminator-invariants` | Passing | Schema/publication hooks and target-plan validation enforce all 17 route policies, discriminators, allowed blocks, and derived-index rules |
 | `article-detail-content-ownership` | **Blocked** | Every internal listed article owns a complete body or has an approved non-route destination |
 | `listing-detail-route-ownership` | **Blocked** | All 90 posts, 72 hubs, 66 venues, and 15 learning videos resolve to complete managed details |
 | `production-block-catalogue-implemented` | **Blocked** | Structural column plus form, checklist, lifecycle, matrix, office, maps, regions, and consent targets work end to end |
@@ -66,6 +69,19 @@ of this documentation:
 | `content-review-queue-cleared` | Partial warning | Missing media, alt fallbacks, stale links, exclusions, host rewrites, and SEO have recorded dispositions |
 
 Any non-passing blocker keeps `productionReadiness` set to `blocked`.
+
+There are currently exactly six non-passing blocker gates:
+
+1. `article-detail-content-ownership` — blocked;
+2. `listing-detail-route-ownership` — blocked;
+3. `production-block-catalogue-implemented` — blocked;
+4. `managed-internal-link-integrity` — blocked;
+5. `editor-controls-have-runtime-effect` — blocked; and
+6. `editor-role-capability-enforcement` — partial.
+
+`content-review-queue-cleared` is also partial, but it is a warning rather than
+a blocker. The two newly passing gates do not change
+`productionReadiness: blocked`.
 
 ## Gate evidence required for launch
 
@@ -81,11 +97,11 @@ Any non-passing blocker keeps `productionReadiness` set to `blocked`.
 
 ### Model and renderer evidence
 
-- generated Payload types and migrations for the full target model;
-- schemas and publish hooks for all 17 archetypes;
-- `learning-videos` collection;
-- venue route mode/detail fields;
-- both virtual index routes/configuration;
+- the implemented foundation already has generated Payload types/migrations,
+  schemas and hooks for all 17 archetypes, learning-video/category collections,
+  venue route modes/details, and both virtual index routes/configuration;
+- the complete production population of those models and representative
+  rendering for every archetype;
 - every planned block implemented from schema through renderer;
 - behavior tests for every editor control; and
 - representative frontend parity checks for each archetype and exceptional
@@ -124,6 +140,30 @@ Any non-passing blocker keeps `productionReadiness` set to `blocked`.
 - secrets, SMTP, object storage, and scheduled publishing are configured; and
 - post-publish revalidation, logs, and failure reporting are observable.
 
+### Foundation rollback policy
+
+The routable-content foundation migration can run down only while its new
+collections, venue/page extensions, external destinations, and index global
+remain at the seed/default state created by the migration. Its down migration
+acquires write-blocking locks before checking those conditions, then aborts
+before any destructive DDL if editor or importer content would be discarded.
+The corresponding up migration also freezes legacy route owners and refuses
+noncanonical or duplicate backfill paths. It also refuses to seed claims while
+a published page, article, or hub has a latest draft that changes its route or
+route-owning discriminator; that draft must first be published or discarded.
+Both directions follow the application lock order, with the route registry
+locked after owner, version, relation, and block tables. Listing-article routes
+are restored on down only from a strict canonical Trayport destination;
+pathless, noncanonical, Unicode-whitespace, scheme-like, or colliding records
+force backup restoration instead.
+
+Before applying the foundation in any shared environment, take and verify a
+database backup and retain the matching prior application release. Once the new
+models have been used, rollback means restoring that pre-foundation backup and
+deploying the prior release together; it does not mean forcing
+`payload migrate:down`. Object storage must be backed up and restored alongside
+the database whenever referenced media may also have changed.
+
 ## Change control
 
 Changes to route count, inclusion/exclusion, route ownership, authoritative
@@ -148,6 +188,21 @@ disposition. The full reference-only snapshot and dependency graph remain
 ignored run artifacts because they are reproducible and unnecessarily large for
 the architecture baseline.
 
-The retained scope evidence passes while `productionReadiness` remains blocked:
-the target models, importer transformations, renderers, managed links, media
-review, and other gates above are still incomplete.
+Run the production inventory and target-plan generator with:
+
+```bash
+make content-inventory
+```
+
+The run writes `production-target-plan.json`,
+`production-target-plan.ndjson`, `target-plan-verification.json`, and
+`target-plan-summary.json` beneath `migration/work/inventory/<run-id>/`. The
+plan deterministically describes 296 routes: 294 Payload documents (six marked
+PoC-ready and 288 plan-only) plus two system-ready virtual indexes. It is
+planning evidence, not a content load or remediation report.
+
+The retained scope evidence and the two route-foundation gates pass while
+`productionReadiness` remains blocked. The actual imported/rendered acceptance
+slice remains six routes; full article/listing ownership, importer
+transformations, planned renderers, managed links, role coverage, media review,
+and the other gates above are still incomplete.

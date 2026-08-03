@@ -5,8 +5,11 @@ import { trayportLayoutBlocks } from '@/blocks/Trayport/config'
 import { contentPathField } from '@/fields/contentPath'
 import { createLegacySourceField } from '@/fields/legacySource'
 import { publishedAtField } from '@/fields/publishedAt'
+import { confirmPathRedirectField } from '@/fields/routeControls'
 import { seoField } from '@/fields/seo'
 import { trayportSlugField } from '@/fields/slug'
+import { validateRoutableDocument } from '@/routing/archetypes'
+import { releaseRoutableRoute, syncRoutableRoute } from '@/routing/registry'
 import { generateContentPreviewPath } from '@/utilities/generateContentPreviewPath'
 
 import {
@@ -95,6 +98,10 @@ export const Pages: CollectionConfig = {
               defaultValue: 'standard',
               options: [
                 {
+                  label: 'Homepage',
+                  value: 'homepage',
+                },
+                {
                   label: 'Standard page',
                   value: 'standard',
                 },
@@ -110,6 +117,18 @@ export const Pages: CollectionConfig = {
                   label: 'Content index',
                   value: 'index',
                 },
+                {
+                  label: 'Legal or policy page',
+                  value: 'legal',
+                },
+                {
+                  label: 'Conversion page',
+                  value: 'conversion',
+                },
+                {
+                  label: 'Interactive market matrix',
+                  value: 'interactive',
+                },
               ],
               required: true,
             },
@@ -122,13 +141,18 @@ export const Pages: CollectionConfig = {
       ],
     },
     trayportSlugField(),
-    contentPathField(),
+    contentPathField({ required: false }),
+    confirmPathRedirectField(),
     publishedAtField(),
     createLegacySourceField(),
   ],
   hooks: {
-    afterChange: [revalidateRoutableContent('pages-sitemap')],
-    afterDelete: [revalidateDeletedRoutableContent('pages-sitemap')],
+    beforeChange: [validateRoutableDocument('pages')],
+    afterChange: [syncRoutableRoute('pages'), revalidateRoutableContent('content-sitemap')],
+    afterDelete: [
+      releaseRoutableRoute('pages'),
+      revalidateDeletedRoutableContent('content-sitemap'),
+    ],
   },
   versions: {
     drafts: {

@@ -5,8 +5,11 @@ import { trayportLayoutBlocks } from '@/blocks/Trayport/config'
 import { contentPathField } from '@/fields/contentPath'
 import { createLegacySourceField } from '@/fields/legacySource'
 import { publishedAtField } from '@/fields/publishedAt'
+import { confirmPathRedirectField } from '@/fields/routeControls'
 import { seoField } from '@/fields/seo'
 import { trayportSlugField } from '@/fields/slug'
+import { validateRoutableDocument } from '@/routing/archetypes'
+import { releaseRoutableRoute, syncRoutableRoute } from '@/routing/registry'
 import { generateContentPreviewPath } from '@/utilities/generateContentPreviewPath'
 
 import {
@@ -34,6 +37,7 @@ export const Articles: CollectionConfig = {
   },
   defaultPopulate: {
     excerpt: true,
+    externalDestination: true,
     heroMedia: true,
     meta: {
       description: true,
@@ -75,6 +79,7 @@ export const Articles: CollectionConfig = {
               name: 'layout',
               type: 'blocks',
               admin: {
+                condition: (_data, siblingData) => siblingData?.contentMode === 'full',
                 initCollapsed: true,
               },
               blocks: trayportLayoutBlocks,
@@ -103,6 +108,19 @@ export const Articles: CollectionConfig = {
                 },
               ],
               required: true,
+            },
+            {
+              name: 'externalDestination',
+              type: 'text',
+              admin: {
+                condition: (_data, siblingData) => siblingData?.contentMode === 'listing',
+                description:
+                  'Optional fully qualified destination for listing-only records. These records never own an internal route.',
+              },
+              validate: (value: string | null | undefined) =>
+                !value ||
+                /^https:\/\/[^/?#]+(?:[/?#].*)?$/i.test(value) ||
+                'Use a complete HTTPS URL.',
             },
             {
               name: 'articleType',
@@ -206,13 +224,23 @@ export const Articles: CollectionConfig = {
       ],
     },
     trayportSlugField(),
-    contentPathField(),
+    contentPathField({
+      condition: (_data, siblingData) => siblingData?.contentMode === 'full',
+      required: false,
+    }),
+    confirmPathRedirectField({
+      condition: (_data, siblingData) => siblingData?.contentMode === 'full',
+    }),
     publishedAtField(),
     createLegacySourceField(),
   ],
   hooks: {
-    afterChange: [revalidateRoutableContent('articles-sitemap')],
-    afterDelete: [revalidateDeletedRoutableContent('articles-sitemap')],
+    beforeChange: [validateRoutableDocument('articles')],
+    afterChange: [syncRoutableRoute('articles'), revalidateRoutableContent('content-sitemap')],
+    afterDelete: [
+      releaseRoutableRoute('articles'),
+      revalidateDeletedRoutableContent('content-sitemap'),
+    ],
   },
   versions: {
     drafts: {
