@@ -4,6 +4,7 @@ import * as migration_20260730_015904_redirect_status from './20260730_015904_re
 import * as migration_20260803_175438_production_pilot_content from './20260803_175438_production_pilot_content'
 import * as migration_20260803_181505_optional_managed_links from './20260803_181505_optional_managed_links'
 import * as migration_20260803_184425_production_pilot_safety from './20260803_184425_production_pilot_safety'
+import * as migration_20260803_231412_visual_parity from './20260803_231412_visual_parity'
 
 export const migrations = [
   {
@@ -35,5 +36,10 @@ export const migrations = [
     up: migration_20260803_184425_production_pilot_safety.up,
     down: migration_20260803_184425_production_pilot_safety.down,
     name: '20260803_184425_production_pilot_safety',
+  },
+  {
+    up: migration_20260803_231412_visual_parity.up,
+    down: migration_20260803_231412_visual_parity.down,
+    name: '20260803_231412_visual_parity',
   },
 ]

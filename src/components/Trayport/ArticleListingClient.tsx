@@ -2,13 +2,22 @@
 
 import { ArrowRight, ExternalLink, Search } from 'lucide-react'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 
 import type { Article } from '@/payload-types'
 
 import { TrayportMedia } from './TrayportMedia'
 
 const PAGE_INCREMENT = 9
+
+const subscribeToLocation = (onStoreChange: () => void) => {
+  window.addEventListener('popstate', onStoreChange)
+  return () => window.removeEventListener('popstate', onStoreChange)
+}
+
+const getLocationQuery = () => new URLSearchParams(window.location.search).get('q')?.trim() || ''
+
+const getServerQuery = () => ''
 
 const copyFor = (family: string) => {
   if (family === 'news') {
@@ -148,31 +157,19 @@ const ArticleCard = ({
   )
 }
 
-const ArticleRow = ({ article, family }: { article: Article; family: string }) => {
+const ArticleRow = ({ article }: { article: Article }) => {
   const destination = articleDestination(article)
   const content = (
     <>
+      <Search aria-hidden className="trayport-article-row__icon" size={15} />
       <p className="trayport-article-row__meta">
         <time dateTime={article.publishedAt || undefined}>
           {formattedDate(article.publishedAt)}
         </time>
-        <span>{categoryTitle(article)}</span>
       </p>
       <h3>{article.title}</h3>
-      <span className="trayport-article-row__action">
-        {destination
-          ? destination.external
-            ? `View ${copyFor(family).singular}`
-            : `Read ${copyFor(family).singular}`
-          : 'Detail migration in progress'}
-      </span>
-      {destination?.external ? (
-        <ExternalLink aria-hidden size={18} />
-      ) : destination ? (
-        <ArrowRight aria-hidden size={18} />
-      ) : (
-        <span aria-hidden className="trayport-article-row__pending" />
-      )}
+      <span className="trayport-article-row__action">{categoryTitle(article)}</span>
+      {!destination ? <span aria-hidden className="trayport-article-row__pending" /> : null}
     </>
   )
 
@@ -215,7 +212,9 @@ export const ArticleListingClient = ({
 }) => {
   const copy = copyFor(family)
   const [category, setCategory] = useState('all')
-  const [query, setQuery] = useState('')
+  const locationQuery = useSyncExternalStore(subscribeToLocation, getLocationQuery, getServerQuery)
+  const [queryOverride, setQueryOverride] = useState<string | null>(null)
+  const query = queryOverride ?? locationQuery
   const [year, setYear] = useState('all')
   const [visible, setVisible] = useState(Math.max(initialPageSize, PAGE_INCREMENT))
 
@@ -294,8 +293,9 @@ export const ArticleListingClient = ({
             <span className="trayport-article-filters__input">
               <Search aria-hidden size={18} />
               <input
+                aria-label={`Search ${copy.plural}`}
                 onChange={(event) => {
-                  setQuery(event.target.value)
+                  setQueryOverride(event.target.value)
                   resetVisible()
                 }}
                 placeholder="Search by title"
@@ -304,9 +304,10 @@ export const ArticleListingClient = ({
               />
             </span>
           </label>
-          <label>
+          <label className="trayport-article-filters__category">
             <span>Category</span>
             <select
+              aria-label="Category"
               onChange={(event) => {
                 setCategory(event.target.value)
                 resetVisible()
@@ -321,9 +322,10 @@ export const ArticleListingClient = ({
               ))}
             </select>
           </label>
-          <label>
+          <label className="trayport-article-filters__year">
             <span>Year</span>
             <select
+              aria-label="Year"
               onChange={(event) => {
                 setYear(event.target.value)
                 resetVisible()
@@ -343,7 +345,7 @@ export const ArticleListingClient = ({
 
       <div aria-live="polite" className="trayport-article-list">
         {list.length ? (
-          list.map((article) => <ArticleRow article={article} family={family} key={article.id} />)
+          list.map((article) => <ArticleRow article={article} key={article.id} />)
         ) : (
           <p className="trayport-listing__empty">No {copy.plural} match those filters.</p>
         )}

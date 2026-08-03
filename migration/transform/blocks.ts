@@ -1,5 +1,13 @@
 import type { NormalizedValue, SourceReusable } from '../contracts/v1'
-import { asArray, asObject, asString, legacyRef, mediaToken, referenceId } from './helpers'
+import {
+  asArray,
+  asBoolean,
+  asObject,
+  asString,
+  legacyRef,
+  mediaToken,
+  referenceId,
+} from './helpers'
 import { htmlToLexical, htmlToPlainText } from './lexical'
 import type { LegacyReference, TransformCoverage } from './types'
 
@@ -13,6 +21,19 @@ export type ManagedLinkLookup = Map<
     relationTo: 'articles' | 'hubs' | 'learning-videos' | 'pages' | 'venues'
   }
 >
+
+// WordPress `map-all` is the standard dark connection-map background used by the live site.
+const LEGACY_MAP_ALL_BACKGROUND_MEDIA_ID = 6101
+const CONNECTION_MAP_LINE_COLORS = new Set([
+  '#1f2a44',
+  '#002d72',
+  '#0057b8',
+  '#009cde',
+  '#00c1d5',
+  '#32b77b',
+  '#ff671f',
+  '#f7ea48',
+])
 
 const count = (target: Record<string, number>, key: string): void => {
   target[key] = (target[key] || 0) + 1
@@ -395,30 +416,96 @@ const mapComponent = (
     case 'divider':
       return [{ blockType: 'divider', style: 'line' }]
     case 'connections': {
+      const style = asString(component.style) === 'light' ? 'light' : 'dark'
+      const assetClasses = asArray(component.asset_classes)
+        .map((term) => legacyRef('asset-class', term))
+        .filter(Boolean)
+      const venueTypes = asArray(component.venue_types)
+        .map((term) => legacyRef('venue-type', term))
+        .filter(Boolean)
       const regions = asArray(component.regions)
         .map((term) => legacyRef('region', term))
         .filter(Boolean)
+      const sourceLineColor = asObject(component.line_color || component.color)
+      const rawLineColor = asString(
+        asString(sourceLineColor.type) === 'shades'
+          ? sourceLineColor.shade
+          : sourceLineColor.color || sourceLineColor.shade || component.line_color,
+      ).toLowerCase()
+      const lineColor = CONNECTION_MAP_LINE_COLORS.has(rawLineColor) ? rawLineColor : '#009cde'
+      const boundedNumber = (
+        value: NormalizedValue | undefined,
+        fallback: number,
+        min: number,
+        max: number,
+      ): number => {
+        const rawValue = asString(value)
+        if (!rawValue) return fallback
+        const numericValue = Number(rawValue)
+        return Number.isFinite(numericValue) ? Math.min(Math.max(numericValue, min), max) : fallback
+      }
+      const rawShowLines = component.show_lines
+      const showLines =
+        rawShowLines === undefined || rawShowLines === null || rawShowLines === ''
+          ? true
+          : asBoolean(rawShowLines)
+
       return [
         {
           blockType: 'marketCoverage',
           title: 'Explore our connectivity',
+          style,
+          backgroundMedia: style === 'dark' ? mediaToken(LEGACY_MAP_ALL_BACKGROUND_MEDIA_ID) : null,
+          height: boundedNumber(component.height, 300, 100, 600),
+          markerSize: boundedNumber(component.marker_size, 5, 2, 8),
+          showLines,
+          lineColor,
+          lineWidth: boundedNumber(component.line_width, 0.5, 0, 1),
+          lineOpacity: boundedNumber(component.line_opacity, 0.5, 0, 1),
+          assetClasses,
+          venueTypes,
           regions,
           actions: [],
         },
       ]
     }
-    case 'charts-new':
+    case 'charts-new': {
+      const range = asObject(component.quarter_range)
+      const normalizeYear = (value: NormalizedValue): number | null => {
+        const year = Number(value)
+        if (!Number.isFinite(year) || year <= 0) return null
+        return year < 100 ? 2000 + year : year
+      }
+      const sourceType = asString(component.chart_type)
+
       return [
         {
           blockType: 'dataChart',
           title: asString(component.title) || 'Market data',
           dataType: asString(component.data_type) === 'price' ? 'price' : 'volume',
+          chartType: sourceType.includes('stacked')
+            ? 'stackedColumn'
+            : sourceType.includes('line')
+              ? 'line'
+              : 'column',
           unit: asString(component.unit),
           assetClassLegacyId: Number(component.asset_class) || null,
+          fromYear: normalizeYear(range.qr_from_year),
+          fromQuarter: Number(range.qr_from_quarter) || null,
+          toYear: normalizeYear(range.qr_to_year),
+          toQuarter: Number(range.qr_to_quarter) || null,
+          axisLabel: asString(component.y_axis_text),
+          height: Math.min(Math.max(Number(component.height) || 350, 280), 560),
+          scalePower: Math.min(Math.max(Number(component.power) || 0, 0), 12),
+          showAxes: asString(component.show_axes) !== '0',
+          showLegend: asString(component.show_legend) !== '0',
+          showValues: asString(component.show_values_on_chart) === '1',
+          showDataTable: true,
           accessibleSummary:
             'Chart series are supplied by the application market-data store rather than Payload.',
         },
       ]
+    }
     case 'office': {
       const category = asObject(component.category)
       const officeId = referenceId(category.single, 'post')
@@ -456,19 +543,20 @@ const sectionTheme = (section: Record<string, NormalizedValue>): string => {
   const contentBackground = asObject(newSettings.content_background)
   const color = asObject(contentBackground.background_color)
   const style = asString(color.style)
-  const dark = asString(color.dark)
   const light = asString(color.light)
 
-  if (style === 'dark' || dark) return 'dark'
-  if (light === '#eff7ff') return 'softBlue'
+  if (style === 'dark') return 'dark'
+  if (style === 'light' && light === '#eff7ff') return 'softBlue'
   return 'light'
 }
 
 const mapHero = (
   section: Record<string, NormalizedValue>,
+  reusables: ReusableLookup,
   links: ManagedLinkLookup,
 ): TargetSection => {
   const hero = asObject(section.hero)
+  const settings = asObject(hero.settings)
   const content = asObject(hero.new_content || hero.content)
   const header = asObject(content.header)
   const subheader = asObject(content.subheader)
@@ -477,16 +565,34 @@ const mapHero = (
   const importedVideo = mediaToken(video.video)
   const externalVideoURL = asString(videoMedia.url)
   const isLegacyLocalVideo = /^https?:\/\/trayport\.local\/app\/uploads\//i.test(externalVideoURL)
+  const backgroundType = asString(settings.bg_type)
+  const selectsVideo = backgroundType === 'video'
+  const selectsImage = backgroundType !== 'video' && backgroundType !== 'none'
+  const media = selectsVideo ? importedVideo : selectsImage ? mediaToken(content.image) : null
+  const selectedExternalVideoURL =
+    selectsVideo && !importedVideo && !isLegacyLocalVideo ? externalVideoURL : ''
+  const statisticsID = referenceId(content.stats_group, 'post')
+  const statisticsSource = statisticsID ? reusables.get(statisticsID) : undefined
+  const statistics = asArray(statisticsSource?.data.stats)
+    .map((candidate) => {
+      const item = asObject(candidate)
+      const data = asObject(item.data)
+      const value = `${asString(data.prefix)}${asString(data.number)}${asString(data.suffix)}`
+      const label = htmlToPlainText(item.description || item.title)
+      return value && label ? { value, label } : null
+    })
+    .filter(Boolean)
 
   return {
     blockType: 'trayportHero',
     eyebrow: htmlToPlainText(asObject(content.badge).text),
     heading: htmlToPlainText(header.text) || 'Trayport',
     body: htmlToLexical(subheader.text || content.subtitle),
-    media: importedVideo || mediaToken(content.image),
-    externalVideoURL: importedVideo || isLegacyLocalVideo ? '' : externalVideoURL,
+    media,
+    externalVideoURL: selectedExternalVideoURL,
     actions: [...actionsFrom(content.buttons, links), ...actionsFrom(content.links, links)],
-    appearance: content.image || importedVideo || externalVideoURL ? 'image' : 'dark',
+    statistics,
+    appearance: media || selectedExternalVideoURL ? 'image' : 'dark',
   }
 }
 
@@ -538,10 +644,37 @@ const mapColumnsSection = (
 
   const settings = asObject(section.new_settings)
   const contentWidth = asString(settings.content_width)
+  const contentBackground = asObject(settings.content_background)
+  const wrapperBackground = asObject(settings.wrapper_background)
+  const wrapperColor = asObject(wrapperBackground.background_color)
+  const wrapperStyle = asString(wrapperColor.style)
+  const wrapperDark = asString(wrapperColor.dark).toLowerCase()
+  const wrapperLight = asString(wrapperColor.light).toLowerCase()
+  const wrapperTheme =
+    wrapperStyle === 'dark' && wrapperDark === '#32b77b'
+      ? 'green'
+      : wrapperStyle === 'dark'
+        ? 'dark'
+        : wrapperStyle === 'light' && wrapperLight === '#eff7ff'
+          ? 'softBlue'
+          : 'none'
+  const legacySettings = asObject(section.settings)
+  const rounded = asString(contentBackground.rounded)
+  const opacity = asString(contentBackground.opacity)
   return {
     blockType: 'contentSection',
     anchor: asString(section.anchor),
     theme: sectionTheme(section),
+    wrapperTheme,
+    appearance:
+      rounded.includes('large') || asString(legacySettings.style).includes('inset')
+        ? 'inset'
+        : 'default',
+    backgroundMedia:
+      asString(contentBackground.content_has_image) === '1'
+        ? mediaToken(contentBackground.content_bg_image)
+        : null,
+    backgroundOpacity: ['10', '20', '50'].includes(opacity) ? opacity : 'none',
     width:
       contentWidth === 'full'
         ? 'wide'
@@ -581,7 +714,7 @@ export const mapPageLayout = (
     count(coverage.topLevelLayouts, layout || '(missing)')
 
     if (layout === 'hero') {
-      blocks.push(mapHero(section, links))
+      blocks.push(mapHero(section, reusables, links))
       continue
     }
     if (layout === 'columns' || layout === 'single') {
@@ -598,7 +731,7 @@ export const mapPageLayout = (
       blockType: 'articleListing',
       family: options.articleFamily || 'insights',
       heading: options.articleFamily === 'news' ? 'Latest news' : 'Latest insights',
-      pageSize: 12,
+      pageSize: 100,
       showCategoryFilter: true,
     })
   }

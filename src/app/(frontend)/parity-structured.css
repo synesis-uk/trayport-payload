@@ -1,0 +1,389 @@
+/*
+ * Structured-route parity layer.
+ *
+ * These rules deliberately live outside globals.css so the hub/venue source-
+ * template treatment can be reviewed or reverted independently of the shared
+ * marketing block system.
+ */
+
+.trayport-structured-page {
+  background: var(--color-surface-soft);
+}
+
+.trayport-structured-stage {
+  padding: clamp(1.5rem, 5vw, 4.5rem) var(--gutter);
+}
+
+.trayport-structured-card {
+  background: #fff;
+  box-shadow: 0 0.8rem 2.5rem rgb(0 45 114 / 11%);
+  margin-inline: auto;
+  max-width: 72rem;
+}
+
+/* Market hub detail */
+
+.trayport-structured-hub__header {
+  min-height: 16rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.trayport-structured-hub__header[data-media='map'] {
+  min-height: 21.875rem;
+}
+
+.trayport-structured-hub__media,
+.trayport-structured-hub__media > div,
+.trayport-structured-hub__media picture {
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.trayport-structured-hub__media::after {
+  background: linear-gradient(180deg, rgb(0 29 73 / 48%), transparent 48%);
+  content: '';
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.trayport-structured-hub__media img,
+.trayport-structured-hub__media video {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.trayport-structured-hub__map {
+  background: var(--color-brand-deep);
+  display: block;
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.trayport-structured-hub__map rect {
+  fill: var(--color-brand-deep);
+}
+
+.trayport-structured-hub__map line {
+  opacity: 0.18;
+  stroke: #fff;
+  stroke-width: 1;
+}
+
+.trayport-structured-hub__map circle {
+  fill: var(--color-orange);
+  stroke: #fff;
+  stroke-width: 3;
+}
+
+.trayport-structured-hub__classification {
+  align-items: center;
+  color: #fff;
+  display: flex;
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  gap: 0.65rem;
+  left: 0;
+  margin: 0;
+  min-height: 4rem;
+  padding: 0.75rem clamp(1.25rem, 5vw, 4rem);
+  position: absolute;
+  top: 0;
+  z-index: 1;
+}
+
+.trayport-structured-hub__title-tab {
+  background: #fff;
+  border-bottom: 0.25rem solid var(--color-brand-light);
+  bottom: 0;
+  left: 0;
+  max-width: calc(100% - 1.25rem);
+  padding: 1rem clamp(1.25rem, 5vw, 4rem);
+  position: absolute;
+  z-index: 1;
+}
+
+.trayport-structured-hub__title-tab h1,
+.trayport-structured-hub__title-tab h2 {
+  color: var(--color-brand-deep);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 600;
+  line-height: 1.08;
+  margin: 0;
+}
+
+.trayport-structured-hub__body {
+  padding: clamp(1.5rem, 5vw, 4rem);
+}
+
+.trayport-structured-hub__summary {
+  color: var(--color-muted);
+  font-size: 1.0625rem;
+  margin: 0 0 2rem;
+  max-width: 48rem;
+}
+
+.trayport-structured-hub__heading {
+  align-items: baseline;
+  border-bottom: 0.0625rem solid var(--color-border);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+}
+
+.trayport-structured-hub__heading h2 {
+  color: var(--color-brand-deep);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  margin: 0;
+}
+
+.trayport-structured-hub__heading span {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.trayport-structured-hub__connections {
+  display: grid;
+  gap: 2rem;
+}
+
+.trayport-structured-hub .trayport-connectivity {
+  background: transparent;
+  padding: 0;
+}
+
+.trayport-structured-hub .trayport-connectivity + .trayport-connectivity {
+  border-top: 0.0625rem solid var(--color-border);
+  padding-top: 2rem;
+}
+
+.trayport-structured-hub .trayport-connectivity__header {
+  border: 0;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.trayport-structured-hub .trayport-connectivity__header h3 {
+  background: var(--color-brand-deep);
+  color: #fff;
+  display: inline-block;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  margin: 0;
+  padding: 0.45rem 0.7rem;
+  text-transform: uppercase;
+}
+
+.trayport-structured-hub .trayport-connectivity__groups {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.trayport-structured-hub .trayport-venue-group h4 {
+  color: var(--color-ink);
+  font-size: 0.875rem;
+  letter-spacing: 0;
+  margin-bottom: 0.6rem;
+  text-transform: none;
+}
+
+.trayport-structured-hub .trayport-venue-list {
+  display: grid;
+  gap: 0.25rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.trayport-structured-hub .trayport-venue-list a,
+.trayport-structured-hub .trayport-venue-list li > span {
+  background: #f7f7f7;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.65rem;
+}
+
+.trayport-structured-hub__empty {
+  color: var(--color-muted);
+  margin: 1.5rem 0 0;
+}
+
+/* Venue detail */
+
+.trayport-structured-venue {
+  padding: clamp(1.5rem, 6vw, 5.5rem);
+}
+
+.trayport-structured-venue__header {
+  align-items: end;
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 2fr) minmax(10rem, 1fr);
+}
+
+.trayport-structured-venue__identity h1,
+.trayport-structured-venue__identity h2 {
+  color: var(--color-brand-deep);
+  font-size: clamp(2.25rem, 5vw, 3.75rem);
+  line-height: 1.05;
+  margin: 0;
+}
+
+.trayport-structured-venue__logo {
+  align-items: center;
+  align-self: stretch;
+  display: flex;
+  justify-content: flex-end;
+  min-height: 6rem;
+  overflow: hidden;
+}
+
+.trayport-structured-venue__logo > div,
+.trayport-structured-venue__logo picture {
+  width: 100%;
+}
+
+.trayport-structured-venue__logo img {
+  display: block;
+  height: auto;
+  margin-left: auto;
+  max-height: 6rem;
+  object-fit: contain;
+  width: min(100%, 14rem);
+}
+
+.trayport-structured-venue__website {
+  justify-self: end;
+}
+
+.trayport-structured-venue__rule {
+  background: var(--color-brand-light);
+  height: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.trayport-structured-venue__about,
+.trayport-structured-venue__markets {
+  padding-top: clamp(2.5rem, 5vw, 4rem);
+}
+
+.trayport-structured-venue__about h2,
+.trayport-structured-venue__markets > h2 {
+  color: var(--color-brand-deep);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  margin-bottom: 1rem;
+}
+
+.trayport-structured-venue__markets.trayport-venue-markets {
+  background: transparent;
+  padding-bottom: 0;
+}
+
+.trayport-structured-venue .trayport-venue-markets__groups {
+  display: block;
+}
+
+.trayport-structured-venue .trayport-venue-markets__groups > section + section {
+  margin-top: 2rem;
+}
+
+.trayport-structured-venue .trayport-venue-markets__groups h3 {
+  border: 0;
+  color: var(--color-ink);
+  font-size: 1.125rem;
+  padding: 0 0 0.8rem;
+}
+
+.trayport-structured-venue .trayport-venue-markets__groups ul {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.trayport-structured-venue .trayport-venue-markets__groups li {
+  border: 0;
+}
+
+.trayport-structured-venue .trayport-venue-markets__groups a,
+.trayport-structured-venue .trayport-venue-markets__groups li > span {
+  background: #f7f7f7;
+  border: 0.0625rem solid var(--color-border);
+  border-radius: var(--radius-control);
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.8rem;
+  text-align: left;
+}
+
+.trayport-structured-venue__footer {
+  border-top: 0.0625rem solid var(--color-border);
+  display: flex;
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+  padding-top: 1.5rem;
+}
+
+@media (min-width: 48rem) {
+  .trayport-structured-hub .trayport-connectivity__groups {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .trayport-structured-hub .trayport-venue-list,
+  .trayport-structured-venue .trayport-venue-markets__groups ul {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .trayport-structured-hub .trayport-venue-list,
+  .trayport-structured-venue .trayport-venue-markets__groups ul {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 39.999rem) {
+  .trayport-structured-stage {
+    padding-inline: 0.75rem;
+  }
+
+  .trayport-structured-hub__classification {
+    font-size: 1rem;
+  }
+
+  .trayport-structured-hub__title-tab {
+    max-width: calc(100% - 0.75rem);
+  }
+
+  .trayport-structured-hub .trayport-venue-list,
+  .trayport-structured-venue .trayport-venue-markets__groups ul {
+    grid-template-columns: 1fr;
+  }
+
+  .trayport-structured-venue__header {
+    grid-template-columns: 1fr;
+  }
+
+  .trayport-structured-venue__logo {
+    display: none;
+  }
+
+  a.trayport-structured-venue__logo {
+    display: flex;
+    min-height: 3rem;
+  }
+
+  .trayport-structured-hub .trayport-venue-list a,
+  .trayport-structured-venue .trayport-venue-markets__groups a,
+  .trayport-structured-venue__website {
+    min-height: 3rem;
+  }
+
+  .trayport-structured-venue__footer .trayport-action {
+    width: 100%;
+  }
+}

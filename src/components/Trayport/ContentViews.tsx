@@ -29,6 +29,25 @@ const relationshipTitles = (
     .map(({ title }) => title || '')
     .filter(Boolean)
 
+type OrderedRelationship = {
+  displayOrder?: number | null
+  title: string
+}
+
+const orderedRelationships = (
+  values?: Array<OrderedRelationship | number | null> | null,
+): OrderedRelationship[] =>
+  (values || [])
+    .filter(
+      (value): value is OrderedRelationship =>
+        value !== null && typeof value === 'object' && Boolean(value.title),
+    )
+    .sort(
+      (left, right) =>
+        (left.displayOrder ?? Number.MAX_SAFE_INTEGER) -
+          (right.displayOrder ?? Number.MAX_SAFE_INTEGER) || left.title.localeCompare(right.title),
+    )
+
 export const splitLeadingHero = <Block extends { blockType?: string | null }>(
   layout?: Block[] | null,
 ): { body: Block[]; hero: Block[] } => {
@@ -40,8 +59,15 @@ export const splitLeadingHero = <Block extends { blockType?: string | null }>(
 
 export const PageView = ({ document }: { document: Page }) => {
   const hasHero = (document.layout || []).some(({ blockType }) => blockType === 'trayportHero')
+  const presentation = document.pageType === 'homepage' ? 'home' : document.pageType
+
   return (
-    <main id="main-content">
+    <main
+      className={`trayport-page trayport-page--${presentation}`}
+      data-page-path={document.path}
+      data-page-type={document.pageType}
+      id="main-content"
+    >
       {!hasHero ? (
         <header className="trayport-page-header">
           <div className="trayport-container trayport-container--standard">
@@ -104,43 +130,57 @@ type HubConnection = NonNullable<Hub['connections']>[number]
 const venueFromConnection = (connection: HubConnection): Venue | null =>
   typeof connection.venue === 'object' ? connection.venue : null
 
-const venueTypeName = (connection: HubConnection) => {
-  const venue = venueFromConnection(connection)
-  const venueType = venue?.venueTypes?.find((item) => typeof item === 'object')
-  return venueType && typeof venueType === 'object' ? venueType.title : 'Connected venues'
-}
-
 const productGroups = (connections: HubConnection[]) => {
-  const groups = new Map<string, HubConnection[]>()
+  const groups = new Map<string, { connections: HubConnection[]; displayOrder: number | null }>()
 
   for (const connection of connections) {
-    const name = venueTypeName(connection)
-    groups.set(name, [...(groups.get(name) || []), connection])
+    const venue = venueFromConnection(connection)
+    const memberships = orderedRelationships(venue?.venueTypes)
+    const venueTypes = memberships.length
+      ? memberships
+      : [{ displayOrder: null, title: 'Connected venues' }]
+
+    for (const venueType of venueTypes) {
+      const existing = groups.get(venueType.title)
+      groups.set(venueType.title, {
+        connections: [...(existing?.connections || []), connection],
+        displayOrder: existing?.displayOrder ?? venueType.displayOrder ?? null,
+      })
+    }
   }
 
-  return [...groups.entries()].sort(([left], [right]) => left.localeCompare(right))
+  return [...groups.entries()].sort(
+    ([leftName, left], [rightName, right]) =>
+      (left.displayOrder ?? Number.MAX_SAFE_INTEGER) -
+        (right.displayOrder ?? Number.MAX_SAFE_INTEGER) || leftName.localeCompare(rightName),
+  )
 }
 
 const ConnectionProduct = ({ title, values }: { title: string; values: HubConnection[] }) => {
   if (!values.length) return null
 
+  const headingID = `connectivity-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+
   return (
-    <section className="trayport-connectivity">
+    <section aria-labelledby={headingID} className="trayport-connectivity">
       <div className="trayport-connectivity__header">
-        <p className="trayport-eyebrow">Connectivity</p>
-        <h2>{title}</h2>
+        <h3 id={headingID}>{title}</h3>
       </div>
 
       <div className="trayport-connectivity__groups">
-        {productGroups(values).map(([groupName, connections]) => (
+        {productGroups(values).map(([groupName, group]) => (
           <section className="trayport-venue-group" key={groupName}>
-            <h3>{groupName}</h3>
+            <h4>{groupName}</h4>
             <ul className="trayport-venue-list">
-              {connections
+              {[...group.connections]
                 .sort((left, right) => {
                   const leftVenue = venueFromConnection(left)
                   const rightVenue = venueFromConnection(right)
-                  return (leftVenue?.title || '').localeCompare(rightVenue?.title || '')
+                  return (
+                    (leftVenue?.displayOrder ?? Number.MAX_SAFE_INTEGER) -
+                      (rightVenue?.displayOrder ?? Number.MAX_SAFE_INTEGER) ||
+                    (leftVenue?.title || '').localeCompare(rightVenue?.title || '')
+                  )
                 })
                 .map((connection, index) => {
                   const venue = venueFromConnection(connection)
@@ -170,6 +210,7 @@ const ConnectionProduct = ({ title, values }: { title: string; values: HubConnec
                           target={external ? '_blank' : undefined}
                         >
                           {content}
+                          {external ? <span className="sr-only"> (opens in a new tab)</span> : null}
                         </a>
                       ) : (
                         <span>{content}</span>
@@ -182,6 +223,45 @@ const ConnectionProduct = ({ title, values }: { title: string; values: HubConnec
         ))}
       </div>
     </section>
+  )
+}
+
+const HubHeaderMap = ({ document }: { document: Hub }) => {
+  const markers = document.map?.markers || []
+  const x = (longitude: number) => ((longitude + 180) / 360) * 1000
+  const y = (latitude: number) => ((90 - latitude) / 180) * 500
+
+  return (
+    <svg
+      aria-labelledby="structured-hub-map-title structured-hub-map-description"
+      className="trayport-structured-hub__map"
+      role="img"
+      viewBox="0 0 1000 500"
+    >
+      <title id="structured-hub-map-title">{document.title} location map</title>
+      <desc id="structured-hub-map-description">
+        {markers.length
+          ? `${markers.length} managed market ${markers.length === 1 ? 'location' : 'locations'}.`
+          : 'Managed market location.'}
+      </desc>
+      <rect height="500" width="1000" />
+      {[250, 500, 750].map((value) => (
+        <line key={`vertical-${value}`} x1={value} x2={value} y1="0" y2="500" />
+      ))}
+      {[125, 250, 375].map((value) => (
+        <line key={`horizontal-${value}`} x1="0" x2="1000" y1={value} y2={value} />
+      ))}
+      {markers.map((marker, index) => (
+        <circle
+          cx={x(marker.location.longitude)}
+          cy={y(marker.location.latitude)}
+          key={`${marker.label || document.title}-${index}`}
+          r="8"
+        >
+          <title>{marker.label || document.map?.locationLabel || document.title}</title>
+        </circle>
+      ))}
+    </svg>
   )
 }
 
@@ -206,163 +286,180 @@ const DetailHero = ({
 
 export const VenueView = ({ document }: { document: Venue }) => {
   const venueTypes = relationshipTitles(document.venueTypes)
-  const assetClasses = relationshipTitles(document.assetClasses)
-  const regions = relationshipTitles(document.regions)
-  const labels = [...venueTypes, ...assetClasses, ...regions]
   const { body, hero } = splitLeadingHero(document.layout)
+  const Title = hero.length ? 'h2' : 'h1'
   const connections = document.marketConnections || []
-  const connectionGroups = new Map<string, typeof connections>()
+  const connectionGroups = new Map<
+    string,
+    { connections: typeof connections; displayOrder: number | null }
+  >()
   for (const connection of connections) {
     const hub = typeof connection.hub === 'object' ? connection.hub : null
-    const assetClass = hub?.assetClasses?.find((item) => item && typeof item === 'object')
-    const group = assetClass && typeof assetClass === 'object' ? assetClass.title : 'Other markets'
-    connectionGroups.set(group, [...(connectionGroups.get(group) || []), connection])
+    const memberships = orderedRelationships(hub?.assetClasses)
+    const assetClasses = memberships.length
+      ? memberships
+      : [{ displayOrder: null, title: 'Other markets' }]
+
+    for (const assetClass of assetClasses) {
+      const existing = connectionGroups.get(assetClass.title)
+      connectionGroups.set(assetClass.title, {
+        connections: [...(existing?.connections || []), connection],
+        displayOrder: existing?.displayOrder ?? assetClass.displayOrder ?? null,
+      })
+    }
   }
 
   return (
-    <main className="trayport-detail" id="main-content">
-      {hero.length ? (
-        <TrayportBlocks blocks={hero} />
-      ) : (
-        <DetailHero
-          eyebrow={labels.slice(0, 2).join(' · ') || 'Connected venue'}
-          summary={document.summary}
-          title={document.title}
-        />
-      )}
+    <main
+      className="trayport-structured-page trayport-structured-page--venue"
+      data-content-type="venue"
+      id="main-content"
+    >
+      {hero.length ? <TrayportBlocks blocks={hero} /> : null}
 
-      <section className="trayport-detail__body">
-        <div className="trayport-container trayport-detail__grid">
-          <div className="trayport-detail__primary">
-            <p className="trayport-eyebrow">Venue profile</p>
-            <h2>Connected through Trayport</h2>
-            {document.description ? (
-              <RichText
-                className="trayport-richtext"
-                data={document.description as DefaultTypedEditorState}
-                enableGutter={false}
-              />
-            ) : document.summary ? (
-              <p className="trayport-detail__summary">{document.summary}</p>
-            ) : null}
-            {document.website ? (
+      <section className="trayport-structured-stage">
+        <article className="trayport-structured-card trayport-structured-venue">
+          <header className="trayport-structured-venue__header">
+            <div className="trayport-structured-venue__identity">
+              <p className="trayport-eyebrow">{venueTypes.join(' · ') || 'Connected venue'}</p>
+              <Title>{document.title}</Title>
+            </div>
+
+            {document.logo ? (
+              document.website ? (
+                <a
+                  aria-label={`Visit ${document.title} website (opens in a new tab)`}
+                  className="trayport-structured-venue__logo"
+                  href={document.website}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <TrayportMedia media={document.logo} showFallbackLink={false} />
+                </a>
+              ) : (
+                <div aria-hidden className="trayport-structured-venue__logo">
+                  <TrayportMedia media={document.logo} showFallbackLink={false} />
+                </div>
+              )
+            ) : document.website ? (
               <a
-                className="trayport-action trayport-action--secondary"
+                className="trayport-inline-link trayport-structured-venue__website"
                 href={document.website}
                 rel="noopener noreferrer"
                 target="_blank"
               >
                 Visit venue website <ExternalLink aria-hidden size={16} />
+                <span className="sr-only"> (opens in a new tab)</span>
               </a>
             ) : null}
-          </div>
+          </header>
 
-          <aside aria-label="Venue details" className="trayport-detail__facts">
-            {document.logo ? (
-              <div className="trayport-detail__logo">
-                <TrayportMedia media={document.logo} showFallbackLink={false} />
+          <div aria-hidden className="trayport-structured-venue__rule" />
+
+          {document.description || document.summary ? (
+            <section
+              aria-labelledby="venue-about-heading"
+              className="trayport-structured-venue__about"
+            >
+              <h2 id="venue-about-heading">About {document.title}</h2>
+              {document.description ? (
+                <RichText
+                  className="trayport-richtext"
+                  data={document.description as DefaultTypedEditorState}
+                  enableGutter={false}
+                />
+              ) : (
+                <p className="trayport-detail__summary">{document.summary}</p>
+              )}
+            </section>
+          ) : null}
+
+          {connections.length ? (
+            <section
+              aria-labelledby="venue-markets-heading"
+              className="trayport-structured-venue__markets trayport-venue-markets"
+            >
+              <h2 id="venue-markets-heading">Markets</h2>
+              <div className="trayport-venue-markets__groups">
+                {[...connectionGroups.entries()]
+                  .sort(
+                    ([leftName, left], [rightName, right]) =>
+                      (left.displayOrder ?? Number.MAX_SAFE_INTEGER) -
+                        (right.displayOrder ?? Number.MAX_SAFE_INTEGER) ||
+                      leftName.localeCompare(rightName),
+                  )
+                  .map(([group, groupData]) => (
+                    <section key={group}>
+                      <h3>{group}</h3>
+                      <ul>
+                        {[...groupData.connections]
+                          .sort((left, right) => {
+                            const leftHub = typeof left.hub === 'object' ? left.hub : null
+                            const rightHub = typeof right.hub === 'object' ? right.hub : null
+                            return (leftHub?.title || '').localeCompare(rightHub?.title || '')
+                          })
+                          .map((connection, index) => {
+                            const hub = typeof connection.hub === 'object' ? connection.hub : null
+                            if (!hub) return null
+                            const href =
+                              hub.contentMode === 'page' && hub.path
+                                ? hub.path
+                                : hub.externalDestination
+                            const external = Boolean(href && /^https?:\/\//.test(href))
+                            const content = (
+                              <>
+                                <span>{hub.title}</span>
+                                {external ? (
+                                  <ExternalLink aria-hidden size={14} />
+                                ) : href ? (
+                                  <ArrowRight aria-hidden size={14} />
+                                ) : null}
+                              </>
+                            )
+
+                            return (
+                              <li key={`${hub.id}-${index}`}>
+                                {href ? (
+                                  <a
+                                    href={href}
+                                    rel={external ? 'noopener noreferrer' : undefined}
+                                    target={external ? '_blank' : undefined}
+                                  >
+                                    {content}
+                                    {external ? (
+                                      <span className="sr-only"> (opens in a new tab)</span>
+                                    ) : null}
+                                  </a>
+                                ) : (
+                                  <span>{content}</span>
+                                )}
+                              </li>
+                            )
+                          })}
+                      </ul>
+                    </section>
+                  ))}
               </div>
-            ) : null}
-            <dl>
-              {document.code ? (
-                <div>
-                  <dt>Venue code</dt>
-                  <dd>{document.code}</dd>
-                </div>
-              ) : null}
-              {venueTypes.length ? (
-                <div>
-                  <dt>Venue type</dt>
-                  <dd>{venueTypes.join(', ')}</dd>
-                </div>
-              ) : null}
-              {assetClasses.length ? (
-                <div>
-                  <dt>Markets</dt>
-                  <dd>{assetClasses.join(', ')}</dd>
-                </div>
-              ) : null}
-              {regions.length ? (
-                <div>
-                  <dt>Regions</dt>
-                  <dd>{regions.join(', ')}</dd>
-                </div>
-              ) : null}
-              {document.location?.label ? (
-                <div>
-                  <dt>Location</dt>
-                  <dd>{document.location.label}</dd>
-                </div>
-              ) : null}
-            </dl>
-          </aside>
-        </div>
-      </section>
+            </section>
+          ) : null}
 
-      {connections.length ? (
-        <section className="trayport-venue-markets">
-          <div className="trayport-container">
-            <div className="trayport-listing__header">
-              <p className="trayport-eyebrow">Connected markets</p>
-              <h2>Markets available through {document.title}</h2>
-              <p className="trayport-detail__summary">
-                Explore the market hubs available through this venue on Trayport.
-              </p>
-            </div>
-            <div className="trayport-venue-markets__groups">
-              {[...connectionGroups.entries()]
-                .sort(([left], [right]) => left.localeCompare(right))
-                .map(([group, groupConnections]) => (
-                  <section key={group}>
-                    <h3>{group}</h3>
-                    <ul>
-                      {groupConnections.map((connection, index) => {
-                        const hub = typeof connection.hub === 'object' ? connection.hub : null
-                        if (!hub) return null
-                        const href =
-                          hub.contentMode === 'page' && hub.path
-                            ? hub.path
-                            : hub.externalDestination
-                        const external = Boolean(href && /^https?:\/\//.test(href))
-                        const content = (
-                          <>
-                            <span>{hub.title}</span>
-                            {external ? (
-                              <ExternalLink aria-hidden size={15} />
-                            ) : (
-                              <ArrowRight aria-hidden size={15} />
-                            )}
-                          </>
-                        )
-                        return (
-                          <li key={`${hub.id}-${index}`}>
-                            {href ? (
-                              <a
-                                href={href}
-                                rel={external ? 'noopener noreferrer' : undefined}
-                                target={external ? '_blank' : undefined}
-                              >
-                                {content}
-                              </a>
-                            ) : (
-                              <span>{content}</span>
-                            )}
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  </section>
-                ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
+          <footer className="trayport-structured-venue__footer">
+            <Link className="trayport-action trayport-action--primary" href="/contact/">
+              Contact Us <ArrowRight aria-hidden size={17} />
+            </Link>
+          </footer>
+        </article>
+      </section>
 
       {body.length ? <TrayportBlocks blocks={body} /> : null}
     </main>
   )
 }
 
+/*
+ * The learning-video detail uses the generic marketing detail treatment. Venue
+ * and hub records above use their source template's structured presentation.
+ */
 export const LearningVideoView = ({ document }: { document: LearningVideo }) => {
   const categories = relationshipTitles(document.categories)
   const isPublic = document.accessMode === 'public'
@@ -723,53 +820,75 @@ export const MarketCoverageIndexView = async ({
 }
 
 export const HubView = ({ document }: { document: Hub }) => {
-  const layout = document.layout || []
+  const { body, hero } = splitLeadingHero(document.layout)
   const connections = document.connections || []
   const joule = connections.filter((connection) => connection.supportsJoule)
   const autoTrader = connections.filter((connection) => connection.supportsAutoTrader)
-  const assetClass = document.assetClasses?.find((item) => typeof item === 'object')
+  const assetClasses = orderedRelationships(document.assetClasses)
   const region = document.regions?.find((item) => typeof item === 'object')
-  const hasManagedHero = layout[0]?.blockType === 'trayportHero'
+  const assetClassTitle = assetClasses.map(({ title }) => title).join(' · ') || 'Market coverage'
+  const regionTitle = region && typeof region === 'object' ? region.title : null
+  const Title = hero.length ? 'h2' : 'h1'
 
   return (
-    <main className="trayport-hub" id="main-content">
-      {hasManagedHero ? (
-        <TrayportBlocks blocks={layout} />
-      ) : (
-        <>
-          <section className="trayport-hub__hero">
-            {document.heroMedia ? (
-              <div className="trayport-hub__media" aria-hidden>
-                <TrayportMedia background media={document.heroMedia} priority />
-              </div>
-            ) : null}
-            <div aria-hidden className="trayport-hub__polygon" />
-            <div className="trayport-container trayport-hub__inner">
-              <div>
-                <p className="trayport-eyebrow">
-                  {[
-                    assetClass && typeof assetClass === 'object' ? assetClass.title : null,
-                    region && typeof region === 'object' ? region.title : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ') || 'Market coverage'}
-                </p>
-                <h1>{document.title}</h1>
-                <p>
-                  {document.summary ||
-                    `Explore broker, exchange and clearing connections available through Trayport's global network.`}
-                </p>
-              </div>
-            </div>
-          </section>
-          {layout.length ? <TrayportBlocks blocks={layout} /> : null}
-        </>
-      )}
+    <main
+      className="trayport-structured-page trayport-structured-page--hub"
+      data-content-type="hub"
+      id="main-content"
+    >
+      {hero.length ? <TrayportBlocks blocks={hero} /> : null}
 
-      <div className="trayport-container trayport-hub__content">
-        <ConnectionProduct title="Joule" values={joule} />
-        <ConnectionProduct title="autoTRADER" values={autoTrader} />
-      </div>
+      <section className="trayport-structured-stage">
+        <article className="trayport-structured-card trayport-structured-hub">
+          <header
+            className="trayport-structured-hub__header"
+            data-media={document.heroMedia ? 'image' : 'map'}
+          >
+            <div
+              aria-hidden={document.heroMedia ? true : undefined}
+              className="trayport-structured-hub__media"
+            >
+              {document.heroMedia ? (
+                <TrayportMedia background media={document.heroMedia} priority />
+              ) : (
+                <HubHeaderMap document={document} />
+              )}
+            </div>
+
+            <p className="trayport-structured-hub__classification">
+              <MapPin aria-hidden size={19} />
+              <span>{[assetClassTitle, regionTitle].filter(Boolean).join(' · ')}</span>
+            </p>
+
+            <div className="trayport-structured-hub__title-tab">
+              <Title>{document.title}</Title>
+            </div>
+          </header>
+
+          <div className="trayport-structured-hub__body">
+            {document.summary ? (
+              <p className="trayport-structured-hub__summary">{document.summary}</p>
+            ) : null}
+
+            <div className="trayport-structured-hub__heading">
+              <h2>Connected Venues</h2>
+              {document.code ? <span>{document.code}</span> : null}
+            </div>
+
+            <div className="trayport-structured-hub__connections">
+              <ConnectionProduct title="Joule" values={joule} />
+              <ConnectionProduct title="autoTRADER" values={autoTrader} />
+              {!joule.length && !autoTrader.length ? (
+                <p className="trayport-structured-hub__empty">
+                  No managed venue connections are available for this market.
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </article>
+      </section>
+
+      {body.length ? <TrayportBlocks blocks={body} /> : null}
     </main>
   )
 }

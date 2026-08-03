@@ -373,6 +373,114 @@ export const MarketCoverageComponent: Block = {
       type: 'richText',
     },
     {
+      name: 'style',
+      type: 'select',
+      dbName: 'map_style',
+      defaultValue: 'dark',
+      options: [
+        { label: 'Dark', value: 'dark' },
+        { label: 'Light', value: 'light' },
+      ],
+      required: true,
+    },
+    {
+      name: 'backgroundMedia',
+      type: 'upload',
+      relationTo: 'media',
+      admin: {
+        description: 'Managed static background used by the map presentation when configured.',
+      },
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'height',
+          type: 'number',
+          defaultValue: 300,
+          min: 100,
+          max: 600,
+          required: true,
+          admin: {
+            step: 50,
+          },
+        },
+        {
+          name: 'markerSize',
+          type: 'number',
+          defaultValue: 5,
+          min: 2,
+          max: 8,
+          required: true,
+          admin: {
+            step: 1,
+          },
+        },
+      ],
+    },
+    {
+      name: 'showLines',
+      type: 'checkbox',
+      defaultValue: true,
+      required: true,
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'lineColor',
+          type: 'select',
+          dbName: 'line_color',
+          defaultValue: '#009cde',
+          options: [
+            { label: 'Navy', value: '#1f2a44' },
+            { label: 'Dark blue', value: '#002d72' },
+            { label: 'Mid blue', value: '#0057b8' },
+            { label: 'Light blue', value: '#009cde' },
+            { label: 'Turquoise', value: '#00c1d5' },
+            { label: 'Green', value: '#32b77b' },
+            { label: 'Orange', value: '#ff671f' },
+            { label: 'Yellow', value: '#f7ea48' },
+          ],
+          required: true,
+        },
+        {
+          name: 'lineWidth',
+          type: 'number',
+          defaultValue: 0.5,
+          min: 0,
+          max: 1,
+          required: true,
+          admin: {
+            step: 0.1,
+          },
+        },
+        {
+          name: 'lineOpacity',
+          type: 'number',
+          defaultValue: 0.5,
+          min: 0,
+          max: 1,
+          required: true,
+          admin: {
+            step: 0.1,
+          },
+        },
+      ],
+    },
+    {
+      name: 'assetClasses',
+      type: 'relationship',
+      relationTo: 'asset-classes',
+      hasMany: true,
+    },
+    {
+      name: 'venueTypes',
+      type: 'relationship',
+      relationTo: 'venue-types',
+      hasMany: true,
+    },
+    {
       name: 'regions',
       type: 'relationship',
       relationTo: 'regions',
@@ -424,6 +532,18 @@ export const DataChartComponent: Block = {
       required: true,
     },
     {
+      name: 'chartType',
+      type: 'select',
+      dbName: 'chart_type',
+      defaultValue: 'stackedColumn',
+      options: [
+        { label: 'Stacked columns', value: 'stackedColumn' },
+        { label: 'Columns', value: 'column' },
+        { label: 'Line', value: 'line' },
+      ],
+      required: true,
+    },
+    {
       name: 'unit',
       type: 'text',
     },
@@ -438,6 +558,89 @@ export const DataChartComponent: Block = {
     {
       name: 'accessibleSummary',
       type: 'textarea',
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'fromYear',
+          type: 'number',
+          min: 2000,
+          max: 2100,
+        },
+        {
+          name: 'fromQuarter',
+          type: 'number',
+          min: 1,
+          max: 4,
+        },
+        {
+          name: 'toYear',
+          type: 'number',
+          min: 2000,
+          max: 2100,
+        },
+        {
+          name: 'toQuarter',
+          type: 'number',
+          min: 1,
+          max: 4,
+        },
+      ],
+    },
+    {
+      name: 'axisLabel',
+      type: 'text',
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'height',
+          type: 'number',
+          defaultValue: 350,
+          min: 280,
+          max: 560,
+        },
+        {
+          name: 'scalePower',
+          type: 'number',
+          defaultValue: 0,
+          min: 0,
+          max: 12,
+          admin: {
+            description: 'Divide source values by 10 to this power before display.',
+          },
+        },
+      ],
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'showAxes',
+          type: 'checkbox',
+          defaultValue: true,
+        },
+        {
+          name: 'showLegend',
+          type: 'checkbox',
+          defaultValue: true,
+        },
+        {
+          name: 'showValues',
+          type: 'checkbox',
+          defaultValue: false,
+        },
+        {
+          name: 'showDataTable',
+          type: 'checkbox',
+          defaultValue: true,
+          admin: {
+            description: 'Accessibility enhancement. Disable to restore chart-only parity.',
+          },
+        },
+      ],
     },
   ],
 }

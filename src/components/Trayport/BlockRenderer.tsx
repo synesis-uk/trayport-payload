@@ -2,7 +2,6 @@ import type { DefaultTypedEditorState } from '@payloadcms/richtext-lexical'
 import configPromise from '@payload-config'
 import {
   ArrowRight,
-  BarChart3,
   ChartNoAxesCombined,
   Clock3,
   ExternalLink,
@@ -22,6 +21,7 @@ import type { ContentLink } from './contentLink'
 import { ManagedLink } from './ManagedLink'
 import { resolveContentLink } from './contentLink'
 import { LearningVideoListingClient } from './LearningVideoListingClient'
+import { MarketVolumeChart } from './MarketVolumeChart.client'
 import { getMarketVolumeQuarterly } from './marketData'
 import { TrayportMedia } from './TrayportMedia'
 
@@ -104,7 +104,36 @@ const MarketCoverage = async ({ component }: { component: UnknownRecord }) => {
   )
   const regions = array(component.regions)
   const x = (longitude: number) => ((longitude + 180) / 360) * 1000
-  const y = (latitude: number) => ((90 - latitude) / 180) * 500
+  const y = (latitude: number) => ((90 - latitude) / 180) * 562
+  const regionAnchors = regions
+    .map(record)
+    .map((region) => {
+      const title = text(region.title)
+      const normalized = title.toLowerCase()
+      const coordinates = normalized.includes('north america')
+        ? { latitude: 42, longitude: -101 }
+        : normalized.includes('asia')
+          ? { latitude: 30, longitude: 113 }
+          : normalized.includes('europe')
+            ? { latitude: 50, longitude: 10 }
+            : null
+      return coordinates ? { ...coordinates, title } : null
+    })
+    .filter(Boolean) as Array<{ latitude: number; longitude: number; title: string }>
+  const routeOrigin =
+    regionAnchors.find(({ title }) => title.toLowerCase().includes('europe')) || regionAnchors[0]
+  const routeColors = ['#00c1d5', '#f7ea48', '#ff6021']
+  const displayMarkers = regionAnchors.length
+    ? regionAnchors
+    : markers.slice(0, 12).map((marker) => ({
+        latitude: marker.latitude,
+        longitude: marker.longitude,
+        title: marker.label,
+      }))
+  const mapHeight = Math.min(Math.max(Number(component.height) || 300, 100), 600)
+  const lineWidth = Math.min(Math.max(Number(component.lineWidth) || 0.5, 0), 1)
+  const lineOpacity = Math.min(Math.max(Number(component.lineOpacity) || 0.5, 0), 1)
+  const lineColor = text(component.lineColor) || '#009cde'
 
   return (
     <div className="trayport-market-coverage">
@@ -127,52 +156,75 @@ const MarketCoverage = async ({ component }: { component: UnknownRecord }) => {
         <Actions value={component.actions} />
       </div>
 
-      <figure className="trayport-coverage-map">
+      <figure
+        className="trayport-coverage-map"
+        data-map-style={text(component.style) || 'dark'}
+        style={
+          {
+            '--trayport-map-height': `${mapHeight}px`,
+            '--trayport-map-line-color': lineColor,
+            '--trayport-map-line-opacity': lineOpacity,
+            '--trayport-map-line-width': Math.max(lineWidth * 8, 1),
+          } as React.CSSProperties
+        }
+      >
+        {component.backgroundMedia ? (
+          <div aria-hidden className="trayport-coverage-map__media">
+            <TrayportMedia
+              background
+              media={component.backgroundMedia as MediaType}
+              showFallbackLink={false}
+            />
+          </div>
+        ) : null}
         <svg
           aria-labelledby="trayport-coverage-map-title trayport-coverage-map-description"
           role="img"
-          viewBox="0 0 1000 500"
+          viewBox="0 0 1000 562"
         >
           <title id="trayport-coverage-map-title">Trayport market connectivity locations</title>
           <desc id="trayport-coverage-map-description">
-            Schematic longitude and latitude field containing {markers.length} imported market
-            markers.
+            Regional connectivity overview for {regionAnchors.map(({ title }) => title).join(', ')}.
           </desc>
-          <rect className="trayport-coverage-map__field" height="500" rx="8" width="1000" />
-          {[250, 500, 750].map((value) => (
-            <line
-              className="trayport-coverage-map__grid"
-              key={`vertical-${value}`}
-              x1={value}
-              x2={value}
-              y1="0"
-              y2="500"
-            />
-          ))}
-          {[125, 250, 375].map((value) => (
-            <line
-              className="trayport-coverage-map__grid"
-              key={`horizontal-${value}`}
-              x1="0"
-              x2="1000"
-              y1={value}
-              y2={value}
-            />
-          ))}
-          {markers.map((marker, index) => (
+          <rect className="trayport-coverage-map__field" height="562" rx="8" width="1000" />
+          {component.showLines !== false && routeOrigin
+            ? regionAnchors
+                .filter((region) => region !== routeOrigin)
+                .map((region, index) => {
+                  const originX = x(routeOrigin.longitude)
+                  const originY = y(routeOrigin.latitude)
+                  const targetX = x(region.longitude)
+                  const targetY = y(region.latitude)
+                  const controlY = Math.min(originY, targetY) - Math.abs(targetX - originX) * 0.2
+                  return (
+                    <path
+                      className="trayport-coverage-map__route"
+                      d={`M ${originX} ${originY} Q ${(originX + targetX) / 2} ${controlY} ${targetX} ${targetY}`}
+                      key={`${routeOrigin.title}-${region.title}`}
+                      style={{
+                        stroke:
+                          routeColors[index % routeColors.length] === '#00c1d5'
+                            ? lineColor
+                            : routeColors[index % routeColors.length],
+                      }}
+                    />
+                  )
+                })
+            : null}
+          {displayMarkers.map((marker, index) => (
             <circle
               className="trayport-coverage-map__marker"
               cx={x(marker.longitude)}
               cy={y(marker.latitude)}
-              key={`${marker.hub}-${marker.label}-${index}`}
-              r="7"
+              key={`${marker.title}-${index}`}
+              r={Math.min(Math.max(Number(component.markerSize) || 5, 3), 9)}
             >
-              <title>{`${marker.label}: ${marker.latitude.toFixed(2)}, ${marker.longitude.toFixed(2)}`}</title>
+              <title>{marker.title}</title>
             </circle>
           ))}
         </svg>
         <figcaption>
-          Imported market locations plotted without a third-party map service.
+          {regionAnchors.length} connected regions shown from managed content.
         </figcaption>
       </figure>
     </div>
@@ -181,119 +233,87 @@ const MarketCoverage = async ({ component }: { component: UnknownRecord }) => {
 
 const DataChart = async ({ component }: { component: UnknownRecord }) => {
   const assetClassLegacyID = Number(component.assetClassLegacyId)
-  const rows = await getMarketVolumeQuarterly(assetClassLegacyID, 10)
-  const totals = rows.map((row) => row.otcBilateral + row.otcCleared + row.exchangeTraded)
-  const maxTotal = Math.max(...totals, 0)
-  const compact = new Intl.NumberFormat('en-GB', {
-    maximumFractionDigits: 1,
-    notation: 'compact',
+  const rows = await getMarketVolumeQuarterly(assetClassLegacyID, {
+    fromQuarter: Number(component.fromQuarter) || null,
+    fromYear: Number(component.fromYear) || null,
+    limit: 40,
+    toQuarter: Number(component.toQuarter) || null,
+    toYear: Number(component.toYear) || null,
   })
+  const scale = 10 ** Math.min(Math.max(Number(component.scalePower) || 0, 0), 12)
+  const displayRows = rows.map((row) => ({
+    ...row,
+    exchangeTraded: row.exchangeTraded / scale,
+    otcBilateral: row.otcBilateral / scale,
+    otcCleared: row.otcCleared / scale,
+  }))
+  const totals = displayRows.map((row) => row.otcBilateral + row.otcCleared + row.exchangeTraded)
   const precise = new Intl.NumberFormat('en-GB', {
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   })
+  const title = text(component.title)
+  const unit = text(component.unit)
+  const showDataTable = component.showDataTable !== false
 
   return (
     <section className="trayport-chart" aria-labelledby={`market-chart-${assetClassLegacyID}`}>
       <div className="trayport-chart__header">
-        <BarChart3 aria-hidden size={28} />
         <div>
-          <h3 id={`market-chart-${assetClassLegacyID}`}>{text(component.title)}</h3>
-          {text(component.accessibleSummary) ? <p>{text(component.accessibleSummary)}</p> : null}
-          {text(component.unit) ? <span>Unit: {text(component.unit)}</span> : null}
+          <h3 id={`market-chart-${assetClassLegacyID}`}>{title}</h3>
+          {text(component.accessibleSummary) ? (
+            <p className="sr-only">{text(component.accessibleSummary)}</p>
+          ) : null}
         </div>
       </div>
 
-      {rows.length ? (
+      {displayRows.length ? (
         <>
-          <div
-            aria-label={`Stacked quarterly market volume for ${text(component.title)}. The latest ${rows.length} quarters are shown.`}
-            className="trayport-chart__plot"
-            role="img"
-            style={{
-              gridTemplateColumns: `repeat(${rows.length}, minmax(1.5rem, 1fr))`,
-            }}
-            tabIndex={0}
-          >
-            {rows.map((row, index) => {
-              const total = totals[index] || 1
-              const availableHeight = maxTotal ? (total / maxTotal) * 100 : 0
-              return (
-                <div className="trayport-chart__quarter" key={`${row.year}-${row.quarter}`}>
-                  <div
-                    aria-hidden
-                    className="trayport-chart__bar"
-                    style={{ height: `${availableHeight}%` }}
-                    title={`${row.year} Q${row.quarter}: ${compact.format(total)}`}
-                  >
-                    <span
-                      className="is-bilateral"
-                      style={{ height: `${(row.otcBilateral / total) * 100}%` }}
-                    />
-                    <span
-                      className="is-cleared"
-                      style={{ height: `${(row.otcCleared / total) * 100}%` }}
-                    />
-                    <span
-                      className="is-exchange"
-                      style={{ height: `${(row.exchangeTraded / total) * 100}%` }}
-                    />
-                  </div>
-                  <span>
-                    Q{row.quarter}
-                    <small>{row.year}</small>
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-          <ul aria-label="Chart legend" className="trayport-chart__legend">
-            <li>
-              <span className="is-bilateral" />
-              OTC bilateral
-            </li>
-            <li>
-              <span className="is-cleared" />
-              OTC cleared
-            </li>
-            <li>
-              <span className="is-exchange" />
-              Exchange traded
-            </li>
-          </ul>
-          <details className="trayport-chart__data">
-            <summary>View chart data</summary>
-            <div
-              aria-label={`${text(component.title)} data table`}
-              className="trayport-table-wrap"
-              role="region"
-              tabIndex={0}
-            >
-              <table className="trayport-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Quarter</th>
-                    <th scope="col">OTC bilateral</th>
-                    <th scope="col">OTC cleared</th>
-                    <th scope="col">Exchange traded</th>
-                    <th scope="col">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row, index) => (
-                    <tr key={`${row.year}-${row.quarter}`}>
-                      <th scope="row">
-                        {row.year} Q{row.quarter}
-                      </th>
-                      <td>{precise.format(row.otcBilateral)}</td>
-                      <td>{precise.format(row.otcCleared)}</td>
-                      <td>{precise.format(row.exchangeTraded)}</td>
-                      <td>{precise.format(totals[index])}</td>
+          <MarketVolumeChart
+            axisLabel={text(component.axisLabel)}
+            height={Number(component.height) || 350}
+            rows={displayRows}
+            showAxes={component.showAxes !== false}
+            showLegend={component.showLegend !== false}
+            showValues={component.showValues === true}
+            title={title}
+            unit={unit}
+          />
+          {showDataTable ? (
+            <details className="trayport-chart__data">
+              <summary>View chart data</summary>
+              <div
+                aria-label={`${title} data table`}
+                className="trayport-table-wrap"
+                role="region"
+                tabIndex={0}
+              >
+                <table className="trayport-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Quarter</th>
+                      <th scope="col">OTC bilateral{unit ? ` (${unit})` : ''}</th>
+                      <th scope="col">OTC cleared{unit ? ` (${unit})` : ''}</th>
+                      <th scope="col">Exchange traded{unit ? ` (${unit})` : ''}</th>
+                      <th scope="col">Total{unit ? ` (${unit})` : ''}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </details>
+                  </thead>
+                  <tbody>
+                    {displayRows.map((row, index) => (
+                      <tr key={`${row.year}-${row.quarter}`}>
+                        <th scope="row">
+                          {row.year} Q{row.quarter}
+                        </th>
+                        <td>{precise.format(row.otcBilateral)}</td>
+                        <td>{precise.format(row.otcCleared)}</td>
+                        <td>{precise.format(row.exchangeTraded)}</td>
+                        <td>{precise.format(totals[index])}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          ) : null}
         </>
       ) : (
         <p className="trayport-chart__empty">
@@ -606,27 +626,44 @@ const ContentSection = ({ block }: { block: UnknownRecord }) => {
   const columns = array(block.columns).map(record)
   return (
     <section
-      className={`trayport-section trayport-section--${text(block.theme) || 'light'} trayport-section--${text(block.spacing) || 'regular'}`}
+      className={`trayport-section trayport-section--${text(block.theme) || 'light'} trayport-section--${text(block.spacing) || 'regular'} trayport-section--wrapper-${text(block.wrapperTheme) || 'none'} trayport-section--appearance-${text(block.appearance) || 'default'}`}
       id={text(block.anchor) || undefined}
     >
       <div className={`trayport-container trayport-container--${text(block.width) || 'wide'}`}>
-        <div className="trayport-grid">
-          {columns.map((column, index) => (
+        <div className="trayport-section__surface">
+          {block.backgroundMedia ? (
             <div
-              className="trayport-column"
-              key={index}
-              style={{ '--trayport-span': Number(text(column.span) || 12) } as React.CSSProperties}
+              aria-hidden
+              className="trayport-section__background"
+              data-opacity={text(block.backgroundOpacity) || 'none'}
             >
-              {array(column.components)
-                .map(record)
-                .map((component, componentIndex) => (
-                  <Component
-                    component={component}
-                    key={`${text(component.blockType)}-${componentIndex}`}
-                  />
-                ))}
+              <TrayportMedia
+                background
+                media={block.backgroundMedia as MediaType}
+                showFallbackLink={false}
+              />
             </div>
-          ))}
+          ) : null}
+          <div className="trayport-grid">
+            {columns.map((column, index) => (
+              <div
+                className="trayport-column"
+                key={index}
+                style={
+                  { '--trayport-span': Number(text(column.span) || 12) } as React.CSSProperties
+                }
+              >
+                {array(column.components)
+                  .map(record)
+                  .map((component, componentIndex) => (
+                    <Component
+                      component={component}
+                      key={`${text(component.blockType)}-${componentIndex}`}
+                    />
+                  ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -635,6 +672,7 @@ const ContentSection = ({ block }: { block: UnknownRecord }) => {
 
 const Hero = ({ block, priority = false }: { block: UnknownRecord; priority?: boolean }) => {
   const hasMedia = Boolean(block.media || text(block.externalVideoURL))
+  const statistics = array(block.statistics).map(record)
   return (
     <section className={`trayport-hero trayport-hero--${text(block.appearance) || 'dark'}`}>
       {hasMedia ? (
@@ -656,6 +694,16 @@ const Hero = ({ block, priority = false }: { block: UnknownRecord; priority?: bo
           <Actions value={block.actions} />
         </div>
       </div>
+      {statistics.length ? (
+        <dl aria-label="Trayport at a glance" className="trayport-hero__statistics">
+          {statistics.map((item, index) => (
+            <div key={`${text(item.label)}-${index}`}>
+              <dd>{text(item.value)}</dd>
+              <dt>{text(item.label)}</dt>
+            </div>
+          ))}
+        </dl>
+      ) : null}
     </section>
   )
 }

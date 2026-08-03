@@ -35,6 +35,27 @@ export const TrayportHero: Block = {
     },
     blockActions,
     {
+      name: 'statistics',
+      type: 'array',
+      maxRows: 4,
+      admin: {
+        description: 'Optional summary statistics shown beneath image heroes on larger screens.',
+        initCollapsed: true,
+      },
+      fields: [
+        {
+          name: 'value',
+          type: 'text',
+          required: true,
+        },
+        {
+          name: 'label',
+          type: 'text',
+          required: true,
+        },
+      ],
+    },
+    {
       name: 'appearance',
       type: 'select',
       defaultValue: 'dark',
@@ -69,6 +90,51 @@ export const ContentSection: Block = {
         { label: 'Soft blue', value: 'softBlue' },
         { label: 'Dark blue', value: 'dark' },
         { label: 'White', value: 'white' },
+      ],
+      required: true,
+    },
+    {
+      name: 'wrapperTheme',
+      type: 'select',
+      dbName: 'wrapper_theme',
+      defaultValue: 'none',
+      options: [
+        { label: 'None', value: 'none' },
+        { label: 'Soft blue', value: 'softBlue' },
+        { label: 'Green', value: 'green' },
+        { label: 'Dark blue', value: 'dark' },
+      ],
+      required: true,
+    },
+    {
+      name: 'appearance',
+      type: 'select',
+      dbName: 'presentation',
+      defaultValue: 'default',
+      options: [
+        { label: 'Default', value: 'default' },
+        { label: 'Inset card', value: 'inset' },
+      ],
+      required: true,
+    },
+    {
+      name: 'backgroundMedia',
+      type: 'upload',
+      relationTo: 'media',
+      admin: {
+        description: 'Optional managed background asset; presentation and opacity remain bounded.',
+      },
+    },
+    {
+      name: 'backgroundOpacity',
+      type: 'select',
+      dbName: 'bg_opacity',
+      defaultValue: 'none',
+      options: [
+        { label: 'None', value: 'none' },
+        { label: '10%', value: '10' },
+        { label: '20%', value: '20' },
+        { label: '50%', value: '50' },
       ],
       required: true,
     },
@@ -154,9 +220,9 @@ export const ArticleListing: Block = {
     {
       name: 'pageSize',
       type: 'number',
-      defaultValue: 12,
+      defaultValue: 100,
       min: 3,
-      max: 24,
+      max: 100,
       required: true,
     },
     {

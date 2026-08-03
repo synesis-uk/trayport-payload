@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronDown, Menu, X } from 'lucide-react'
+import { ChevronDown, Menu, Search, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useId, useRef, useState } from 'react'
@@ -28,7 +28,10 @@ export const HeaderClient = ({ navigation, settings }: HeaderClientProps) => {
   const menuID = useId()
   const menuButton = useRef<HTMLButtonElement>(null)
   const headerRef = useRef<HTMLElement>(null)
+  const searchButton = useRef<HTMLButtonElement>(null)
+  const searchDialog = useRef<HTMLDivElement>(null)
   const [mobileMenu, setMobileMenu] = useState({ open: false, pathname })
+  const [searchOpen, setSearchOpen] = useState(false)
   const [dropdown, setDropdown] = useState<{ item: string | null; pathname: string }>({
     item: null,
     pathname,
@@ -54,11 +57,43 @@ export const HeaderClient = ({ navigation, settings }: HeaderClientProps) => {
   }, [mobileOpen])
 
   useEffect(() => {
+    if (!searchOpen) return
+
+    const dialog = searchDialog.current
+    if (!dialog) return
+
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return
+      const focusable = [...dialog.querySelectorAll<HTMLElement>('button, input, [href]')].filter(
+        (element) => !element.hasAttribute('disabled') && element.tabIndex !== -1,
+      )
+      if (!focusable.length) return
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    dialog.addEventListener('keydown', trapFocus)
+    return () => dialog.removeEventListener('keydown', trapFocus)
+  }, [searchOpen])
+
+  useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       if (mobileOpen) {
         setMobileMenu({ open: false, pathname })
         menuButton.current?.focus()
+      }
+      if (searchOpen) {
+        setSearchOpen(false)
+        window.requestAnimationFrame(() => searchButton.current?.focus())
       }
       setDropdown({ item: null, pathname })
     }
@@ -75,7 +110,7 @@ export const HeaderClient = ({ navigation, settings }: HeaderClientProps) => {
       document.removeEventListener('keydown', closeOnEscape)
       document.removeEventListener('pointerdown', closeOutside)
     }
-  }, [mobileOpen, pathname])
+  }, [mobileOpen, pathname, searchOpen])
 
   return (
     <header className="site-header" ref={headerRef}>
@@ -169,9 +204,18 @@ export const HeaderClient = ({ navigation, settings }: HeaderClientProps) => {
           </nav>
 
           <div className="site-header__actions">
-            {primaryAction && resolveContentLink(primaryAction).href !== '#' ? (
-              <ManagedLink className="site-header__cta" link={primaryAction} />
-            ) : null}
+            <button
+              aria-controls="site-search-dialog"
+              aria-expanded={searchOpen}
+              aria-haspopup="dialog"
+              aria-label="Open site search"
+              className="site-header__search"
+              onClick={() => setSearchOpen(true)}
+              ref={searchButton}
+              type="button"
+            >
+              <Search aria-hidden size={18} strokeWidth={1.8} />
+            </button>
             <button
               aria-controls={menuID}
               aria-expanded={mobileOpen}
@@ -229,6 +273,57 @@ export const HeaderClient = ({ navigation, settings }: HeaderClientProps) => {
           ) : null}
         </nav>
       </div>
+
+      {searchOpen ? (
+        <div
+          aria-labelledby="site-search-title"
+          aria-modal="true"
+          className="site-search"
+          id="site-search-dialog"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) {
+              setSearchOpen(false)
+              window.requestAnimationFrame(() => searchButton.current?.focus())
+            }
+          }}
+          ref={searchDialog}
+          role="dialog"
+        >
+          <div className="site-search__panel">
+            <div className="site-search__header">
+              <h2 id="site-search-title">Site Search</h2>
+              <button
+                aria-label="Close site search"
+                onClick={() => {
+                  setSearchOpen(false)
+                  window.requestAnimationFrame(() => searchButton.current?.focus())
+                }}
+                type="button"
+              >
+                <X aria-hidden size={22} />
+              </button>
+            </div>
+            <form action="/resources/insights/" method="get" role="search">
+              <label className="sr-only" htmlFor="site-search-input">
+                Search Trayport insights
+              </label>
+              <Search aria-hidden size={20} />
+              <input
+                autoFocus
+                id="site-search-input"
+                name="q"
+                placeholder="Search insights…"
+                type="search"
+              />
+              <button type="submit">Search</button>
+            </form>
+            <p>
+              Search currently covers the migrated insight library. Broader content search can be
+              enabled as additional routes are migrated.
+            </p>
+          </div>
+        </div>
+      ) : null}
     </header>
   )
 }

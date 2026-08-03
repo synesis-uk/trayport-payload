@@ -9,6 +9,9 @@ import { getServerSideURL } from '@/utilities/getURL'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 
 import './globals.css'
+import './parity-shell.css'
+import './parity-structured.css'
+import './parity-blocks.css'
 
 const inter = localFont({
   display: 'swap',
@@ -22,7 +25,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { isEnabled } = await draftMode()
 
   return (
-    <html className={inter.variable} lang="en">
+    <html className={inter.variable} data-scroll-behavior="smooth" lang="en">
       <head>
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />

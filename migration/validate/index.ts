@@ -580,12 +580,15 @@ export const validateTransformed = (
   assert(!/"@type":"SearchAction"/.test(JSON.stringify(home.data.meta)))
   const joule = targets.find(({ target, legacy }) => target === 'pages' && legacy.legacyId === 1924)
   assert(joule)
-  for (const page of [home, joule]) {
+  for (const [page, expectedMediaLegacyID] of [
+    [home, 10867],
+    [joule, 3547],
+  ] as const) {
     const hero = (page.data.layout as Array<Record<string, unknown>>).find(
       ({ blockType }) => blockType === 'trayportHero',
     )
     assert(hero, `Missing hero for ${page.data.path}`)
-    assert.deepEqual(hero.media, { $legacyRef: 'media', legacyId: 3990 })
+    assert.deepEqual(hero.media, { $legacyRef: 'media', legacyId: expectedMediaLegacyID })
     assert.equal(hero.externalVideoURL, '')
   }
 

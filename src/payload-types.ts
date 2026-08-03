@@ -293,6 +293,16 @@ export interface TrayportHeroBlock {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Optional summary statistics shown beneath image heroes on larger screens.
+   */
+  statistics?:
+    | {
+        value: string;
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
   appearance: 'dark' | 'image' | 'light';
   id?: string | null;
   blockName?: string | null;
@@ -546,6 +556,13 @@ export interface Article {
 export interface ContentSectionBlock {
   anchor?: string | null;
   theme: 'light' | 'softBlue' | 'dark' | 'white';
+  wrapperTheme: 'none' | 'softBlue' | 'green' | 'dark';
+  appearance: 'default' | 'inset';
+  /**
+   * Optional managed background asset; presentation and opacity remain bounded.
+   */
+  backgroundMedia?: (number | null) | Media;
+  backgroundOpacity: 'none' | '10' | '20' | '50';
   width: 'reading' | 'standard' | 'wide' | 'full';
   spacing: 'compact' | 'regular' | 'generous';
   columns: {
@@ -1396,6 +1413,19 @@ export interface MarketCoverageComponent {
     };
     [k: string]: unknown;
   } | null;
+  style: 'dark' | 'light';
+  /**
+   * Managed static background used by the map presentation when configured.
+   */
+  backgroundMedia?: (number | null) | Media;
+  height: number;
+  markerSize: number;
+  showLines: boolean;
+  lineColor: '#1f2a44' | '#002d72' | '#0057b8' | '#009cde' | '#00c1d5' | '#32b77b' | '#ff671f' | '#f7ea48';
+  lineWidth: number;
+  lineOpacity: number;
+  assetClasses?: (number | AssetClass)[] | null;
+  venueTypes?: (number | VenueType)[] | null;
   regions?: (number | Region)[] | null;
   actions?:
     | {
@@ -1453,12 +1483,30 @@ export interface EmbedComponent {
 export interface DataChartComponent {
   title: string;
   dataType: 'volume' | 'price' | 'other';
+  chartType: 'stackedColumn' | 'column' | 'line';
   unit?: string | null;
   /**
    * Application-data lookup key. Chart series remain outside the editorial CMS.
    */
   assetClassLegacyId?: number | null;
   accessibleSummary?: string | null;
+  fromYear?: number | null;
+  fromQuarter?: number | null;
+  toYear?: number | null;
+  toQuarter?: number | null;
+  axisLabel?: string | null;
+  height?: number | null;
+  /**
+   * Divide source values by 10 to this power before display.
+   */
+  scalePower?: number | null;
+  showAxes?: boolean | null;
+  showLegend?: boolean | null;
+  showValues?: boolean | null;
+  /**
+   * Accessibility enhancement. Disable to restore chart-only parity.
+   */
+  showDataTable?: boolean | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'dataChart';
@@ -1927,6 +1975,13 @@ export interface TrayportHeroBlockSelect<T extends boolean = true> {
         style?: T;
         id?: T;
       };
+  statistics?:
+    | T
+    | {
+        value?: T;
+        label?: T;
+        id?: T;
+      };
   appearance?: T;
   id?: T;
   blockName?: T;
@@ -1938,6 +1993,10 @@ export interface TrayportHeroBlockSelect<T extends boolean = true> {
 export interface ContentSectionBlockSelect<T extends boolean = true> {
   anchor?: T;
   theme?: T;
+  wrapperTheme?: T;
+  appearance?: T;
+  backgroundMedia?: T;
+  backgroundOpacity?: T;
   width?: T;
   spacing?: T;
   columns?:
@@ -2182,6 +2241,16 @@ export interface DividerComponentSelect<T extends boolean = true> {
 export interface MarketCoverageComponentSelect<T extends boolean = true> {
   title?: T;
   body?: T;
+  style?: T;
+  backgroundMedia?: T;
+  height?: T;
+  markerSize?: T;
+  showLines?: T;
+  lineColor?: T;
+  lineWidth?: T;
+  lineOpacity?: T;
+  assetClasses?: T;
+  venueTypes?: T;
   regions?: T;
   actions?:
     | T
@@ -2219,9 +2288,21 @@ export interface EmbedComponentSelect<T extends boolean = true> {
 export interface DataChartComponentSelect<T extends boolean = true> {
   title?: T;
   dataType?: T;
+  chartType?: T;
   unit?: T;
   assetClassLegacyId?: T;
   accessibleSummary?: T;
+  fromYear?: T;
+  fromQuarter?: T;
+  toYear?: T;
+  toQuarter?: T;
+  axisLabel?: T;
+  height?: T;
+  scalePower?: T;
+  showAxes?: T;
+  showLegend?: T;
+  showValues?: T;
+  showDataTable?: T;
   id?: T;
   blockName?: T;
 }

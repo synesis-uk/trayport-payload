@@ -8,6 +8,14 @@ export type MarketQuarter = {
   year: number
 }
 
+export type MarketQuarterRange = {
+  fromQuarter?: number | null
+  fromYear?: number | null
+  limit?: number
+  toQuarter?: number | null
+  toYear?: number | null
+}
+
 type MarketQuarterRow = {
   exchange_traded: number | string
   otc_bilateral: number | string
@@ -33,10 +41,16 @@ const marketPool = () => {
 
 export const getMarketVolumeQuarterly = async (
   assetClassLegacyID: number,
-  limit = 10,
+  rangeOrLimit: MarketQuarterRange | number = 10,
 ): Promise<MarketQuarter[]> => {
   const pool = marketPool()
   if (!pool || !Number.isFinite(assetClassLegacyID)) return []
+
+  const range = typeof rangeOrLimit === 'number' ? { limit: rangeOrLimit } : rangeOrLimit
+  const limit = Math.min(Math.max(range.limit || 40, 1), 40)
+  const fromPeriod =
+    range.fromYear && range.fromQuarter ? range.fromYear * 4 + range.fromQuarter : 0
+  const toPeriod = range.toYear && range.toQuarter ? range.toYear * 4 + range.toQuarter : 99999
 
   try {
     const result = await pool.query<MarketQuarterRow>(
@@ -49,11 +63,12 @@ export const getMarketVolumeQuarterly = async (
           coalesce(sum(exchange_traded), 0)::float8 AS exchange_traded
         FROM app.market_volume_monthly
         WHERE asset_class_legacy_id = $1
+          AND (year::int * 4 + ceil(month / 3.0)::int) BETWEEN $2 AND $3
         GROUP BY year, ceil(month / 3.0)
         ORDER BY year DESC, quarter DESC
-        LIMIT $2
+        LIMIT $4
       `,
-      [assetClassLegacyID, Math.min(Math.max(limit, 1), 12)],
+      [assetClassLegacyID, fromPeriod, toPeriod, limit],
     )
 
     return result.rows

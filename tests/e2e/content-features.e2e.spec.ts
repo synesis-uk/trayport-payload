@@ -27,14 +27,6 @@ test.describe('imported dynamic content', () => {
     }
 
     const articleRows = page.locator('.trayport-article-list .trayport-article-row')
-    await expect(articleRows).toHaveCount(12)
-
-    for (let click = 0; click < 3; click += 1) {
-      const loadMore = page.getByRole('button', { name: 'Load more insights' })
-      if (!(await loadMore.isVisible())) break
-      await loadMore.click()
-    }
-
     await expect(page.getByRole('button', { name: 'Load more insights' })).toHaveCount(0)
     await expect(articleRows).toHaveCount(35)
     expect((await featuredCards.count()) + (await articleRows.count())).toBe(39)
@@ -45,15 +37,9 @@ test.describe('imported dynamic content', () => {
   }) => {
     await page.goto('/resources/insights/')
 
-    // The listing is a client component. Prove hydration before dispatching a
-    // filter event so a fast browser cannot fill the server-rendered input
-    // before React has attached its handlers.
-    await page.getByRole('button', { name: 'Load more insights' }).click()
-    await expect(page.locator('.trayport-article-list a.trayport-article-row')).toHaveCount(21)
-
-    await page
-      .getByRole('searchbox', { name: 'Search insights' })
-      .fill('Data Analytics for Energy Traders')
+    const search = page.getByRole('searchbox', { name: 'Search insights' })
+    await expect(search).toBeEditable()
+    await search.fill('Data Analytics for Energy Traders')
 
     await expect(page.locator('section.trayport-featured-articles')).toHaveCount(0)
     const result = page.locator('.trayport-article-list a.trayport-article-row')
@@ -70,14 +56,31 @@ test.describe('imported dynamic content', () => {
   test('German Power renders relationship-driven Joule and autoTRADER groups', async ({ page }) => {
     await page.goto('/market-coverage/german-power/')
 
+    const hub = page.locator('main[data-content-type="hub"]')
+    await expect(hub).toBeVisible()
+    await expect(hub.locator('.trayport-structured-hub__header')).toHaveAttribute(
+      'data-media',
+      'image',
+    )
+    await expect(
+      hub.locator('.trayport-structured-hub__title-tab').getByRole('heading', {
+        exact: true,
+        level: 1,
+        name: 'German Power',
+      }),
+    ).toBeVisible()
+
     const productSections = page.locator('section.trayport-connectivity')
     await expect(productSections).toHaveCount(2)
+    await expect(
+      hub.getByRole('heading', { exact: true, level: 2, name: 'Connected Venues' }),
+    ).toBeVisible()
 
     const joule = productSections.filter({
-      has: page.getByRole('heading', { exact: true, level: 2, name: 'Joule' }),
+      has: page.getByRole('heading', { exact: true, level: 3, name: 'Joule' }),
     })
     const autoTrader = productSections.filter({
-      has: page.getByRole('heading', { exact: true, level: 2, name: 'autoTRADER' }),
+      has: page.getByRole('heading', { exact: true, level: 3, name: 'autoTRADER' }),
     })
     await expect(joule.locator('.trayport-venue-list > li')).toHaveCount(19)
     await expect(autoTrader.locator('.trayport-venue-list > li')).toHaveCount(11)
@@ -88,7 +91,7 @@ test.describe('imported dynamic content', () => {
     expect(new Set(visibleVenueNames.map((name) => name.trim())).size).toBe(21)
 
     for (const group of ['Broker', 'Exchange', 'Clearing House']) {
-      await expect(joule.getByRole('heading', { exact: true, level: 3, name: group })).toBeVisible()
+      await expect(joule.getByRole('heading', { exact: true, level: 4, name: group })).toBeVisible()
     }
   })
 
@@ -100,15 +103,53 @@ test.describe('imported dynamic content', () => {
     const featuredCards = page.locator('.trayport-featured-articles .trayport-article-card')
     const articleRows = page.locator('.trayport-article-list .trayport-article-row')
     await expect(featuredCards).toHaveCount(1)
-    await expect(articleRows).toHaveCount(12)
-
-    while (await page.getByRole('button', { name: 'Load more news' }).isVisible()) {
-      await page.getByRole('button', { name: 'Load more news' }).click()
-    }
-
     await expect(page.getByRole('button', { name: 'Load more news' })).toHaveCount(0)
     await expect(articleRows).toHaveCount(30)
     expect((await featuredCards.count()) + (await articleRows.count())).toBe(31)
+  })
+
+  test('Home uses image heroes, imported statistics, Highcharts, and the managed map', async ({
+    page,
+  }) => {
+    await page.goto('/')
+
+    const hero = page.locator('.trayport-hero')
+    await expect(hero.locator('.trayport-hero__media img')).toHaveCount(1)
+    await expect(hero.locator('video')).toHaveCount(0)
+    await expect(hero.locator('.trayport-hero__statistics > div')).toHaveCount(4)
+
+    await expect(page.locator('.highcharts-root')).toHaveCount(2)
+    const chartData = page.locator('.trayport-chart__data').first()
+    await chartData.locator('summary').click()
+    await expect(chartData).toHaveAttribute('open', '')
+    await expect(chartData.locator('tbody tr')).toHaveCount(20)
+
+    await expect(page.locator('.trayport-coverage-map__media img')).toHaveCount(1)
+  })
+
+  test('desktop site search restores focus and applies its query to Insights', async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-chromium')
+
+    await page.goto('/')
+    const openSearch = page.getByRole('button', { name: 'Open site search' })
+    await openSearch.click()
+
+    const dialog = page.getByRole('dialog', { name: 'Site Search' })
+    const field = page.getByRole('searchbox', { name: 'Search Trayport insights' })
+    await expect(dialog).toBeVisible()
+    await expect(field).toBeFocused()
+
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    await expect(openSearch).toBeFocused()
+
+    await openSearch.click()
+    await field.fill('energy')
+    await field.press('Enter')
+    await expect(page).toHaveURL('/resources/insights/?q=energy')
+    await expect(page.getByRole('searchbox', { name: 'Search insights' })).toHaveValue('energy')
   })
 
   test('Learning Hub renders 15 protected records and filters them by product', async ({
@@ -172,9 +213,37 @@ test.describe('imported dynamic content', () => {
   test('EEX renders 37 unique connected hubs in four market groups', async ({ page }) => {
     await page.goto('/venue/eex/')
 
+    const venue = page.locator('main[data-content-type="venue"]')
+    await expect(venue).toBeVisible()
+    await expect(
+      venue.locator('.trayport-structured-venue__identity').getByRole('heading', {
+        exact: true,
+        level: 1,
+        name: 'EEX',
+      }),
+    ).toBeVisible()
+    await expect(venue.locator('.trayport-structured-venue__logo')).toHaveCount(1)
+    await expect(venue.locator('.trayport-structured-venue__logo')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    )
+    await expect(
+      venue.getByRole('heading', { exact: true, level: 2, name: 'About EEX' }),
+    ).toBeVisible()
+    await expect(venue.getByRole('link', { exact: true, name: 'Contact Us' })).toHaveAttribute(
+      'href',
+      '/contact/',
+    )
+
     const marketGroups = page.locator('.trayport-venue-markets__groups > section')
     await expect(marketGroups).toHaveCount(4)
-    for (const group of ['Bulk', 'Climate', 'Natural Gas', 'Power']) {
+    await expect(marketGroups.locator(':scope > h3')).toHaveText([
+      'Power',
+      'Natural Gas',
+      'Climate',
+      'Bulk',
+    ])
+    for (const group of ['Power', 'Natural Gas', 'Climate', 'Bulk']) {
       await expect(page.getByRole('heading', { exact: true, level: 3, name: group })).toBeVisible()
     }
     await expect(marketGroups.locator('li')).toHaveCount(37)
@@ -182,5 +251,10 @@ test.describe('imported dynamic content', () => {
       'href',
       '/market-coverage/german-power/',
     )
+
+    await page.setViewportSize({ height: 844, width: 390 })
+    const firstMarketLink = marketGroups.locator('a').first()
+    await expect(firstMarketLink).toBeVisible()
+    expect((await firstMarketLink.boundingBox())?.height).toBeGreaterThanOrEqual(48)
   })
 })

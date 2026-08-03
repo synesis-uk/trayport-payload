@@ -2,6 +2,15 @@ import { expect, test } from '@playwright/test'
 
 import { representativeRoutes } from '../helpers/site'
 
+const pagePresentations = {
+  '/': { className: 'trayport-page--home', type: 'homepage' },
+  '/company/about-us/': { className: 'trayport-page--standard', type: 'standard' },
+  '/company/offices/': { className: 'trayport-page--standard', type: 'standard' },
+  '/products/joule/': { className: 'trayport-page--product', type: 'product' },
+  '/products/tradesignal/': { className: 'trayport-page--product', type: 'product' },
+  '/resources/faqs/': { className: 'trayport-page--standard', type: 'standard' },
+} as const
+
 test.describe('representative WordPress content routes', () => {
   for (const route of representativeRoutes) {
     test(`${route.path} renders WordPress ${route.legacyId} at its canonical identity`, async ({
@@ -10,7 +19,16 @@ test.describe('representative WordPress content routes', () => {
       const response = await page.goto(route.path)
 
       expect(response?.status()).toBe(200)
-      await expect(page.locator('main#main-content')).toBeVisible()
+      const main = page.locator('main#main-content')
+      await expect(main).toBeVisible()
+
+      const presentation = pagePresentations[route.path as keyof typeof pagePresentations]
+      if (presentation) {
+        await expect(main).toHaveClass(new RegExp(`\\b${presentation.className}\\b`))
+        await expect(main).toHaveAttribute('data-page-path', route.path)
+        await expect(main).toHaveAttribute('data-page-type', presentation.type)
+      }
+
       await expect(
         page.getByRole('heading', { exact: true, level: 1, name: route.heading }),
       ).toBeVisible()
