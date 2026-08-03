@@ -21,6 +21,10 @@ export const ManagedLink = ({ children, className, link, onClick }: ManagedLinkP
     target: newTab ? '_blank' : undefined,
   }
 
+  if (href === '#') {
+    return <span className={className}>{content}</span>
+  }
+
   if (isExternal || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) {
     return (
       <a href={href} {...shared}>

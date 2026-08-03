@@ -1,12 +1,13 @@
-import type { Article, Hub, Page } from '@/payload-types'
+import type { Article, Hub, LearningVideo, Page, Venue } from '@/payload-types'
 
-type ReferenceValue = Article | Hub | Page | number | string | null | undefined
+type ReferenceValue =
+  Article | Hub | LearningVideo | Page | Venue | number | string | null | undefined
 
 export type ContentLink = {
   label?: string | null
   type?: 'custom' | 'reference' | null
   reference?: {
-    relationTo?: 'articles' | 'hubs' | 'pages' | null
+    relationTo?: 'articles' | 'hubs' | 'learning-videos' | 'pages' | 'venues' | null
     value?: ReferenceValue
   } | null
   url?: string | null

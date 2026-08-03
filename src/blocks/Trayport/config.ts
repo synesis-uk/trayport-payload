@@ -131,6 +131,18 @@ export const ArticleListing: Block = {
   interfaceName: 'ArticleListingBlock',
   fields: [
     {
+      name: 'family',
+      type: 'select',
+      defaultValue: 'insights',
+      options: [
+        { label: 'Insights', value: 'insights' },
+        { label: 'News', value: 'news' },
+        { label: 'Events', value: 'events' },
+        { label: 'All editorial content', value: 'all' },
+      ],
+      required: true,
+    },
+    {
       name: 'heading',
       type: 'text',
       defaultValue: 'Latest insights',
@@ -155,4 +167,43 @@ export const ArticleListing: Block = {
   ],
 }
 
-export const trayportLayoutBlocks = [TrayportHero, ContentSection, ArticleListing]
+export const LearningVideoListing: Block = {
+  slug: 'learningVideoListing',
+  interfaceName: 'LearningVideoListingBlock',
+  fields: [
+    {
+      name: 'heading',
+      type: 'text',
+      defaultValue: 'Explore the Learning Hub',
+    },
+    {
+      name: 'intro',
+      type: 'richText',
+    },
+    {
+      name: 'pageSize',
+      type: 'number',
+      defaultValue: 15,
+      min: 3,
+      max: 30,
+      required: true,
+    },
+    {
+      name: 'showProductFilter',
+      type: 'checkbox',
+      defaultValue: true,
+    },
+    {
+      name: 'showCategoryFilter',
+      type: 'checkbox',
+      defaultValue: true,
+    },
+  ],
+}
+
+export const trayportLayoutBlocks = [
+  TrayportHero,
+  ContentSection,
+  ArticleListing,
+  LearningVideoListing,
+]

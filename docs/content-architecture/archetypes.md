@@ -11,7 +11,7 @@ registry contains the same 17 IDs. Payload integration tests now prove their
 discriminators, required/forbidden route policies, top-level block policies,
 publication guards, virtual claims, and cross-collection collision behavior.
 This passing runtime gate is narrower than production parity: planned blocks
-and the remaining 288 plan-only documents are still incomplete.
+and the remaining 280 plan-only documents are still incomplete.
 
 ## Target archetypes
 
@@ -27,7 +27,7 @@ and the remaining 288 plan-only documents are still incomplete.
 | `page.content-index` | `pages` | Required | Layout plus generated listing | Passing: publication requires `articleListing`, which is forbidden on other page types |
 | `article.full` | `articles` | Required | Complete article layout | Passing: publication requires a path and non-empty allowed layout |
 | `article.listing-metadata` | `articles` | Forbidden | Listing metadata only | Passing: path and layout are forbidden |
-| `learning-video.public-detail` | `learning-videos` | Required | Video metadata, media, access policy, SEO | Passing guard: public media may publish; restricted modes remain drafts until protected delivery exists |
+| `learning-video.public-detail` | `learning-videos` | Required | Video metadata, media, access policy, SEO | Passing guard: public media may publish; restricted modes publish metadata-only gates without protected media or body content |
 | `hub.public-page` | `hubs` | Required | Layout and structured market data | Passing runtime route/block invariant |
 | `hub.map-only` | `hubs` | Forbidden | Structured market data | Passing: path and layout are forbidden |
 | `venue.structured-record` | `venues` | Forbidden | Structured market data | Passing: `relationship-only` mode forbids path and layout |
@@ -177,11 +177,12 @@ access policy are separate fields:
 - access policy decides whether the full media, transcript, or gated action is
   available to the current visitor.
 
-The current renderer proves the public-versus-restricted presentation state in
-draft preview. Publication validation permits only `public` access mode;
-`authenticated` and `subscriber` records remain drafts until
+The current renderer publishes `authenticated` and `subscriber` records as
+metadata-only gate pages. Collection access redacts their media and body fields,
+and publication validation forbids those protected values until
 identity/subscription authorization and protected asset delivery are
-implemented and verified.
+implemented and verified. Public records may publish full managed or external
+video content.
 
 Private WordPress records are not imported as additional public routes merely
 to reproduce a legacy permission mechanism.

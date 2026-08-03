@@ -24,6 +24,12 @@ export const TrayportMedia = ({
 }: TrayportMediaProps) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const resource = media && typeof media === 'object' ? media : null
+  const reviewedExternalImage =
+    resource?.externalURL &&
+    /^https:\/\/cdn\.trayport\.com\/app\/uploads\//i.test(resource.externalURL) &&
+    /\.(?:avif|gif|jpe?g|png|webp)(?:[?#].*)?$/i.test(resource.externalURL)
+      ? resource.externalURL
+      : null
   const isVideo = Boolean(resource?.mimeType?.startsWith('video/'))
   const videoURL = isVideo
     ? getMediaUrl(resource?.url, resource?.updatedAt) || resource?.externalURL || externalURL
@@ -92,6 +98,22 @@ export const TrayportMedia = ({
   }
 
   if (!media) return null
+
+  if (reviewedExternalImage && resource) {
+    return (
+      <Media
+        className={[className, background ? 'trayport-background-media' : null]
+          .filter(Boolean)
+          .join(' ')}
+        fill={background}
+        imgClassName="trayport-media__image"
+        pictureClassName={background ? 'trayport-background-media__picture' : undefined}
+        priority={priority}
+        resource={{ ...resource, mimeType: 'image/*', url: reviewedExternalImage }}
+        size="(max-width: 767px) 100vw, 50vw"
+      />
+    )
+  }
 
   return (
     <Media

@@ -171,12 +171,12 @@ presentation/SEO in the `route-indexes` global.
 
 `learning-videos` and `learning-video-categories` are implemented Payload
 collections. A learning video has title/summary, `public`, `authenticated`, or
-`subscriber` access mode, managed media or a validated HTTPS video URL,
-duration, category relationships, optional supporting layout, SEO, path,
-drafts/versions/scheduling, preview, revalidation, and provenance. Publication
-currently requires `public` access mode, managed or external video media, and a
-globally reserved path. Authenticated and subscriber records can be prepared as
-drafts but cannot be published until their delivery controls exist.
+`subscriber` access mode, duration, category relationships, SEO, path,
+drafts/versions/scheduling, preview, revalidation, and provenance. Public
+records may use managed media or a validated HTTPS video URL plus optional
+supporting layout. Authenticated and subscriber records may publish only as
+metadata-only gate pages: they cannot reference the public media library, an
+external video URL, or supporting layout until private delivery exists.
 
 For full production parity, each of the 15 public watch details additionally
 requires:
@@ -196,12 +196,13 @@ requires:
 - read-only migration provenance.
 
 The frontend detail renderer keeps the canonical route public and renders media
-for `public` records. It includes the future restricted presentation state for
-draft preview, but publication validation keeps `authenticated` and
-`subscriber` records draft-only. Identity/subscription authorization and
-protected asset delivery are not implemented yet. The production importer also
-does not yet load all 15 details or all supporting fields, so complete Learning
-Hub ownership remains under the listing-detail gate.
+and supporting layout only for `public` records. Authenticated and subscriber
+records render a public metadata gate without protected binaries. Validation
+enforces that boundary for drafts as well as publication, and the renderer
+ignores stale protected layout defensively. Identity/subscription authorization
+and protected asset delivery are not implemented yet. The production pilot
+therefore owns one selected metadata gate and keeps the other 14 records as
+listing-only fallbacks to the live site.
 
 ## Taxonomies and structured dependencies
 
@@ -278,8 +279,8 @@ gate.
 
 Redirects require a normalized unique `from`, a managed internal destination or
 validated external `to`, and an explicit `301` permanent or `302` temporary
-status. Next.js applies the corresponding method-preserving runtime navigation
-status (`308` or `307`) when a claimed redirect is resolved. Redirects are
+status. The Next.js network proxy resolves published redirect claims before page
+rendering and preserves those exact HTTP statuses. Redirects are
 claimed in the shared namespace, so a source cannot shadow content, a virtual
 index, or another redirect. Confirmed published path changes create a permanent
 redirect in the same transaction. The confirmation for a scheduled change

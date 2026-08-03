@@ -38,11 +38,22 @@ export const splitLeadingHero = <Block extends { blockType?: string | null }>(
     : { body: blocks, hero: [] }
 }
 
-export const PageView = ({ document }: { document: Page }) => (
-  <main id="main-content">
-    <TrayportBlocks blocks={document.layout} />
-  </main>
-)
+export const PageView = ({ document }: { document: Page }) => {
+  const hasHero = (document.layout || []).some(({ blockType }) => blockType === 'trayportHero')
+  return (
+    <main id="main-content">
+      {!hasHero ? (
+        <header className="trayport-page-header">
+          <div className="trayport-container trayport-container--standard">
+            <p className="trayport-eyebrow">Trayport</p>
+            <h1>{document.title}</h1>
+          </div>
+        </header>
+      ) : null}
+      <TrayportBlocks blocks={document.layout} />
+    </main>
+  )
+}
 
 export const ArticleView = ({ document }: { document: Article }) => {
   const categories = (document.categories || []).filter((category) => typeof category === 'object')
@@ -199,6 +210,14 @@ export const VenueView = ({ document }: { document: Venue }) => {
   const regions = relationshipTitles(document.regions)
   const labels = [...venueTypes, ...assetClasses, ...regions]
   const { body, hero } = splitLeadingHero(document.layout)
+  const connections = document.marketConnections || []
+  const connectionGroups = new Map<string, typeof connections>()
+  for (const connection of connections) {
+    const hub = typeof connection.hub === 'object' ? connection.hub : null
+    const assetClass = hub?.assetClasses?.find((item) => item && typeof item === 'object')
+    const group = assetClass && typeof assetClass === 'object' ? assetClass.title : 'Other markets'
+    connectionGroups.set(group, [...(connectionGroups.get(group) || []), connection])
+  }
 
   return (
     <main className="trayport-detail" id="main-content">
@@ -280,6 +299,65 @@ export const VenueView = ({ document }: { document: Venue }) => {
         </div>
       </section>
 
+      {connections.length ? (
+        <section className="trayport-venue-markets">
+          <div className="trayport-container">
+            <div className="trayport-listing__header">
+              <p className="trayport-eyebrow">Connected markets</p>
+              <h2>Markets available through {document.title}</h2>
+              <p className="trayport-detail__summary">
+                Explore the market hubs available through this venue on Trayport.
+              </p>
+            </div>
+            <div className="trayport-venue-markets__groups">
+              {[...connectionGroups.entries()]
+                .sort(([left], [right]) => left.localeCompare(right))
+                .map(([group, groupConnections]) => (
+                  <section key={group}>
+                    <h3>{group}</h3>
+                    <ul>
+                      {groupConnections.map((connection, index) => {
+                        const hub = typeof connection.hub === 'object' ? connection.hub : null
+                        if (!hub) return null
+                        const href =
+                          hub.contentMode === 'page' && hub.path
+                            ? hub.path
+                            : hub.externalDestination
+                        const external = Boolean(href && /^https?:\/\//.test(href))
+                        const content = (
+                          <>
+                            <span>{hub.title}</span>
+                            {external ? (
+                              <ExternalLink aria-hidden size={15} />
+                            ) : (
+                              <ArrowRight aria-hidden size={15} />
+                            )}
+                          </>
+                        )
+                        return (
+                          <li key={`${hub.id}-${index}`}>
+                            {href ? (
+                              <a
+                                href={href}
+                                rel={external ? 'noopener noreferrer' : undefined}
+                                target={external ? '_blank' : undefined}
+                              >
+                                {content}
+                              </a>
+                            ) : (
+                              <span>{content}</span>
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </section>
+                ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {body.length ? <TrayportBlocks blocks={body} /> : null}
     </main>
   )
@@ -288,7 +366,9 @@ export const VenueView = ({ document }: { document: Venue }) => {
 export const LearningVideoView = ({ document }: { document: LearningVideo }) => {
   const categories = relationshipTitles(document.categories)
   const isPublic = document.accessMode === 'public'
-  const { body, hero } = splitLeadingHero(document.layout)
+  // Protected records are metadata-only gates until private asset delivery exists.
+  // Ignore any stale layout defensively even if a record predates the model guard.
+  const { body, hero } = isPublic ? splitLeadingHero(document.layout) : { body: [], hero: [] }
 
   return (
     <main className="trayport-detail trayport-learning-video" id="main-content">
@@ -330,10 +410,8 @@ export const LearningVideoView = ({ document }: { document: LearningVideo }) => 
                 <p className="trayport-eyebrow">
                   {document.accessMode === 'subscriber' ? 'Subscriber access' : 'Sign in required'}
                 </p>
-                <h2>This video is available to registered viewers.</h2>
-                <p>
-                  The page remains public while the video and supporting actions stay protected.
-                </p>
+                <h2>This video is available to customers with a Trayport login.</h2>
+                <p>Contact our sales team if you would like to gain access or learn more.</p>
               </div>
             )}
           </div>
@@ -366,6 +444,18 @@ export const LearningVideoView = ({ document }: { document: LearningVideo }) => 
           </aside>
         </div>
       </section>
+
+      {document.description ? (
+        <section className="trayport-section trayport-section--white trayport-section--compact">
+          <div className="trayport-container trayport-container--reading">
+            <RichText
+              className="trayport-richtext"
+              data={document.description as DefaultTypedEditorState}
+              enableGutter={false}
+            />
+          </div>
+        </section>
+      ) : null}
 
       {body.length ? <TrayportBlocks blocks={body} /> : null}
     </main>

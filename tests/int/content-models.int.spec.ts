@@ -293,6 +293,7 @@ describe.sequential('Trayport content models', () => {
       data: {
         alt: '',
         decorative: true,
+        sourceFileHash: 'a'.repeat(64),
         title: 'Native decorative image',
       },
       filePath: 'src/endpoints/seed/image-post1.webp',
@@ -307,6 +308,23 @@ describe.sequential('Trayport content models', () => {
         overrideAccess: true,
       }),
     )
+
+    await payload.update({
+      collection: 'media',
+      data: {
+        sourceFileHash: 'b'.repeat(64),
+      },
+      id: media.id,
+      overrideAccess: false,
+      user: editor,
+    })
+    const privilegedMedia = await payload.findByID({
+      collection: 'media',
+      depth: 0,
+      id: media.id,
+      overrideAccess: true,
+    })
+    expect(privilegedMedia.sourceFileHash).toBeFalsy()
 
     for (const document of [
       page,

@@ -116,9 +116,9 @@ describe('content route owner resolution', () => {
   })
 
   it.each([
-    ['301', true],
-    ['302', false],
-  ] as const)('preserves the configured %s redirect intent', async (type, permanent) => {
+    ['301', 301],
+    ['302', 302],
+  ] as const)('preserves the configured %s redirect intent', async (type, status) => {
     const findByID = vi.fn().mockResolvedValue({
       createdAt: '2026-07-30T00:00:00.000Z',
       from: `/redirect-${type}/`,
@@ -146,7 +146,64 @@ describe('content route owner resolution', () => {
     ).resolves.toEqual({
       destination: '/destination/',
       kind: 'redirect',
-      permanent,
+      status,
+    })
+  })
+
+  it('resolves the managed Trading in Joule alias through its learning-video reference', async () => {
+    const findByID = vi
+      .fn()
+      .mockResolvedValueOnce({
+        createdAt: '2026-08-03T00:00:00.000Z',
+        from: '/learning-hub/watch/trading-in-joule/',
+        id: 845400,
+        to: {
+          reference: {
+            relationTo: 'learning-videos',
+            value: 8454,
+          },
+          type: 'reference',
+        },
+        type: '301',
+        updatedAt: '2026-08-03T00:00:00.000Z',
+      })
+      .mockResolvedValueOnce({
+        id: 8454,
+        path: '/learning-hub-video/trading-in-joule/',
+      })
+
+    await expect(
+      resolveRouteClaimOwner({
+        claim: routeClaim({
+          archetype: 'redirect',
+          ownerCollection: 'redirects',
+          ownerDocumentId: '845400',
+          ownerKind: 'redirect',
+          path: '/learning-hub/watch/trading-in-joule/',
+        }),
+        draft: false,
+        payload: payloadWithFindByID(findByID),
+      }),
+    ).resolves.toEqual({
+      destination: '/learning-hub-video/trading-in-joule/',
+      kind: 'redirect',
+      status: 301,
+    })
+
+    expect(findByID).toHaveBeenNthCalledWith(1, {
+      collection: 'redirects',
+      depth: 1,
+      disableErrors: true,
+      id: '845400',
+      overrideAccess: false,
+    })
+    expect(findByID).toHaveBeenNthCalledWith(2, {
+      collection: 'learning-videos',
+      depth: 0,
+      disableErrors: true,
+      draft: false,
+      id: 8454,
+      overrideAccess: false,
     })
   })
 

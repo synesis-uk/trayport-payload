@@ -288,6 +288,6 @@ make content-inventory
 ```
 
 That plan records where these block transforms will be needed, but it is
-planning evidence only. The current imported/rendered acceptance slice remains
-six routes, and the other production bodies have not been transformed or
+planning evidence only. The current imported/rendered acceptance slice covers
+14 routes, and the other 280 production bodies have not been transformed or
 content-remediated.

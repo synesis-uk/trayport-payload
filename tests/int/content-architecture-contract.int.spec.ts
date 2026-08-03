@@ -113,7 +113,7 @@ describe('production content-architecture contract', () => {
     const pageMapper = between(
       importer,
       'export const mapPageLayout =',
-      'const articleSectionFromComponent',
+      'export const mapArticleLayout =',
     )
     const articleMapper = between(importer, 'export const mapArticleLayout =')
 
@@ -259,7 +259,6 @@ describe('production content-architecture contract', () => {
       'component:lifecycle',
       'component:market-matrix',
       'component:markets-map',
-      'component:office',
       'component:regions',
       'shortcode:wcc_category_list',
     ])
@@ -418,6 +417,7 @@ describe('production content-architecture contract', () => {
       'hubs',
       'venues',
       'learning-videos',
+      'offices',
       'learning-video-categories',
       'media',
       'article-categories',
@@ -450,6 +450,7 @@ describe('production content-architecture contract', () => {
     )
 
     expect(byID.get('article.listing-metadata')?.routePolicy).toBe('forbidden')
+    expect(byID.get('learning-video.listing-metadata')?.routePolicy).toBe('forbidden')
     expect(byID.get('hub.map-only')?.routePolicy).toBe('forbidden')
     expect(byID.get('hub.public-page')?.routePolicy).toBe('required')
     expect(byID.get('venue.structured-record')?.routePolicy).toBe('forbidden')

@@ -52,7 +52,7 @@ Application PostgreSQL:
 - `app.market_volume_monthly`: normalized monthly market facts. Payload blocks
   store only editorial chart configuration.
 
-Deliberately excluded from the proof of concept:
+Deliberately excluded from the production pilot:
 
 - HubSpot and form-builder architecture.
 - Commodities Report pages.
@@ -67,10 +67,13 @@ Deliberately excluded from the proof of concept:
 2. Extraction runs through WP-CLI inside the source container so ACF clone
    fields, repeaters, post objects, and options are resolved by WordPress.
 3. The extractor writes deterministic, versioned NDJSON with secrets and
-   source-only UI state removed.
+   source-only UI state removed. It advances the latest-run pointer only after
+   source acceptance.
 4. Transformation maps every observed layout to typed Payload blocks and
-   creates a coverage report. Unknown layouts fail the run.
-5. Loading upserts documents by the stable WordPress source identity, resolves
+   creates a coverage report. Unknown layouts fail the run. Passing source and
+   transformed validation seals an immutable `accepted-run.json` hash manifest.
+5. Loading first verifies the accepted-run marker and all bound artifacts, then
+   upserts documents by the stable WordPress source identity, resolves
    relationships in a second pass, and imports market facts in a transaction.
 6. Verification checks the agreed record totals, route identities,
    relationship totals, missing-media review queue, and idempotency.
@@ -82,13 +85,13 @@ Git. Source WordPress data is never changed by the importer.
 also emits `production-target-plan.json`, its NDJSON form, a verification
 report, and a summary under `migration/work/inventory/<run-id>/`. The plan
 deterministically accounts for 296 routes, but it is planning evidence only.
-The importer and rendered acceptance slice in this repository still cover the
-six representative source routes; the other production documents have not been
+The importer and rendered acceptance slice in this repository cover 14
+representative source routes; the other 280 production documents have not been
 loaded or content-remediated.
 
 ## Routable-content foundation
 
-The proof of concept applies migrations from a source checkout before starting
+The production pilot applies migrations from a source checkout before starting
 the standalone application. A production container release should add a
 separate migration job or migration-capable image rather than attempting schema
 changes in the web process.

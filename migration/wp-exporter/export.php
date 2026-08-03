@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Export the deliberately small Trayport PoC source graph through WordPress and ACF.
+ * Export the bounded Trayport production-pilot source graph through WordPress and ACF.
  *
  * Run only from an already bootstrapped WP-CLI process:
- *   TP_POC_ROOT_IDS=1898,2203 wp eval-file /tmp/trayport-export.php
+ *   TP_PILOT_ROOT_IDS=1898,2203 wp eval-file /tmp/trayport-export.php
  */
 
 if (!defined('ABSPATH') || !defined('WP_CLI')) {
@@ -290,6 +290,7 @@ function tp_export_media(int $mediaId): void
     $relativePath = get_post_meta($mediaId, '_wp_attached_file', true);
     $resolvedPath = get_attached_file($mediaId);
     $locallyReadable = is_string($resolvedPath) && $resolvedPath !== '' && is_readable($resolvedPath);
+    $fileHash = $locallyReadable ? hash_file('sha256', $resolvedPath) : null;
     $mimeType = (string) get_post_mime_type($mediaId);
     $alt = (string) get_post_meta($mediaId, '_wp_attachment_image_alt', true);
     $isImage = strpos($mimeType, 'image/') === 0;
@@ -305,6 +306,7 @@ function tp_export_media(int $mediaId): void
         'caption' => (string) wp_get_attachment_caption($mediaId),
         'description' => (string) get_post_field('post_content', $mediaId),
         'mimeType' => $mimeType,
+        'fileHash' => is_string($fileHash) ? $fileHash : null,
         'url' => wp_get_attachment_url($mediaId) ?: null,
         'relativePath' => is_string($relativePath) && $relativePath !== '' ? $relativePath : null,
         'width' => is_array($metadata) && isset($metadata['width']) ? (int) $metadata['width'] : null,
@@ -470,7 +472,7 @@ function tp_export_curated_reusables(array &$mediaIds, array &$termIds): void
     );
     tp_export_reusable(3197, ['pre_title', 'title', 'feature'], $mediaIds, $termIds);
 
-    foreach ([1861, 1883, 1884] as $productId) {
+    foreach ([752, 753, 754, 811, 1861, 1866, 1883, 1884] as $productId) {
         tp_export_reusable(
             $productId,
             [
@@ -483,6 +485,15 @@ function tp_export_curated_reusables(array &$mediaIds, array &$termIds): void
                 'image',
                 'features',
             ],
+            $mediaIds,
+            $termIds
+        );
+    }
+
+    foreach ([4052, 4055, 4056, 4057] as $officeId) {
+        tp_export_reusable(
+            $officeId,
+            ['image', 'name', 'address_prefix', 'address', 'phone', 'email', 'map_zoom'],
             $mediaIds,
             $termIds
         );
@@ -566,6 +577,7 @@ function tp_normalized_marker_rows($value): array
 
 function tp_export_map_hubs(array &$termIds): void
 {
+    $pilotDependencyHubIds = [2490, 3332, 3333, 3336, 6776];
     $hubIds = get_posts([
         'post_type' => 'hub',
         'post_status' => 'publish',
@@ -579,7 +591,9 @@ function tp_export_map_hubs(array &$termIds): void
     foreach ($hubIds as $hubId) {
         $classId = tp_reference_id(function_exists('get_field') ? get_field('class', $hubId) : null);
         $regionId = tp_reference_id(function_exists('get_field') ? get_field('region', $hubId) : null);
-        if (!in_array($classId, [21, 22], true) || !in_array($regionId, [29, 30, 31], true)) {
+        $isMapHub = in_array($classId, [21, 22], true)
+            && in_array($regionId, [29, 30, 31], true);
+        if (!$isMapHub && !in_array((int) $hubId, $pilotDependencyHubIds, true)) {
             continue;
         }
 
@@ -720,11 +734,11 @@ function tp_emit_warning(
 
 $rootIds = array_values(array_unique(array_filter(array_map(
     'intval',
-    explode(',', (string) getenv('TP_POC_ROOT_IDS'))
+    explode(',', (string) (getenv('TP_PILOT_ROOT_IDS') ?: getenv('TP_POC_ROOT_IDS')))
 ))));
 
 if (!$rootIds) {
-    fwrite(STDERR, "TP_POC_ROOT_IDS must contain at least one post ID.\n");
+    fwrite(STDERR, "TP_PILOT_ROOT_IDS must contain at least one post ID.\n");
     exit(2);
 }
 
@@ -793,9 +807,90 @@ foreach ($rootIds as $postId) {
             true,
             'root'
         );
+    } elseif ($postType === 'learning-hub-video') {
+        // Protected video binaries are deliberately excluded. The pilot publishes
+        // metadata/gate pages, never subscriber-only media.
+        tp_export_post(
+            (int) $postId,
+            $mediaIds,
+            $termIds,
+            [
+                'categories',
+                'tags',
+                'order',
+                'permissions',
+                'product',
+                'image',
+                'duration',
+                'name',
+                'short_description',
+                'description',
+                'page_settings',
+            ],
+            false,
+            'root'
+        );
     } else {
         tp_export_post((int) $postId, $mediaIds, $termIds, null, true, 'root');
     }
+}
+
+$newsIds = get_posts([
+    'post_type' => 'post',
+    'post_status' => 'publish',
+    'posts_per_page' => -1,
+    'fields' => 'ids',
+    'category' => 111,
+    'orderby' => 'ID',
+    'order' => 'ASC',
+    'no_found_rows' => true,
+]);
+foreach ($newsIds as $articleId) {
+    if (in_array((int) $articleId, $rootIds, true)) {
+        continue;
+    }
+    tp_export_post(
+        (int) $articleId,
+        $mediaIds,
+        $termIds,
+        ['article_header', 'display_date', 'featured', 'page_settings'],
+        true,
+        'news-listing'
+    );
+}
+
+$learningVideoIds = get_posts([
+    'post_type' => 'learning-hub-video',
+    'post_status' => 'publish',
+    'posts_per_page' => -1,
+    'fields' => 'ids',
+    'orderby' => 'ID',
+    'order' => 'ASC',
+    'no_found_rows' => true,
+]);
+foreach ($learningVideoIds as $videoId) {
+    if (in_array((int) $videoId, $rootIds, true)) {
+        continue;
+    }
+    tp_export_post(
+        (int) $videoId,
+        $mediaIds,
+        $termIds,
+        [
+            'categories',
+            'tags',
+            'order',
+            'permissions',
+            'product',
+            'image',
+            'duration',
+            'name',
+            'short_description',
+            'page_settings',
+        ],
+        false,
+        'learning-listing'
+    );
 }
 
 $insightsIds = get_posts([
@@ -833,6 +928,9 @@ if ($hubId > 0) {
     ]);
 
     foreach ($hubConnections['venueIds'] as $venueId) {
+        if (in_array((int) $venueId, $rootIds, true)) {
+            continue;
+        }
         tp_export_post(
             (int) $venueId,
             $mediaIds,
@@ -868,6 +966,34 @@ tp_emit_warning(
     'Commodities Report (page 2233) is excluded from the PoC navigation by policy.',
     2233,
     'options.dropdown'
+);
+tp_emit_warning(
+    'deferred-hubspot-form',
+    'info',
+    'Tradesignal legacy HubSpot form is intentionally omitted because HubSpot forms are outside the pilot scope.',
+    1926,
+    'pages.1926.sections_new'
+);
+tp_emit_warning(
+    'deferred-hubspot-form',
+    'info',
+    'E-World meeting-request HubSpot form is intentionally omitted from the pilot.',
+    10030,
+    'posts.10030.sections.2'
+);
+tp_emit_warning(
+    'deferred-hubspot-form',
+    'info',
+    'E-World secondary HubSpot form is intentionally omitted from the pilot.',
+    10030,
+    'posts.10030.sections.4'
+);
+tp_emit_warning(
+    'protected-learning-media',
+    'info',
+    'Learning Hub video binaries are subscriber-only and are not exported to Payload media.',
+    8454,
+    'learning-hub-video.permissions'
 );
 tp_emit_warning(
     'stale-private-link',

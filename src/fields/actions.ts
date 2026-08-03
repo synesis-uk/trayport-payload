@@ -1,5 +1,7 @@
 import type { ArrayField } from 'payload'
 
+import { navigationLinkField } from './navigationLink'
+
 export const actionsField = (name = 'actions'): ArrayField => ({
   name,
   type: 'array',
@@ -14,11 +16,7 @@ export const actionsField = (name = 'actions'): ArrayField => ({
       type: 'text',
       required: true,
     },
-    {
-      name: 'url',
-      type: 'text',
-      required: true,
-    },
+    navigationLinkField({ typeDBName: 'content_link_type' }),
     {
       name: 'style',
       type: 'select',
@@ -29,11 +27,6 @@ export const actionsField = (name = 'actions'): ArrayField => ({
         { label: 'Text link', value: 'link' },
       ],
       required: true,
-    },
-    {
-      name: 'newTab',
-      type: 'checkbox',
-      defaultValue: false,
     },
   ],
 })

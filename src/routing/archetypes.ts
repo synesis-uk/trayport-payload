@@ -23,6 +23,7 @@ export const routeArchetypeIDs = [
   'article.full',
   'article.listing-metadata',
   'learning-video.public-detail',
+  'learning-video.listing-metadata',
   'hub.public-page',
   'hub.map-only',
   'venue.structured-record',
@@ -126,16 +127,19 @@ export const resolveArchetype = (
       : { archetype: 'venue.structured-record', policy: 'forbidden' }
   }
 
-  return { archetype: 'learning-video.public-detail', policy: 'required' }
+  return document.contentMode === 'full'
+    ? { archetype: 'learning-video.public-detail', policy: 'required' }
+    : { archetype: 'learning-video.listing-metadata', policy: 'forbidden' }
 }
 
 const allowedBlocksFor = (archetype: RouteArchetypeID): Set<string> => {
   if (archetype === 'page.content-index') {
-    return new Set(['trayportHero', 'contentSection', 'articleListing'])
+    return new Set(['trayportHero', 'contentSection', 'articleListing', 'learningVideoListing'])
   }
 
   if (
     archetype === 'article.listing-metadata' ||
+    archetype === 'learning-video.listing-metadata' ||
     archetype === 'hub.map-only' ||
     archetype === 'venue.structured-record'
   ) {
@@ -183,9 +187,14 @@ const validateLayout = (
   if (
     published &&
     archetype === 'page.content-index' &&
-    !layout.some((block) => block.blockType === 'articleListing')
+    layout.filter(
+      (block) => block.blockType === 'articleListing' || block.blockType === 'learningVideoListing',
+    ).length !== 1
   ) {
-    throw new APIError('Content-index pages require an article listing before publication.', 400)
+    throw new APIError(
+      'Content-index pages require exactly one article or learning-video listing before publication.',
+      400,
+    )
   }
 }
 
@@ -431,16 +440,25 @@ export const validateRoutableDocument = (
       )
     }
 
-    if (published && resolution.archetype === 'learning-video.public-detail') {
+    if (collection === 'learning-videos') {
+      const contentMode = text(next.contentMode) || 'listing'
       const accessMode = text(next.accessMode) || 'public'
-      if (accessMode !== 'public') {
+      const externalVideoURL = text(next.externalVideoURL)
+
+      if (contentMode !== 'full' && (next.video || externalVideoURL || layout.length > 0)) {
         throw new APIError(
-          'Authenticated and subscriber learning videos must remain drafts until protected media delivery is implemented.',
+          'Listing-only learning videos must not store managed media, an external video URL, or supporting layout.',
           400,
         )
       }
 
-      const externalVideoURL = text(next.externalVideoURL)
+      if (accessMode !== 'public' && (next.video || externalVideoURL || layout.length > 0)) {
+        throw new APIError(
+          'Protected learning-video pages must not expose managed media, an external video URL, or supporting layout.',
+          400,
+        )
+      }
+
       if (externalVideoURL && validateHTTPSVideoURL(externalVideoURL) !== true) {
         throw new APIError(
           'A learning video external destination must be a complete HTTPS URL.',
@@ -453,7 +471,13 @@ export const validateRoutableDocument = (
         throw new APIError('Managed learning-video media must use a video MIME type.', 400)
       }
 
-      if (!mediaMimeType && !externalVideoURL) {
+      if (
+        published &&
+        resolution.archetype === 'learning-video.public-detail' &&
+        accessMode === 'public' &&
+        !mediaMimeType &&
+        !externalVideoURL
+      ) {
         throw new APIError(
           'A learning video requires managed media or an external video URL before publication.',
           400,

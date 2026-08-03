@@ -64,7 +64,13 @@ export const sourcePostSchema = baseRecordSchema.extend({
   publishedAt: z.string().nullable(),
   modifiedAt: z.string().nullable(),
   featuredMediaId: z.number().int().positive().nullable(),
-  scopeRole: z.enum(['root', 'insights-listing', 'venue-summary']),
+  scopeRole: z.enum([
+    'root',
+    'insights-listing',
+    'news-listing',
+    'learning-listing',
+    'venue-summary',
+  ]),
   featuredOrder: z.number().int().nonnegative().nullable(),
   taxonomies: z.record(z.string(), z.array(z.number().int().positive())),
   acf: z.record(z.string(), normalizedValueSchema),
@@ -92,6 +98,10 @@ export const sourceMediaSchema = baseRecordSchema.extend({
   caption: z.string(),
   description: z.string(),
   mimeType: z.string(),
+  fileHash: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .nullable(),
   url: z.string().url().nullable(),
   relativePath: z.string().nullable(),
   width: z.number().int().positive().nullable(),

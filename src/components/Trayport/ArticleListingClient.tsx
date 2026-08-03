@@ -10,6 +10,39 @@ import { TrayportMedia } from './TrayportMedia'
 
 const PAGE_INCREMENT = 9
 
+const copyFor = (family: string) => {
+  if (family === 'news') {
+    return {
+      featured: 'Featured news',
+      loadMore: 'Load more news',
+      plural: 'news',
+      singular: 'news item',
+    }
+  }
+  if (family === 'events') {
+    return {
+      featured: 'Featured events',
+      loadMore: 'Load more events',
+      plural: 'events',
+      singular: 'event',
+    }
+  }
+  if (family === 'all') {
+    return {
+      featured: 'Featured resources',
+      loadMore: 'Load more resources',
+      plural: 'resources',
+      singular: 'resource',
+    }
+  }
+  return {
+    featured: 'Featured insights',
+    loadMore: 'Load more insights',
+    plural: 'insights',
+    singular: 'insight',
+  }
+}
+
 const articleCategories = (article: Article) =>
   (article.categories || []).filter((category) => typeof category === 'object')
 
@@ -47,7 +80,15 @@ const articleDestination = (article: Article): { external: boolean; href: string
   return null
 }
 
-const ArticleCard = ({ article, lead }: { article: Article; lead: boolean }) => {
+const ArticleCard = ({
+  article,
+  family,
+  lead,
+}: {
+  article: Article
+  family: string
+  lead: boolean
+}) => {
   const destination = articleDestination(article)
   const className = [
     'trayport-article-card',
@@ -70,7 +111,9 @@ const ArticleCard = ({ article, lead }: { article: Article; lead: boolean }) => 
         {lead && article.excerpt ? <p>{article.excerpt}</p> : null}
         {destination ? (
           <span className="trayport-inline-link">
-            {destination.external ? 'View insight' : 'Read insight'}
+            {destination.external
+              ? `View ${copyFor(family).singular}`
+              : `Read ${copyFor(family).singular}`}
             {destination.external ? (
               <ExternalLink aria-hidden size={16} />
             ) : (
@@ -105,7 +148,7 @@ const ArticleCard = ({ article, lead }: { article: Article; lead: boolean }) => 
   )
 }
 
-const ArticleRow = ({ article }: { article: Article }) => {
+const ArticleRow = ({ article, family }: { article: Article; family: string }) => {
   const destination = articleDestination(article)
   const content = (
     <>
@@ -119,8 +162,8 @@ const ArticleRow = ({ article }: { article: Article }) => {
       <span className="trayport-article-row__action">
         {destination
           ? destination.external
-            ? 'View insight'
-            : 'Read insight'
+            ? `View ${copyFor(family).singular}`
+            : `Read ${copyFor(family).singular}`
           : 'Detail migration in progress'}
       </span>
       {destination?.external ? (
@@ -161,13 +204,16 @@ const ArticleRow = ({ article }: { article: Article }) => {
 
 export const ArticleListingClient = ({
   articles,
+  family,
   initialPageSize,
   showCategoryFilter,
 }: {
   articles: Article[]
+  family: string
   initialPageSize: number
   showCategoryFilter: boolean
 }) => {
+  const copy = copyFor(family)
   const [category, setCategory] = useState('all')
   const [query, setQuery] = useState('')
   const [year, setYear] = useState('all')
@@ -222,13 +268,16 @@ export const ArticleListingClient = ({
   return (
     <>
       {featured.length ? (
-        <section aria-labelledby="featured-insights-title" className="trayport-featured-articles">
+        <section
+          aria-labelledby={`featured-${family}-title`}
+          className="trayport-featured-articles"
+        >
           <div className="trayport-listing__subheading">
-            <h3 id="featured-insights-title">Featured insights</h3>
+            <h3 id={`featured-${family}-title`}>{copy.featured}</h3>
           </div>
           <div className="trayport-featured-articles__grid">
             {featured.map((article, index) => (
-              <ArticleCard article={article} key={article.id} lead={index === 0} />
+              <ArticleCard article={article} family={family} key={article.id} lead={index === 0} />
             ))}
           </div>
         </section>
@@ -241,7 +290,7 @@ export const ArticleListingClient = ({
           role="search"
         >
           <label className="trayport-article-filters__search">
-            <span>Search insights</span>
+            <span>Search {copy.plural}</span>
             <span className="trayport-article-filters__input">
               <Search aria-hidden size={18} />
               <input
@@ -294,9 +343,9 @@ export const ArticleListingClient = ({
 
       <div aria-live="polite" className="trayport-article-list">
         {list.length ? (
-          list.map((article) => <ArticleRow article={article} key={article.id} />)
+          list.map((article) => <ArticleRow article={article} family={family} key={article.id} />)
         ) : (
-          <p className="trayport-listing__empty">No insights match those filters.</p>
+          <p className="trayport-listing__empty">No {copy.plural} match those filters.</p>
         )}
       </div>
 
@@ -306,7 +355,7 @@ export const ArticleListingClient = ({
           onClick={() => setVisible((count) => count + PAGE_INCREMENT)}
           type="button"
         >
-          Load more insights
+          {copy.loadMore}
         </button>
       ) : null}
     </>

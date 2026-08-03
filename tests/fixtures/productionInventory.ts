@@ -103,7 +103,13 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
   const additionalPageIDs = [
     10140,
     9248,
-    ...Array.from({ length: 43 }, (_, index) => 3001 + index),
+    3311,
+    3002,
+    2205,
+    1926,
+    9244,
+    3001,
+    ...Array.from({ length: 37 }, (_, index) => 3007 + index),
     2203,
   ]
   const additionalPages = additionalPageIDs.map((legacyId, index) =>
@@ -114,17 +120,25 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
         ? '/products/eod-file/'
         : legacyId === 9248
           ? '/resources/insights/'
-          : legacyId === 2203
-            ? '/company/about-us/'
-            : index === 10
-              ? '/privacy/'
-              : `/page-${index + 1}/`,
+          : legacyId === 3311
+            ? '/learning-hub/'
+            : legacyId === 2205
+              ? '/company/offices/'
+              : legacyId === 1926
+                ? '/products/tradesignal/'
+                : legacyId === 9244
+                  ? '/resources/news/'
+                  : legacyId === 2203
+                    ? '/company/about-us/'
+                    : index === 10
+                      ? '/privacy/'
+                      : `/page-${index + 1}/`,
       {
         authoritativeField: 'sections_new',
         template:
-          legacyId === 9248
+          legacyId === 9248 || legacyId === 9244
             ? 'layouts/articles-list.blade.php'
-            : index === 2
+            : legacyId === 3311
               ? 'layouts/learning-hub-home.blade.php'
               : index === 3
                 ? 'layouts/market-matrix.blade.php'
@@ -180,14 +194,16 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
       page.legacyId === 10140 ? null : page.legacyId,
     ),
   )
-  const postIDs = [9351, ...Array.from({ length: 89 }, (_, index) => 20_000 + index)]
+  const postIDs = [9351, 10030, ...Array.from({ length: 88 }, (_, index) => 20_000 + index)]
   const posts = postIDs.map((legacyId, index) =>
     inventoryNode(
       legacyId,
       'post',
       legacyId === 9351
         ? '/insights/on-demand-webinar-data-analytics-for-energy-traders/'
-        : `/insights/article-${index}/`,
+        : legacyId === 10030
+          ? '/event/e-world-2026/'
+          : `/insights/article-${index}/`,
       {
         authoritativeField: 'sections',
         componentLayouts: [
@@ -201,7 +217,11 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
     ),
   )
   const venues = Array.from({ length: 66 }, (_, index) =>
-    inventoryNode(30_000 + index, 'venue', `/venue/venue-${index + 1}/`),
+    inventoryNode(
+      index === 0 ? 3363 : 30_000 + index,
+      'venue',
+      index === 0 ? '/venue/eex/' : `/venue/venue-${index + 1}/`,
+    ),
   )
   const hubIDs = [2495, ...Array.from({ length: 71 }, (_, index) => 40_000 + index)]
   const hubs = hubIDs.map((legacyId, index) =>
@@ -213,9 +233,11 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
   )
   const learningVideos = Array.from({ length: 15 }, (_, index) =>
     inventoryNode(
-      50_000 + index,
+      index === 0 ? 8454 : 50_000 + index,
       'learning-hub-video',
-      `/resources/learning-hub/video-${index + 1}/`,
+      index === 0
+        ? '/learning-hub-video/trading-in-joule/'
+        : `/resources/learning-hub/video-${index + 1}/`,
     ),
   )
   learningVideos[0].references = managedTerms

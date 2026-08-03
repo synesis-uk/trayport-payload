@@ -8,7 +8,7 @@ import {
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-import { admins, adminsOrEditors } from '@/access/roles'
+import { admins, adminsOrEditors, isAdmin } from '@/access/roles'
 import { anyone } from '../access/anyone'
 import { createLegacySourceField } from '@/fields/legacySource'
 
@@ -102,6 +102,20 @@ export const Media: CollectionConfig = {
       admin: {
         description: 'Optional externally hosted source, primarily for video.',
       },
+    },
+    {
+      name: 'sourceFileHash',
+      type: 'text',
+      access: {
+        create: ({ req }) => isAdmin(req.user),
+        read: ({ req }) => isAdmin(req.user),
+        update: ({ req }) => isAdmin(req.user),
+      },
+      admin: {
+        hidden: true,
+        readOnly: true,
+      },
+      index: true,
     },
     {
       name: 'poster',

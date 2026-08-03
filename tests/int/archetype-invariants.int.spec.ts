@@ -57,6 +57,7 @@ const hero = (heading: string) => ({
 
 const articleListing = (heading: string) => ({
   blockType: 'articleListing' as const,
+  family: 'insights' as const,
   heading,
   pageSize: 12,
   showCategoryFilter: true,
@@ -183,12 +184,12 @@ describe.sequential('route archetype invariants', () => {
 
   afterAll(cleanSuiteFixtures, 60_000)
 
-  it('keeps the runtime registry exactly aligned with all 17 contract archetypes', () => {
+  it('keeps the runtime registry exactly aligned with all 18 contract archetypes', () => {
     const contractIDs = contentArchitectureContract.archetypes.map(({ id }) => id).sort()
     const runtimeIDs = [...routeArchetypeIDs].sort()
 
-    expect(routeArchetypeIDs).toHaveLength(17)
-    expect(new Set(routeArchetypeIDs)).toHaveLength(17)
+    expect(routeArchetypeIDs).toHaveLength(18)
+    expect(new Set(routeArchetypeIDs)).toHaveLength(18)
     expect(runtimeIDs).toEqual(contractIDs)
   })
 
@@ -494,7 +495,7 @@ describe.sequential('route archetype invariants', () => {
         draft: false,
         overrideAccess: true,
       }),
-    ).rejects.toThrow(/require an article listing/i)
+    ).rejects.toThrow(/require exactly one article or learning-video listing/i)
     await expectNoDocument('pages', missingListingSlug)
 
     const validListingPath = fixturePath('valid-index')
@@ -608,7 +609,7 @@ describe.sequential('route archetype invariants', () => {
     await expectNoDocument('venues', venueSlug)
   })
 
-  it('keeps restricted learning videos draft-only and publishes valid public media', async () => {
+  it('publishes protected gate pages without media and valid public media', async () => {
     const missingVideoSlug = fixtureKey('missing-video')
     await expect(
       payload.create({
@@ -617,6 +618,8 @@ describe.sequential('route archetype invariants', () => {
         data: {
           _status: 'published',
           accessMode: 'public',
+          contentMode: 'full',
+          displayOrder: 0,
           path: fixturePath('missing-video'),
           slug: missingVideoSlug,
           title: 'Missing video',
@@ -646,6 +649,8 @@ describe.sequential('route archetype invariants', () => {
           data: {
             _status: 'published',
             accessMode: 'public',
+            contentMode: 'full',
+            displayOrder: 0,
             path: fixturePath('image-as-video'),
             slug: imageVideoSlug,
             title: 'Image supplied as video',
@@ -668,6 +673,8 @@ describe.sequential('route archetype invariants', () => {
         data: {
           _status: 'published',
           accessMode: 'public',
+          contentMode: 'full',
+          displayOrder: 0,
           externalVideoURL: 'https://',
           path: fixturePath('invalid-external-video'),
           slug: invalidExternalSlug,
@@ -679,13 +686,111 @@ describe.sequential('route archetype invariants', () => {
     ).rejects.toThrow(/complete HTTPS URL/i)
     await expectNoDocument('learning-videos', invalidExternalSlug)
 
+    const protectedMediaSlug = fixtureKey('protected-media')
+    await expect(
+      payload.create({
+        collection: 'learning-videos',
+        context: draftMutationContext,
+        data: {
+          accessMode: 'subscriber',
+          contentMode: 'full',
+          displayOrder: 0,
+          externalVideoURL: 'https://video.example.test/watch/restricted-video',
+          path: fixturePath('protected-media'),
+          slug: protectedMediaSlug,
+          title: 'Protected media leak',
+        },
+        draft: true,
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/must not expose managed media, an external video URL, or supporting layout/i)
+    await expectNoDocument('learning-videos', protectedMediaSlug)
+
+    const protectedLayoutSlug = fixtureKey('protected-layout')
+    await expect(
+      payload.create({
+        collection: 'learning-videos',
+        context: draftMutationContext,
+        data: {
+          accessMode: 'subscriber',
+          contentMode: 'full',
+          displayOrder: 0,
+          layout: [hero('Protected supporting layout')],
+          path: fixturePath('protected-layout'),
+          slug: protectedLayoutSlug,
+          title: 'Protected layout leak',
+        },
+        draft: true,
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/must not expose managed media, an external video URL, or supporting layout/i)
+    await expectNoDocument('learning-videos', protectedLayoutSlug)
+
+    const protectedListingSlug = fixtureKey('protected-listing-media')
+    await expect(
+      payload.create({
+        collection: 'learning-videos',
+        context: publishMutationContext,
+        data: {
+          _status: 'published',
+          accessMode: 'subscriber',
+          contentMode: 'listing',
+          displayOrder: 0,
+          externalDestination: 'https://www.trayport.com/learning-hub/watch/restricted/',
+          externalVideoURL: 'https://video.example.test/watch/restricted-video',
+          slug: protectedListingSlug,
+          title: 'Protected listing media leak',
+        },
+        draft: false,
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/listing-only learning videos must not store managed media/i)
+    await expectNoDocument('learning-videos', protectedListingSlug)
+
+    const staleProtected = await payload.create({
+      collection: 'learning-videos',
+      context: { disableRevalidate: true, skipRouteRegistry: true },
+      data: {
+        _status: 'published',
+        accessMode: 'subscriber',
+        contentMode: 'full',
+        displayOrder: 0,
+        externalVideoURL: 'https://video.example.test/watch/stale-protected-video',
+        layout: [hero('Stale protected supporting layout')],
+        path: fixturePath('stale-protected-video'),
+        slug: fixtureKey('stale-protected-video'),
+        title: 'Stale protected video',
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+    try {
+      const publicProtected = await payload.findByID({
+        collection: 'learning-videos',
+        depth: 0,
+        id: staleProtected.id,
+        overrideAccess: false,
+      })
+      expect(publicProtected.externalVideoURL).toBeUndefined()
+      expect(publicProtected.video).toBeUndefined()
+      expect(publicProtected.layout).toEqual([])
+    } finally {
+      await payload.delete({
+        collection: 'learning-videos',
+        context: { disableRevalidate: true, skipRouteRegistry: true },
+        id: staleProtected.id,
+        overrideAccess: true,
+      })
+    }
+
     const restrictedPath = fixturePath('restricted-video')
     const restricted = await payload.create({
       collection: 'learning-videos',
       context: draftMutationContext,
       data: {
         accessMode: 'subscriber',
-        externalVideoURL: 'https://video.example.test/watch/restricted-video',
+        contentMode: 'full',
+        displayOrder: 0,
         path: restrictedPath,
         slug: fixtureKey('restricted-video'),
         title: 'Restricted learning video',
@@ -705,21 +810,25 @@ describe.sequential('route archetype invariants', () => {
       ownerDocumentId: String(restricted.id),
       state: 'reserved',
     })
-    await expect(
-      payload.update({
-        collection: 'learning-videos',
-        context: publishMutationContext,
-        data: {
-          _status: 'published',
-        },
-        draft: false,
-        id: restricted.id,
-        overrideAccess: true,
-      }),
-    ).rejects.toThrow(/must remain drafts until protected media delivery is implemented/i)
+    const protectedGate = await payload.update({
+      collection: 'learning-videos',
+      context: publishMutationContext,
+      data: {
+        _status: 'published',
+      },
+      draft: false,
+      id: restricted.id,
+      overrideAccess: true,
+    })
+    expect(protectedGate._status).toBe('published')
     await expect(
       findRouteClaim({ draft: false, path: restrictedPath, payload }),
-    ).resolves.toBeNull()
+    ).resolves.toMatchObject({
+      archetype: 'learning-video.public-detail',
+      ownerCollection: 'learning-videos',
+      ownerDocumentId: String(restricted.id),
+      state: 'published',
+    })
 
     const validPath = fixturePath('external-video')
     const valid = await payload.create({
@@ -728,6 +837,8 @@ describe.sequential('route archetype invariants', () => {
       data: {
         _status: 'published',
         accessMode: 'public',
+        contentMode: 'full',
+        displayOrder: 0,
         externalVideoURL: 'https://video.example.test/watch/external-video',
         path: validPath,
         slug: fixtureKey('external-video'),

@@ -148,6 +148,33 @@ export const Venues: CollectionConfig = {
       ],
     },
     {
+      name: 'marketConnections',
+      type: 'array',
+      admin: {
+        description:
+          'Markets available through this venue. Non-routable hubs retain a reviewed live-site fallback.',
+        initCollapsed: true,
+      },
+      fields: [
+        {
+          name: 'hub',
+          type: 'relationship',
+          relationTo: 'hubs',
+          required: true,
+        },
+        {
+          name: 'connectionType',
+          type: 'select',
+          options: [
+            { label: 'Joule', value: 'd' },
+            { label: 'autoTRADER', value: 'a' },
+            { label: 'Joule and autoTRADER', value: 'b' },
+          ],
+          required: true,
+        },
+      ],
+    },
+    {
       name: 'displayOrder',
       type: 'number',
       admin: {

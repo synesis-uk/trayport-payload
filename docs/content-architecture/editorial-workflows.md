@@ -273,10 +273,10 @@ Inventory run IDs are immutable and cannot be reused; `latest-run.txt` advances
 only after both inventory and target-plan verification pass. Editors do not
 maintain those artifacts.
 
-The target plan is deterministic planning evidence: it classifies six Payload
-documents as PoC-ready, 288 as plan-only, and two virtual indexes as
-system-ready. It does not load those 288 documents. The actual imported and
-rendered acceptance slice remains the six representative routes.
+The target plan is deterministic planning evidence: it accounts for 296 source
+routes plus two virtual indexes. It does not load the remaining 280 production
+documents. The actual imported and rendered acceptance slice is the 14-route
+production pilot documented in the repository README.
 
 ## Launch validation
 

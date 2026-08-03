@@ -3,7 +3,7 @@ import net from 'node:net'
 
 import { migrationConfig } from '../lib/config'
 import { run } from '../lib/process'
-import { pocScope } from '../scopes/poc'
+import { pilotScope } from '../scopes/pilot'
 
 type SourceProbe = {
   acfVersion: string
@@ -50,7 +50,7 @@ const connectionTarget = (
 }
 
 const probeSource = (): SourceProbe => {
-  const expected = JSON.stringify(pocScope.roots.map(({ legacyId }) => legacyId))
+  const expected = JSON.stringify(pilotScope.roots.map(({ legacyId }) => legacyId))
   const php = [
     `$ids = ${expected};`,
     '$roots = [];',
@@ -114,7 +114,7 @@ export const preflight = async (): Promise<void> => {
     throw new Error('Advanced Custom Fields is not active in the source container.')
   }
 
-  for (const expectedRoot of pocScope.roots) {
+  for (const expectedRoot of pilotScope.roots) {
     const actual = source.roots.find(({ id }) => id === expectedRoot.legacyId)
     if (!actual) {
       throw new Error(`Missing source root ${expectedRoot.legacyId}`)

@@ -147,6 +147,10 @@ export const Articles: CollectionConfig = {
                   label: 'News',
                   value: 'news',
                 },
+                {
+                  label: 'Event',
+                  value: 'event',
+                },
               ],
               required: true,
             },

@@ -197,12 +197,12 @@ make content-inventory
 The run writes `production-target-plan.json`,
 `production-target-plan.ndjson`, `target-plan-verification.json`, and
 `target-plan-summary.json` beneath `migration/work/inventory/<run-id>/`. The
-plan deterministically describes 296 routes: 294 Payload documents (six marked
-PoC-ready and 288 plan-only) plus two system-ready virtual indexes. It is
+plan deterministically describes 296 routes: 294 Payload documents (14 marked
+pilot-ready and 280 plan-only) plus two system-ready virtual indexes. It is
 planning evidence, not a content load or remediation report.
 
 The retained scope evidence and the two route-foundation gates pass while
 `productionReadiness` remains blocked. The actual imported/rendered acceptance
-slice remains six routes; full article/listing ownership, importer
+slice now covers 14 routes; full article/listing ownership, importer
 transformations, planned renderers, managed links, role coverage, media review,
 and the other gates above are still incomplete.

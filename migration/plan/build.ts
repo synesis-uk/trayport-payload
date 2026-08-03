@@ -3,7 +3,7 @@ import crypto from 'node:crypto'
 import type { ProductionInventory, RuntimeInventorySnapshot } from '../inventory/contracts'
 import { inventoryUtilities } from '../inventory/discover'
 import { contentArchitectureContract } from '../mappings/contentArchitecture'
-import { pocScope, type PocRoot } from '../scopes/poc'
+import { pilotScope, type PilotRoot } from '../scopes/pilot'
 import {
   productionTargetPlanSchema,
   type ProductionTargetPlan,
@@ -50,7 +50,7 @@ const virtualConfigReferences: Record<string, VirtualConfigReference> = {
 const routeKey = (legacyId: number | null, canonicalPath: string): string =>
   legacyId === null ? `virtual:${canonicalPath}` : `wordpress:${legacyId}`
 
-const matchesPocRoute = (route: TargetPlanRoute, root: PocRoot): boolean =>
+const matchesPilotRoute = (route: TargetPlanRoute, root: PilotRoot): boolean =>
   route.ownerKind === 'payload-document' &&
   route.legacyId === root.legacyId &&
   route.sourcePostType === root.postType &&
@@ -63,7 +63,9 @@ const buildRoutes = (inventory: ProductionInventory): TargetPlanRoute[] => {
   const archetypes = new Map(
     contentArchitectureContract.archetypes.map((archetype) => [archetype.id, archetype]),
   )
-  const pocRootsByID = new Map<number, PocRoot>(pocScope.roots.map((root) => [root.legacyId, root]))
+  const pilotRootsByID = new Map<number, PilotRoot>(
+    pilotScope.roots.map((root) => [root.legacyId, root]),
+  )
 
   return inventory.routes
     .filter(({ disposition }) => disposition === 'included')
@@ -102,9 +104,9 @@ const buildRoutes = (inventory: ProductionInventory): TargetPlanRoute[] => {
         roles: uniqueSorted(route.roles),
         sources: uniqueSorted(route.sources),
       }
-      const pocRoot =
-        plannedRoute.legacyId === null ? undefined : pocRootsByID.get(plannedRoute.legacyId)
-      if (pocRoot && matchesPocRoute(plannedRoute, pocRoot)) {
+      const pilotRoot =
+        plannedRoute.legacyId === null ? undefined : pilotRootsByID.get(plannedRoute.legacyId)
+      if (pilotRoot && matchesPilotRoute(plannedRoute, pilotRoot)) {
         plannedRoute.contentState = 'poc-ready'
       }
       return plannedRoute
@@ -367,12 +369,12 @@ const verifyPlan = (plan: ProductionTargetPlan, missingTerms: string[]): TargetP
     },
     {
       id: 'poc-ready-documents',
-      expected: 6,
+      expected: pilotScope.roots.length,
       actual: plan.routes.filter(({ contentState }) => contentState === 'poc-ready').length,
     },
     {
       id: 'plan-only-documents',
-      expected: 288,
+      expected: 294 - pilotScope.roots.length,
       actual: plan.routes.filter(({ contentState }) => contentState === 'plan-only').length,
     },
     {
@@ -402,10 +404,10 @@ const verifyPlan = (plan: ProductionTargetPlan, missingTerms: string[]): TargetP
       expected: 50,
       actual: plan.redirects.length,
     },
-    ...pocScope.roots.map((root) => ({
+    ...pilotScope.roots.map((root) => ({
       id: `poc-root:${root.legacyId}`,
       expected: 1,
-      actual: plan.routes.filter((route) => matchesPocRoute(route, root)).length,
+      actual: plan.routes.filter((route) => matchesPilotRoute(route, root)).length,
     })),
     ...expectedManagedTaxonomies.flatMap((taxonomy) => [
       {

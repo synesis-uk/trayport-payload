@@ -1,6 +1,6 @@
 # Trayport web
 
-The current implementation combines a proof-of-concept frontend with the
+The current implementation combines a production-pilot frontend with the
 production content-architecture baseline for replacing the live Trayport
 WordPress site. Next.js and Payload run as one self-hostable application,
 editorial content and media controls live in Payload, and market facts live in
@@ -9,7 +9,7 @@ application-owned PostgreSQL tables.
 The implementation follows the currently used live navigation and content rather
 than recreating dormant WordPress administration structures.
 
-## Proof-of-concept routes
+## Production-pilot routes
 
 - `/`
 - `/company/about-us/`
@@ -17,17 +17,26 @@ than recreating dormant WordPress administration structures.
 - `/resources/insights/`
 - `/insights/on-demand-webinar-data-analytics-for-energy-traders/`
 - `/market-coverage/german-power/`
+- `/company/offices/`
+- `/products/tradesignal/`
+- `/resources/faqs/`
+- `/resources/news/`
+- `/event/e-world-2026/`
+- `/learning-hub/`
+- `/learning-hub-video/trading-in-joule/`
+- `/venue/eex/`
 
-These six routes are the implemented frontend slice. The verified production
+These 14 routes are the implemented frontend slice. The verified production
 source corpus contains 296 canonical routes; those routes are inventoried and
 classified, but they are not all imported or rendered by this frontend yet.
 The deterministic production target plan describes 294 future/current Payload
 document owners and two virtual indexes, but it is planning evidence rather than
-proof that the other 288 planned documents have been migrated or remediated.
+proof that the other 280 planned documents have been migrated or remediated.
 
-The Insights page is backed by all 39 published source records. The connectivity
-view uses 50 imported hubs and 55 locations. German Power uses its 21 live venue
-relationships.
+The Insights and News indexes are backed by all 39 and 31 published source
+records respectively. The Learning Hub owns 15 protected metadata records. The
+market graph imports 55 hubs and 58 markers; German Power uses its 21 live venue
+relationships, while EEX renders 37 unique connected markets.
 
 ## Architecture
 
@@ -149,6 +158,17 @@ by Git. Reports include content coverage, curated exclusions, stale/private
 links, missing media, the alt-text review queue, market-row results, load
 changes, and source/target fingerprints.
 
+Migration run IDs are immutable. Extraction refuses an existing run directory
+and advances `migration/work/latest-run.txt` only after source validation passes.
+Transformation writes its artifacts atomically, runs source and transformed
+acceptance, and then writes `reports/accepted-run.json` last. That marker binds
+the complete source, transformed, market-data, coverage, review, and acceptance
+artifact set to SHA-256 hashes. It also binds the importer-owned fallback media
+and market-schema SQL used during writes. Both dry-run and live load verify the
+marker and every bound artifact before opening Payload or starting market-data
+work; a missing marker or any post-acceptance change fails closed. Use a new run
+ID to re-extract or re-transform accepted input.
+
 `make content-inventory` is the production-scope discovery gate. It reads the
 active ACF navigation and footer, applies the approved FAQ inclusion and
 Commodities Report exclusion, closes over generated listings and dependencies,
@@ -158,12 +178,12 @@ canonical owners. Per-run output is written to
 [`docs/content-architecture`](docs/content-architecture/README.md).
 
 The generated target plan is deterministic implementation input. Running it
-does not expand the PoC importer: the loaded and rendered source slice remains
-the six routes listed above, and the full 296-route import, body remediation,
+does not expand the production-pilot importer: the loaded and rendered source
+slice remains the 14 routes listed above, and the full 296-route import, body remediation,
 media/link review, and parity validation remain future work.
 
-The importer is idempotent. Re-running it against unchanged source data must
-produce no Payload or market-data writes.
+The loader is idempotent across accepted runs. Loading equivalent source data
+must produce no Payload or market-data writes.
 
 ## Content administration
 
@@ -176,8 +196,9 @@ account becomes an administrator.
 - Pages, full articles, public hubs, public venues, and learning videos support
   drafts, authenticated live preview, scheduled publishing, and route-aware
   revalidation.
-- Authenticated and subscriber learning videos remain draft-only until identity
-  checks and protected media delivery are implemented.
+- Authenticated and subscriber learning videos may publish as metadata-only gate
+  pages. Managed/external video fields and supporting layouts remain forbidden
+  until identity checks and protected media delivery are implemented.
 - Hub `map-only`, venue `relationship-only`, and article `listing` records are
   structured data only: publication hooks forbid public paths and layouts.
 - The `route-indexes` global controls headings, introductions, and SEO for the

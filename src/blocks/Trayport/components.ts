@@ -1,5 +1,6 @@
 import type { Block } from 'payload'
 
+import { navigationLinkField } from '@/fields/navigationLink'
 import { blockActions } from './actions'
 
 export const HeadingComponent: Block = {
@@ -118,7 +119,6 @@ export const FeatureListComponent: Block = {
         {
           name: 'title',
           type: 'text',
-          required: true,
         },
         {
           name: 'body',
@@ -126,21 +126,25 @@ export const FeatureListComponent: Block = {
         },
         {
           name: 'icon',
-          type: 'text',
+          type: 'select',
+          options: [
+            { label: 'Idea', value: 'lightbulb' },
+            { label: 'Growth', value: 'trend' },
+            { label: 'Time', value: 'clock' },
+            { label: 'Chart', value: 'chart' },
+            { label: 'Scan', value: 'scan' },
+          ],
         },
         {
           name: 'media',
           type: 'upload',
           relationTo: 'media',
         },
-        {
-          name: 'url',
-          type: 'text',
-        },
-        {
-          name: 'linkLabel',
-          type: 'text',
-        },
+        navigationLinkField({
+          includeLabel: true,
+          required: false,
+          typeDBName: 'content_link_type',
+        }),
       ],
     },
   ],
@@ -195,6 +199,16 @@ export const FAQComponent: Block = {
           type: 'richText',
           required: true,
         },
+        {
+          name: 'media',
+          type: 'upload',
+          filterOptions: {
+            mimeType: {
+              contains: 'image/',
+            },
+          },
+          relationTo: 'media',
+        },
       ],
     },
   ],
@@ -231,10 +245,7 @@ export const EntityListComponent: Block = {
           name: 'description',
           type: 'richText',
         },
-        {
-          name: 'url',
-          type: 'text',
-        },
+        navigationLinkField({ required: false, typeDBName: 'content_link_type' }),
         {
           name: 'media',
           type: 'upload',
@@ -431,6 +442,33 @@ export const DataChartComponent: Block = {
   ],
 }
 
+export const OfficeComponent: Block = {
+  slug: 'office',
+  interfaceName: 'OfficeComponent',
+  labels: {
+    singular: 'Office',
+    plural: 'Offices',
+  },
+  fields: [
+    {
+      name: 'office',
+      type: 'relationship',
+      relationTo: 'offices',
+      required: true,
+    },
+    {
+      name: 'appearance',
+      type: 'select',
+      defaultValue: 'standard',
+      options: [
+        { label: 'Standard', value: 'standard' },
+        { label: 'Featured', value: 'featured' },
+      ],
+      required: true,
+    },
+  ],
+}
+
 export const sectionComponents = [
   HeadingComponent,
   RichTextComponent,
@@ -447,4 +485,5 @@ export const sectionComponents = [
   MarketCoverageComponent,
   EmbedComponent,
   DataChartComponent,
+  OfficeComponent,
 ]

@@ -1,7 +1,7 @@
 import configPromise from '@payload-config'
 import type { Metadata } from 'next'
 import { draftMode, headers } from 'next/headers'
-import { notFound, permanentRedirect, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { getPayload, type Payload } from 'payload'
 import { cache } from 'react'
 
@@ -51,7 +51,7 @@ type VirtualResult =
 type RedirectResult = {
   destination: string
   kind: 'redirect'
-  permanent: boolean
+  status: 301 | 302
 }
 
 type RouteResult = ContentResult | RedirectResult | VirtualResult
@@ -138,7 +138,7 @@ const redirectResult = async (
   return {
     destination,
     kind: 'redirect',
-    permanent: redirectType === '301',
+    status: redirectType === '301' ? 301 : 302,
   }
 }
 
@@ -242,8 +242,10 @@ export const ContentRoute = async ({ segments }: { segments?: string[] }) => {
 
   if (!result) notFound()
   if (result.kind === 'redirect') {
-    if (result.permanent) permanentRedirect(result.destination)
-    redirect(result.destination)
+    // Public requests are handled by src/proxy.ts so Payload's exact 301/302
+    // contract survives. Reaching the page renderer means Proxy was bypassed;
+    // do not silently substitute Next's different 308/307 semantics.
+    notFound()
   }
 
   return (

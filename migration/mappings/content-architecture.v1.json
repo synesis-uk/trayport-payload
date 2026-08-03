@@ -167,7 +167,7 @@
   },
   "blocks": {
     "implemented": {
-      "topLevel": ["trayportHero", "contentSection", "articleListing"],
+      "topLevel": ["trayportHero", "contentSection", "articleListing", "learningVideoListing"],
       "sectionComponents": [
         "heading",
         "richText",
@@ -183,7 +183,8 @@
         "divider",
         "marketCoverage",
         "embed",
-        "dataChart"
+        "dataChart",
+        "office"
       ]
     },
     "planned": [
@@ -260,20 +261,6 @@
         ],
         "implementationStatus": "planned",
         "description": "Interactive market matrix driven by managed hub and venue route owners."
-      },
-      {
-        "id": "office",
-        "kind": "block",
-        "placement": "section-component",
-        "targetBlockType": "office",
-        "sourceLayouts": [
-          {
-            "scope": "component",
-            "source": "office"
-          }
-        ],
-        "implementationStatus": "planned",
-        "description": "Structured office address, contact, and map presentation."
       },
       {
         "id": "markets-map",
@@ -478,7 +465,12 @@
       },
       "routePolicy": "required",
       "contentOwner": "layout",
-      "allowedTopLevelBlocks": ["trayportHero", "contentSection", "articleListing"],
+      "allowedTopLevelBlocks": [
+        "trayportHero",
+        "contentSection",
+        "articleListing",
+        "learningVideoListing"
+      ],
       "editorCapabilities": [
         "compose-layout",
         "configure-listing",
@@ -531,7 +523,10 @@
     {
       "id": "learning-video.public-detail",
       "collection": "learning-videos",
-      "discriminator": null,
+      "discriminator": {
+        "field": "contentMode",
+        "value": "full"
+      },
       "routePolicy": "required",
       "contentOwner": "video-metadata-and-managed-media",
       "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
@@ -545,6 +540,20 @@
         "publish",
         "schedule-publish"
       ],
+      "implementationStatus": "passing",
+      "gap": null
+    },
+    {
+      "id": "learning-video.listing-metadata",
+      "collection": "learning-videos",
+      "discriminator": {
+        "field": "contentMode",
+        "value": "listing"
+      },
+      "routePolicy": "forbidden",
+      "contentOwner": "listing-metadata-only",
+      "allowedTopLevelBlocks": [],
+      "editorCapabilities": ["manage-video-metadata", "manage-taxonomy", "draft"],
       "implementationStatus": "passing",
       "gap": null
     },
@@ -1084,6 +1093,14 @@
       "contentResponsibility": "Learning-hub video metadata, managed media, taxonomy, SEO, and complete public detail routes."
     },
     {
+      "resource": "offices",
+      "kind": "payload-collection",
+      "systemOfRecord": "payload",
+      "domainOwner": "editorial",
+      "routeNamespace": null,
+      "contentResponsibility": "Reusable office addresses, contact details, coordinates, and display order."
+    },
+    {
       "resource": "learning-video-categories",
       "kind": "payload-collection",
       "systemOfRecord": "payload",
@@ -1255,6 +1272,13 @@
         "preview",
         "read-versions"
       ],
+      "public": ["read-published"]
+    },
+    {
+      "resourceGroup": "versioned-editorial-records",
+      "resources": ["offices"],
+      "administrator": ["create", "read", "update", "delete", "draft", "publish", "read-versions"],
+      "editor": ["create", "read", "update", "draft", "publish", "read-versions"],
       "public": ["read-published"]
     },
     {

@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const requiredReportNames = [
+  'accepted-run.json',
   'acceptance-source.json',
   'acceptance-transform.json',
   'content-review.json',
@@ -35,8 +36,8 @@ const requestedRunDirectory = (): string | null => {
 }
 
 /**
- * `latest-run.txt` can legitimately point at an extraction still in progress.
- * Fall back to the newest fully validated run in that case.
+ * `latest-run.txt` points at the newest source-accepted extraction, which may not
+ * have transformed acceptance yet. Fall back to the newest sealed run in that case.
  */
 export const resolveCompleteMigrationRun = (): string => {
   const requested = requestedRunDirectory()

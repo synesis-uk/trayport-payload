@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { admins, adminsOrEditors, publicOrCMSUsers } from '@/access/roles'
+import { admins, adminsOrEditors, isAdminOrEditor, publicOrCMSUsers } from '@/access/roles'
 import { trayportLayoutBlocks } from '@/blocks/Trayport/config'
 import { contentPathField } from '@/fields/contentPath'
 import { createLegacySourceField } from '@/fields/legacySource'
@@ -27,7 +27,7 @@ export const LearningVideos: CollectionConfig = {
     update: adminsOrEditors,
   },
   admin: {
-    defaultColumns: ['title', 'accessMode', 'path', '_status', 'updatedAt'],
+    defaultColumns: ['title', 'contentMode', 'accessMode', 'path', '_status', 'updatedAt'],
     group: 'Content',
     livePreview: {
       url: ({ data }) => generateContentPreviewPath(data?.path),
@@ -38,16 +38,20 @@ export const LearningVideos: CollectionConfig = {
   defaultPopulate: {
     accessMode: true,
     categories: true,
+    contentMode: true,
+    externalDestination: true,
     meta: {
       description: true,
       image: true,
     },
     path: true,
+    poster: true,
+    product: true,
     publishedAt: true,
     summary: true,
     title: true,
-    video: true,
   },
+  defaultSort: 'displayOrder',
   fields: [
     {
       name: 'title',
@@ -60,24 +64,65 @@ export const LearningVideos: CollectionConfig = {
       type: 'textarea',
     },
     {
+      name: 'description',
+      type: 'richText',
+    },
+    {
+      name: 'contentMode',
+      type: 'select',
+      admin: {
+        description:
+          'Listing-only records populate the Learning Hub while their detail page remains on the live site.',
+        position: 'sidebar',
+      },
+      defaultValue: 'listing',
+      options: [
+        { label: 'Listing only', value: 'listing' },
+        { label: 'Managed detail page', value: 'full' },
+      ],
+      required: true,
+    },
+    {
+      name: 'externalDestination',
+      type: 'text',
+      admin: {
+        condition: (_data, siblingData) => siblingData?.contentMode === 'listing',
+        description: 'HTTPS destination for a listing-only record.',
+      },
+      validate: (value: string | null | undefined) =>
+        !value || /^https:\/\/[^/?#]+(?:[/?#].*)?$/i.test(value) || 'Use a complete HTTPS URL.',
+    },
+    {
       name: 'accessMode',
       type: 'select',
       admin: {
         description:
-          'Only public videos can be published until identity checks and protected media delivery are implemented. Other access modes can be prepared as drafts.',
+          'Protected records may publish as metadata-only gate pages. They cannot expose a managed video or external video URL until protected delivery is implemented.',
         position: 'sidebar',
       },
-      defaultValue: 'public',
+      defaultValue: 'subscriber',
       options: [
         { label: 'Public', value: 'public' },
-        { label: 'Authenticated users (draft only)', value: 'authenticated' },
-        { label: 'Subscribers (draft only)', value: 'subscriber' },
+        { label: 'Authenticated users', value: 'authenticated' },
+        { label: 'Subscribers', value: 'subscriber' },
       ],
       required: true,
     },
     {
       name: 'video',
       type: 'upload',
+      access: {
+        read: ({ doc, req, siblingData }) =>
+          isAdminOrEditor(req.user) ||
+          siblingData?.accessMode === 'public' ||
+          doc?.accessMode === 'public',
+      },
+      admin: {
+        condition: (_data, siblingData) =>
+          siblingData?.contentMode === 'full' && siblingData?.accessMode === 'public',
+        description:
+          'Public videos only. Protected delivery is not implemented and protected records cannot reference this public media library.',
+      },
       filterOptions: {
         mimeType: {
           contains: 'video/',
@@ -88,10 +133,28 @@ export const LearningVideos: CollectionConfig = {
     {
       name: 'externalVideoURL',
       type: 'text',
+      access: {
+        read: ({ doc, req, siblingData }) =>
+          isAdminOrEditor(req.user) ||
+          siblingData?.accessMode === 'public' ||
+          doc?.accessMode === 'public',
+      },
       admin: {
+        condition: (_data, siblingData) =>
+          siblingData?.contentMode === 'full' && siblingData?.accessMode === 'public',
         description: 'Optional HTTPS video destination when media is hosted outside Payload.',
       },
       validate: (value: string | null | undefined) => validateHTTPSVideoURL(value),
+    },
+    {
+      name: 'poster',
+      type: 'upload',
+      filterOptions: {
+        mimeType: {
+          contains: 'image/',
+        },
+      },
+      relationTo: 'media',
     },
     {
       name: 'duration',
@@ -107,17 +170,58 @@ export const LearningVideos: CollectionConfig = {
       relationTo: 'learning-video-categories',
     },
     {
+      name: 'product',
+      type: 'text',
+      index: true,
+    },
+    {
+      name: 'tags',
+      type: 'array',
+      fields: [
+        {
+          name: 'label',
+          type: 'text',
+          required: true,
+        },
+      ],
+    },
+    {
+      name: 'displayOrder',
+      type: 'number',
+      admin: {
+        position: 'sidebar',
+        step: 1,
+      },
+      defaultValue: 0,
+      index: true,
+      min: 0,
+      required: true,
+    },
+    {
       name: 'layout',
       type: 'blocks',
+      access: {
+        read: ({ doc, req, siblingData }) =>
+          isAdminOrEditor(req.user) ||
+          siblingData?.accessMode === 'public' ||
+          doc?.accessMode === 'public',
+      },
       admin: {
+        condition: (_data, siblingData) =>
+          siblingData?.contentMode === 'full' && siblingData?.accessMode === 'public',
         initCollapsed: true,
       },
       blocks: trayportLayoutBlocks,
     },
     seoField(),
     trayportSlugField(),
-    contentPathField({ required: false }),
-    confirmPathRedirectField(),
+    contentPathField({
+      condition: (_data, siblingData) => siblingData?.contentMode === 'full',
+      required: false,
+    }),
+    confirmPathRedirectField({
+      condition: (_data, siblingData) => siblingData?.contentMode === 'full',
+    }),
     publishedAtField(),
     createLegacySourceField(),
   ],

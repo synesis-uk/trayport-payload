@@ -1,21 +1,57 @@
 import type { NormalizedValue, SourceReusable } from '../contracts/v1'
 import { asArray, asObject, asString, legacyRef, mediaToken, referenceId } from './helpers'
 import { htmlToLexical, htmlToPlainText } from './lexical'
-import type { TransformCoverage } from './types'
+import type { LegacyReference, TransformCoverage } from './types'
 
 type TargetComponent = Record<string, unknown> & { blockType: string }
 type TargetSection = Record<string, unknown> & { blockType: string }
 export type ReusableLookup = Map<number, SourceReusable>
+export type ManagedLinkLookup = Map<
+  number,
+  {
+    kind: LegacyReference['$legacyRef']
+    relationTo: 'articles' | 'hubs' | 'learning-videos' | 'pages' | 'venues'
+  }
+>
 
 const count = (target: Record<string, number>, key: string): void => {
   target[key] = (target[key] || 0) + 1
 }
 
-const linkFromValue = (value: unknown): Record<string, unknown> | null => {
+const normalizedFeatureIcon = (value: unknown): string | undefined => {
+  const icon = asString(value)
+  if (icon === 'arrow-trend-up') return 'trend'
+  return ['lightbulb', 'trend', 'clock', 'chart', 'scan'].includes(icon) ? icon : undefined
+}
+
+const liveFallbackURL = (value: string): string => {
+  if (/^(?:#|mailto:|tel:)/i.test(value)) return value
+  try {
+    const url = new URL(value, 'http://trayport.local')
+    if (
+      ['trayport.local', 'prod.trayport.com', 'trayport.com', 'www.trayport.com'].includes(
+        url.hostname,
+      )
+    ) {
+      return new URL(
+        `${url.pathname}${url.search}${url.hash}`,
+        'https://www.trayport.com',
+      ).toString()
+    }
+  } catch {
+    return value
+  }
+  return value
+}
+
+const linkFromValue = (
+  value: unknown,
+  links: ManagedLinkLookup = new Map(),
+): Record<string, unknown> | null => {
   const object = asObject(value)
   const link = asObject(object.new_link || object.link || value)
   const label = asString(link.title || link.name || object.label)
-  const url = asString(link.url)
+  const url = asString(link.url || link.path)
 
   if (!label || !url) {
     return null
@@ -25,20 +61,41 @@ const linkFromValue = (value: unknown): Record<string, unknown> | null => {
   const style =
     legacyStyle === 'secondary' ? 'secondary' : legacyStyle === 'primary' ? 'primary' : 'link'
 
+  const numericValue = Number(asString(link.value)) || referenceId(link.value, 'post') || 0
+  const target =
+    Number.isInteger(numericValue) && !url.startsWith('#') ? links.get(numericValue) : null
+  const managedLink = target
+    ? {
+        type: 'reference',
+        reference: {
+          relationTo: target.relationTo,
+          value: legacyRef(target.kind, numericValue),
+        },
+        newTab: asString(link.target) === '_blank',
+      }
+    : {
+        type: 'custom',
+        url: liveFallbackURL(url),
+        newTab: asString(link.target) === '_blank',
+      }
+
   return {
     label,
-    url: url.replace(/^http:\/\/trayport\.local/, ''),
+    link: managedLink,
     style,
-    newTab: asString(link.target) === '_blank',
   }
 }
 
-const actionsFrom = (value: unknown): Record<string, unknown>[] =>
+const actionsFrom = (value: unknown, links: ManagedLinkLookup): Record<string, unknown>[] =>
   asArray(value)
-    .map(linkFromValue)
+    .map((item) => linkFromValue(item, links))
     .filter((item): item is Record<string, unknown> => Boolean(item))
 
-const entityItemsFrom = (value: unknown, reusables: ReusableLookup): Record<string, unknown>[] => {
+const entityItemsFrom = (
+  value: unknown,
+  reusables: ReusableLookup,
+  links: ManagedLinkLookup,
+): Record<string, unknown>[] => {
   const references = Array.isArray(value) ? value : value ? [value] : []
   return references
     .map((candidate) => {
@@ -50,26 +107,44 @@ const entityItemsFrom = (value: unknown, reusables: ReusableLookup): Record<stri
       if (!title) return null
       const redirect = asObject(asArray(data.page_redirect)[0])
       const externalLink = asObject(data.external_link)
+      const rawURL = asString(
+        externalLink.url ||
+          redirect.path ||
+          data.website ||
+          reusable?.path ||
+          item.path ||
+          item.url,
+      )
+      const rawValue = redirect.value || redirect.post || redirect.page
+      const mappedLink = rawURL
+        ? linkFromValue(
+            {
+              new_link: {
+                ...redirect,
+                title: htmlToPlainText(title),
+                url: rawURL,
+                value: rawValue,
+              },
+            },
+            links,
+          )
+        : null
       return {
         title: htmlToPlainText(title),
         description: htmlToLexical(
           data.short_description || data.description || data.job_role || data.testimonial || '',
         ),
         media: mediaToken(data.display_logo || data.image || data.logo),
-        url: asString(
-          externalLink.url ||
-            redirect.path ||
-            data.website ||
-            reusable?.path ||
-            item.path ||
-            item.url,
-        ),
+        link: mappedLink?.link,
       }
     })
     .filter(Boolean) as Record<string, unknown>[]
 }
 
-const featureItems = (component: Record<string, NormalizedValue>): Record<string, unknown>[] => {
+const featureItems = (
+  component: Record<string, NormalizedValue>,
+  links: ManagedLinkLookup,
+): Record<string, unknown>[] => {
   const candidates = [
     ...asArray(component.feature),
     ...asArray(component.features),
@@ -83,19 +158,26 @@ const featureItems = (component: Record<string, NormalizedValue>): Record<string
       const description = item.description || item.body || ''
       const imageGroup = asObject(item.image)
       const media = mediaToken(imageGroup.image || item.image || item.logo)
-      const button = linkFromValue(item.button)
+      const button = linkFromValue(item.button, links)
+      const icon = normalizedFeatureIcon(item.icon)
 
       if (!title && !description && !media) {
         return null
       }
 
       return {
-        title: title || 'Feature',
+        title,
         body: htmlToLexical(description),
-        icon: asString(item.icon),
+        ...(icon ? { icon } : {}),
         media,
-        url: asString(button?.url),
-        linkLabel: asString(button?.label),
+        ...(button
+          ? {
+              link: {
+                ...(asObject(button.link) as Record<string, unknown>),
+                label: asString(button.label),
+              },
+            }
+          : {}),
       }
     })
     .filter(Boolean) as Record<string, unknown>[]
@@ -105,6 +187,7 @@ const mapComponent = (
   componentValue: unknown,
   coverage: TransformCoverage,
   reusables: ReusableLookup = new Map(),
+  links: ManagedLinkLookup = new Map(),
 ): TargetComponent[] => {
   const component = asObject(componentValue)
   const layout = asString(component.acf_fc_layout)
@@ -156,7 +239,7 @@ const mapComponent = (
       ]
     }
     case 'buttons': {
-      const actions = actionsFrom(component.buttons)
+      const actions = actionsFrom(component.buttons, links)
       return actions.length ? [{ blockType: 'actions', actions }] : []
     }
     case 'image': {
@@ -199,7 +282,7 @@ const mapComponent = (
             feature: reusable.data.feature,
           } as Record<string, NormalizedValue>)
         : component
-      const items = featureItems(source)
+      const items = featureItems(source, links)
       return items.length
         ? [
             {
@@ -238,6 +321,7 @@ const mapComponent = (
           return {
             question,
             answer: htmlToLexical(item.answer),
+            media: mediaToken(item.image),
           }
         })
         .filter(Boolean) as Record<string, unknown>[]
@@ -247,7 +331,7 @@ const mapComponent = (
     case 'products':
     case 'clients': {
       const category = asObject(component.category)
-      const items = entityItemsFrom(category.specific || category.single, reusables)
+      const items = entityItemsFrom(category.specific || category.single, reusables, links)
       return items.length
         ? [
             {
@@ -335,6 +419,26 @@ const mapComponent = (
             'Chart series are supplied by the application market-data store rather than Payload.',
         },
       ]
+    case 'office': {
+      const category = asObject(component.category)
+      const officeId = referenceId(category.single, 'post')
+      const office = officeId ? legacyRef('office', officeId) : null
+      return office
+        ? [
+            {
+              blockType: 'office',
+              office,
+              appearance: asString(category.style) === 'dark' ? 'featured' : 'standard',
+            },
+          ]
+        : []
+    }
+    case 'form':
+      coverage.ignoredComponentLayouts.form = {
+        count: (coverage.ignoredComponentLayouts.form?.count || 0) + 1,
+        reason: 'Legacy HubSpot forms are explicitly deferred from the production pilot.',
+      }
+      return []
     case 'icon':
       coverage.ignoredComponentLayouts.icon = {
         count: (coverage.ignoredComponentLayouts.icon?.count || 0) + 1,
@@ -360,7 +464,10 @@ const sectionTheme = (section: Record<string, NormalizedValue>): string => {
   return 'light'
 }
 
-const mapHero = (section: Record<string, NormalizedValue>): TargetSection => {
+const mapHero = (
+  section: Record<string, NormalizedValue>,
+  links: ManagedLinkLookup,
+): TargetSection => {
   const hero = asObject(section.hero)
   const content = asObject(hero.new_content || hero.content)
   const header = asObject(content.header)
@@ -378,7 +485,7 @@ const mapHero = (section: Record<string, NormalizedValue>): TargetSection => {
     body: htmlToLexical(subheader.text || content.subtitle),
     media: importedVideo || mediaToken(content.image),
     externalVideoURL: importedVideo || isLegacyLocalVideo ? '' : externalVideoURL,
-    actions: actionsFrom(content.buttons),
+    actions: [...actionsFrom(content.buttons, links), ...actionsFrom(content.links, links)],
     appearance: content.image || importedVideo || externalVideoURL ? 'image' : 'dark',
   }
 }
@@ -387,6 +494,7 @@ const mapColumnsSection = (
   section: Record<string, NormalizedValue>,
   coverage: TransformCoverage,
   reusables: ReusableLookup,
+  links: ManagedLinkLookup,
 ): TargetSection | null => {
   const sourceColumns =
     asString(section.acf_fc_layout) === 'single'
@@ -401,9 +509,23 @@ const mapColumnsSection = (
   const columns = sourceColumns
     .map((columnValue) => {
       const column = asObject(columnValue)
-      const components = asArray(column.components).flatMap((component) =>
-        mapComponent(component, coverage, reusables),
-      )
+      const components = asArray(column.components)
+        .filter(Boolean)
+        .flatMap((component) => mapComponent(component, coverage, reusables, links))
+      for (let index = 0; index < components.length - 1; index += 1) {
+        const current = components[index]
+        const next = components[index + 1]
+        if (
+          current?.blockType === 'heading' &&
+          current.level === 'h4' &&
+          current.eyebrow === current.text &&
+          next?.blockType === 'heading'
+        ) {
+          next.eyebrow = current.text
+          components.splice(index, 1)
+          index -= 1
+        }
+      }
       if (!components.length) return null
 
       const rawSpan = asString(column.acfe_layout_col)
@@ -440,8 +562,13 @@ const mapColumnsSection = (
 export const mapPageLayout = (
   acf: Record<string, NormalizedValue>,
   coverage: TransformCoverage,
-  options: { appendArticleListing?: boolean } = {},
+  options: {
+    appendArticleListing?: boolean
+    articleFamily?: 'insights' | 'news'
+    appendLearningVideoListing?: boolean
+  } = {},
   reusables: ReusableLookup = new Map(),
+  links: ManagedLinkLookup = new Map(),
 ): TargetSection[] => {
   const sections = asArray(
     Array.isArray(acf.sections_new) && acf.sections_new.length ? acf.sections_new : acf.sections,
@@ -454,11 +581,11 @@ export const mapPageLayout = (
     count(coverage.topLevelLayouts, layout || '(missing)')
 
     if (layout === 'hero') {
-      blocks.push(mapHero(section))
+      blocks.push(mapHero(section, links))
       continue
     }
     if (layout === 'columns' || layout === 'single') {
-      const block = mapColumnsSection(section, coverage, reusables)
+      const block = mapColumnsSection(section, coverage, reusables, links)
       if (block) blocks.push(block)
       continue
     }
@@ -469,33 +596,30 @@ export const mapPageLayout = (
   if (options.appendArticleListing) {
     blocks.push({
       blockType: 'articleListing',
-      heading: 'Latest insights',
+      family: options.articleFamily || 'insights',
+      heading: options.articleFamily === 'news' ? 'Latest news' : 'Latest insights',
       pageSize: 12,
       showCategoryFilter: true,
+    })
+  }
+
+  if (options.appendLearningVideoListing) {
+    blocks.push({
+      blockType: 'learningVideoListing',
+      heading: 'Explore the Learning Hub',
+      pageSize: 15,
+      showCategoryFilter: true,
+      showProductFilter: true,
     })
   }
 
   return blocks
 }
 
-const articleSectionFromComponent = (
-  component: Record<string, NormalizedValue>,
-  coverage: TransformCoverage,
-): TargetSection | null => {
-  const mapped = mapComponent(component, coverage)
-  if (!mapped.length) return null
-  return {
-    blockType: 'contentSection',
-    theme: 'white',
-    width: 'reading',
-    spacing: 'compact',
-    columns: [{ span: '12', components: mapped }],
-  }
-}
-
 export const mapArticleLayout = (
   sectionsValue: unknown,
   coverage: TransformCoverage,
+  links: ManagedLinkLookup = new Map(),
 ): TargetSection[] => {
   const blocks: TargetSection[] = []
 
@@ -537,12 +661,26 @@ export const mapArticleLayout = (
           tag: 'h2',
         },
       }
+    } else if (layout === 'form') {
+      coverage.ignoredComponentLayouts.form = {
+        count: (coverage.ignoredComponentLayouts.form?.count || 0) + 1,
+        reason: 'Legacy HubSpot forms are explicitly deferred from the production pilot.',
+      }
     } else {
       coverage.unsupportedTopLevelLayouts.push(layout || '(missing)')
     }
 
     if (component) {
-      const block = articleSectionFromComponent(component, coverage)
+      const mapped = mapComponent(component, coverage, new Map(), links)
+      const block: TargetSection | null = mapped.length
+        ? {
+            blockType: 'contentSection',
+            theme: 'white',
+            width: 'reading',
+            spacing: 'compact',
+            columns: [{ span: '12', components: mapped }],
+          }
+        : null
       if (block) {
         if (layout === 'index-point') block.anchor = asString(section.anchor)
         blocks.push(block)

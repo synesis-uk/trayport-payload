@@ -1,11 +1,27 @@
 import type { DefaultTypedEditorState } from '@payloadcms/richtext-lexical'
 import configPromise from '@payload-config'
-import { ArrowRight, BarChart3, ExternalLink } from 'lucide-react'
+import {
+  ArrowRight,
+  BarChart3,
+  ChartNoAxesCombined,
+  Clock3,
+  ExternalLink,
+  Lightbulb,
+  Mail,
+  MapPin,
+  Phone,
+  ScanLine,
+  TrendingUp,
+} from 'lucide-react'
 import { getPayload } from 'payload'
 
 import type { Media as MediaType } from '@/payload-types'
 import RichText from '@/components/RichText'
 import { ArticleListingClient } from './ArticleListingClient'
+import type { ContentLink } from './contentLink'
+import { ManagedLink } from './ManagedLink'
+import { resolveContentLink } from './contentLink'
+import { LearningVideoListingClient } from './LearningVideoListingClient'
 import { getMarketVolumeQuarterly } from './marketData'
 import { TrayportMedia } from './TrayportMedia'
 
@@ -25,28 +41,43 @@ const richText = (value: unknown, className?: string) => {
   )
 }
 
+const legacyOrManagedLink = (value: UnknownRecord): ContentLink => {
+  if (value.link && typeof value.link === 'object') return value.link as ContentLink
+  return {
+    label: text(value.label || value.linkLabel),
+    newTab: Boolean(value.newTab),
+    type: 'custom',
+    url: text(value.url),
+  }
+}
+
 const Actions = ({ value }: { value: unknown }) => {
   const actions = array(value)
     .map(record)
-    .filter((item) => text(item.label) && text(item.url))
+    .filter(
+      (item) => text(item.label) && resolveContentLink(legacyOrManagedLink(item)).href !== '#',
+    )
   if (!actions.length) return null
 
   return (
     <div className="trayport-actions">
       {actions.map((action, index) => {
-        const newTab = Boolean(action.newTab)
+        const link = legacyOrManagedLink(action)
+        const { isExternal, newTab } = resolveContentLink(link)
         const style = text(action.style) || 'primary'
         return (
-          <a
+          <ManagedLink
             className={`trayport-action trayport-action--${style}`}
-            href={text(action.url)}
-            key={`${text(action.url)}-${index}`}
-            rel={newTab ? 'noreferrer' : undefined}
-            target={newTab ? '_blank' : undefined}
+            key={`${text(action.label)}-${index}`}
+            link={link}
           >
             <span>{text(action.label)}</span>
-            {newTab ? <ExternalLink aria-hidden size={16} /> : <ArrowRight aria-hidden size={17} />}
-          </a>
+            {newTab || isExternal ? (
+              <ExternalLink aria-hidden size={16} />
+            ) : (
+              <ArrowRight aria-hidden size={17} />
+            )}
+          </ManagedLink>
         )
       })}
     </div>
@@ -315,28 +346,47 @@ const Component = ({ component }: { component: UnknownRecord }) => {
       if (!items.length) return null
       return (
         <div className={`trayport-features trayport-features--${text(component.layout) || 'grid'}`}>
-          {items.map((item, index) => (
-            <article className="trayport-feature" key={`${text(item.title)}-${index}`}>
-              {item.media ? (
-                <TrayportMedia
-                  className="trayport-feature__media"
-                  media={item.media as MediaType}
-                />
-              ) : null}
-              <div className="trayport-feature__body">
-                {text(item.icon) ? (
-                  <span className="trayport-feature__icon">{text(item.icon)}</span>
+          {items.map((item, index) => {
+            const icon = text(item.icon)
+            const Icon =
+              icon === 'lightbulb'
+                ? Lightbulb
+                : icon === 'trend'
+                  ? TrendingUp
+                  : icon === 'clock'
+                    ? Clock3
+                    : icon === 'chart'
+                      ? ChartNoAxesCombined
+                      : icon === 'scan'
+                        ? ScanLine
+                        : null
+            const link = legacyOrManagedLink(item)
+            const hasLink = resolveContentLink(link).href !== '#'
+            return (
+              <article className="trayport-feature" key={`${text(item.title)}-${index}`}>
+                {item.media ? (
+                  <TrayportMedia
+                    className="trayport-feature__media"
+                    media={item.media as MediaType}
+                  />
                 ) : null}
-                <h3>{text(item.title)}</h3>
-                {richText(item.body, 'trayport-richtext')}
-                {text(item.url) ? (
-                  <a className="trayport-inline-link" href={text(item.url)}>
-                    {text(item.linkLabel) || 'Learn more'} <ArrowRight aria-hidden size={16} />
-                  </a>
-                ) : null}
-              </div>
-            </article>
-          ))}
+                <div className="trayport-feature__body">
+                  {Icon ? (
+                    <span className="trayport-feature__icon">
+                      <Icon aria-hidden size={22} />
+                    </span>
+                  ) : null}
+                  {text(item.title) ? <h3>{text(item.title)}</h3> : null}
+                  {richText(item.body, 'trayport-richtext')}
+                  {hasLink ? (
+                    <ManagedLink className="trayport-inline-link" link={link}>
+                      {link.label || 'Learn more'} <ArrowRight aria-hidden size={16} />
+                    </ManagedLink>
+                  ) : null}
+                </div>
+              </article>
+            )
+          })}
         </div>
       )
     }
@@ -365,7 +415,18 @@ const Component = ({ component }: { component: UnknownRecord }) => {
           {items.map((item, index) => (
             <details key={`${text(item.question)}-${index}`}>
               <summary>{text(item.question)}</summary>
-              {richText(item.answer, 'trayport-richtext')}
+              <div
+                className={
+                  item.media
+                    ? 'trayport-faq__answer trayport-faq__answer--media'
+                    : 'trayport-faq__answer'
+                }
+              >
+                {richText(item.answer, 'trayport-richtext')}
+                {item.media ? (
+                  <TrayportMedia media={item.media as MediaType} showFallbackLink={false} />
+                ) : null}
+              </div>
             </details>
           ))}
         </div>
@@ -378,28 +439,30 @@ const Component = ({ component }: { component: UnknownRecord }) => {
           className={`trayport-entities trayport-entities--${text(component.kind) || 'general'}`}
         >
           {items.map((item, index) => {
+            const link = legacyOrManagedLink(item)
+            const hasLink = resolveContentLink(link).href !== '#'
             const body = (
               <>
                 {item.media ? (
                   <TrayportMedia
                     className="trayport-entity__media"
                     media={item.media as MediaType}
-                    showFallbackLink={!text(item.url)}
+                    showFallbackLink={!hasLink}
                   />
                 ) : null}
                 <h3>{text(item.title)}</h3>
                 {richText(item.description, 'trayport-richtext')}
-                {text(item.url) ? <ArrowRight aria-hidden size={17} /> : null}
+                {hasLink ? <ArrowRight aria-hidden size={17} /> : null}
               </>
             )
-            return text(item.url) ? (
-              <a
+            return hasLink ? (
+              <ManagedLink
                 className="trayport-entity"
-                href={text(item.url)}
                 key={`${text(item.title)}-${index}`}
+                link={link}
               >
                 {body}
-              </a>
+              </ManagedLink>
             ) : (
               <article className="trayport-entity" key={`${text(item.title)}-${index}`}>
                 {body}
@@ -492,6 +555,48 @@ const Component = ({ component }: { component: UnknownRecord }) => {
       )
     case 'dataChart':
       return <DataChart component={component} />
+    case 'office': {
+      const office = record(component.office)
+      if (!text(office.legalName || office.title)) return null
+      const prefix = text(office.addressPrefix)
+      const address = text(office.address)
+      const mapURL =
+        office.coordinates && typeof office.coordinates === 'object'
+          ? `https://www.openstreetmap.org/?mlat=${text(record(office.coordinates).latitude)}&mlon=${text(record(office.coordinates).longitude)}`
+          : ''
+      return (
+        <article
+          className={`trayport-office trayport-office--${text(component.appearance) || 'standard'}`}
+        >
+          <p className="trayport-eyebrow">{text(office.title)}</p>
+          <h3>{text(office.legalName || office.title)}</h3>
+          <address>
+            {prefix ? <span>{prefix}</span> : null}
+            <span>{address}</span>
+          </address>
+          <div className="trayport-office__contacts">
+            {text(office.phone) ? (
+              <a href={`tel:${text(office.phone).replace(/[^+\d]/g, '')}`}>
+                <Phone aria-hidden size={16} />
+                {text(office.phone)}
+              </a>
+            ) : null}
+            {text(office.email) ? (
+              <a href={`mailto:${text(office.email)}`}>
+                <Mail aria-hidden size={16} />
+                {text(office.email)}
+              </a>
+            ) : null}
+            {mapURL ? (
+              <a href={mapURL} rel="noopener noreferrer" target="_blank">
+                <MapPin aria-hidden size={16} />
+                View map
+              </a>
+            ) : null}
+          </div>
+        </article>
+      )
+    }
     default:
       return null
   }
@@ -557,12 +662,24 @@ const Hero = ({ block, priority = false }: { block: UnknownRecord; priority?: bo
 
 const ArticleListing = async ({ block }: { block: UnknownRecord }) => {
   const payload = await getPayload({ config: configPromise })
+  const family = text(block.family) || 'insights'
+  const types =
+    family === 'news'
+      ? ['news']
+      : family === 'events'
+        ? ['event']
+        : family === 'all'
+          ? ['insight', 'webinar', 'video', 'case-study', 'news', 'event']
+          : ['insight', 'webinar', 'video', 'case-study']
   const result = await payload.find({
     collection: 'articles',
     depth: 2,
     limit: 100,
     overrideAccess: false,
     sort: '-publishedAt',
+    where: {
+      articleType: { in: types },
+    },
   })
 
   return (
@@ -575,8 +692,51 @@ const ArticleListing = async ({ block }: { block: UnknownRecord }) => {
         </div>
         <ArticleListingClient
           articles={result.docs}
+          family={family}
           initialPageSize={Number(block.pageSize) || 12}
           showCategoryFilter={Boolean(block.showCategoryFilter)}
+        />
+      </div>
+    </section>
+  )
+}
+
+const LearningVideoListing = async ({ block }: { block: UnknownRecord }) => {
+  const payload = await getPayload({ config: configPromise })
+  const result = await payload.find({
+    collection: 'learning-videos',
+    depth: 2,
+    limit: 100,
+    overrideAccess: false,
+    pagination: false,
+    select: {
+      accessMode: true,
+      categories: true,
+      contentMode: true,
+      duration: true,
+      externalDestination: true,
+      path: true,
+      poster: true,
+      product: true,
+      summary: true,
+      title: true,
+    },
+    sort: 'displayOrder',
+  })
+
+  return (
+    <section className="trayport-section trayport-section--light trayport-listing trayport-learning-listing">
+      <div className="trayport-container">
+        <div className="trayport-listing__header">
+          <p className="trayport-eyebrow">Learning Hub</p>
+          <h2>{text(block.heading) || 'Explore the Learning Hub'}</h2>
+          {richText(block.intro, 'trayport-richtext')}
+        </div>
+        <LearningVideoListingClient
+          initialPageSize={Number(block.pageSize) || 15}
+          showCategoryFilter={Boolean(block.showCategoryFilter)}
+          showProductFilter={Boolean(block.showProductFilter)}
+          videos={result.docs}
         />
       </div>
     </section>
@@ -598,6 +758,9 @@ export const TrayportBlocks = async ({ blocks }: { blocks: unknown }) => {
         }
         if (type === 'articleListing') {
           return <ArticleListing block={block} key={`${type}-${index}`} />
+        }
+        if (type === 'learningVideoListing') {
+          return <LearningVideoListing block={block} key={`${type}-${index}`} />
         }
         return null
       })}

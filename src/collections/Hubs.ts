@@ -37,7 +37,10 @@ export const Hubs: CollectionConfig = {
     useAsTitle: 'title',
   },
   defaultPopulate: {
+    assetClasses: true,
     code: true,
+    contentMode: true,
+    externalDestination: true,
     heroMedia: true,
     meta: {
       description: true,
@@ -75,6 +78,18 @@ export const Hubs: CollectionConfig = {
         },
       ],
       required: true,
+    },
+    {
+      name: 'externalDestination',
+      type: 'text',
+      admin: {
+        condition: (_data, siblingData) => siblingData?.contentMode === 'map-only',
+        description:
+          'Temporary live-site fallback used by managed relationships until this hub owns a migrated route.',
+        position: 'sidebar',
+      },
+      validate: (value: string | null | undefined) =>
+        !value || /^https:\/\/[^/?#]+(?:[/?#].*)?$/i.test(value) || 'Use a complete HTTPS URL.',
     },
     {
       type: 'tabs',

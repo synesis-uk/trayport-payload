@@ -5,6 +5,8 @@ import path from 'node:path'
 import 'dotenv/config'
 import { Pool } from 'pg'
 
+import { verifyAcceptedRun } from '../lib/acceptedRun'
+
 type MarketRow = {
   assetClassLegacyId: number
   exchangeTraded: string | null
@@ -58,7 +60,10 @@ export const loadMarketData = async (
   runDir: string,
   options: { dryRun?: boolean } = {},
 ): Promise<MarketLoadReport> => {
-  const rows = readRows(runDir)
+  const resolvedRunDir = path.resolve(runDir)
+  verifyAcceptedRun(path.basename(resolvedRunDir), resolvedRunDir)
+
+  const rows = readRows(resolvedRunDir)
   const pool = new Pool({ connectionString: databaseURL(), max: 1 })
   const client = await pool.connect()
 
@@ -216,7 +221,7 @@ export const loadMarketData = async (
     if (options.dryRun) {
       await client.query('rollback')
       fs.writeFileSync(
-        path.join(runDir, 'reports', 'market-load.json'),
+        path.join(resolvedRunDir, 'reports', 'market-load.json'),
         `${JSON.stringify({ dryRun: true, ...predictedReport }, null, 2)}\n`,
       )
       return predictedReport
@@ -295,7 +300,7 @@ export const loadMarketData = async (
 
     await client.query('commit')
     fs.writeFileSync(
-      path.join(runDir, 'reports', 'market-load.json'),
+      path.join(resolvedRunDir, 'reports', 'market-load.json'),
       `${JSON.stringify({ dryRun: false, ...report }, null, 2)}\n`,
     )
     return report

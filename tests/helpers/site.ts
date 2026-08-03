@@ -48,6 +48,54 @@ export const representativeRoutes = [
     path: '/market-coverage/german-power/',
     title: /German Power \| Virtual Hub \| Trayport/i,
   },
+  {
+    heading: 'Office Locations',
+    legacyId: 2205,
+    path: '/company/offices/',
+    title: /Trayport Office Locations \| UK, Austria, Germany, Singapore/i,
+  },
+  {
+    heading: 'Tradesignal',
+    legacyId: 1926,
+    path: '/products/tradesignal/',
+    title: /Tradesignal \| Intuitive Charting & Analysis for Traders \| Trayport/i,
+  },
+  {
+    heading: 'FAQs',
+    legacyId: 7609,
+    path: '/resources/faqs/',
+    title: /Frequently Asked Questions \| Trayport/i,
+  },
+  {
+    heading: 'News',
+    legacyId: 9244,
+    path: '/resources/news/',
+    title: /Insights, News & Events \| Market Analysis & Updates \| Trayport/i,
+  },
+  {
+    heading: 'Trayport confirms participation at E-World 2026',
+    legacyId: 10030,
+    path: '/event/e-world-2026/',
+    title: /E-world 2026 \| Events \| Trayport/i,
+  },
+  {
+    heading: 'The Learning Hub',
+    legacyId: 3311,
+    path: '/learning-hub/',
+    title: /Trayport Learning Hub \| Product Features & Functionality Videos/i,
+  },
+  {
+    heading: 'Trading in Joule',
+    legacyId: 8454,
+    path: '/learning-hub-video/trading-in-joule/',
+    title: /Trading in Joule \| Learning Hub \| Trayport/i,
+  },
+  {
+    heading: 'EEX',
+    legacyId: 3363,
+    path: '/venue/eex/',
+    title: /EEX \| Exchange \| Trayport/i,
+  },
 ] as const satisfies readonly RepresentativeRoute[]
 
 export const activeNavigationRoots = ['Company', 'Products', 'Markets', 'Regions', 'Resources']

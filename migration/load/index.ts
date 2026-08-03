@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -5,12 +6,14 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 
 import { migrationConfig } from '../lib/config'
+import { verifyAcceptedRun } from '../lib/acceptedRun'
 import type { LegacyReference, TargetCollection, TargetRecord } from '../transform/types'
 import { loadMarketData } from './marketData'
 
 type PayloadDocument = {
   id: number | string
   [key: string]: unknown
+  sourceFileHash?: string | null
   legacySource?: {
     contentHash?: string | null
   } | null
@@ -33,7 +36,12 @@ type LoadOptions = {
 
 const referenceKindForTarget: Partial<Record<TargetCollection, LegacyReference['$legacyRef']>> = {
   media: 'media',
+  pages: 'page',
+  articles: 'article',
+  hubs: 'hub',
   venues: 'venue',
+  'learning-videos': 'learning-video',
+  offices: 'office',
   'article-categories': 'article-category',
   'learning-video-categories': 'learning-video-category',
   'asset-classes': 'asset-class',
@@ -48,12 +56,81 @@ const loadPriority: Record<TargetRecord['target'], number> = {
   'venue-types': 10,
   regions: 10,
   media: 20,
+  offices: 25,
   venues: 30,
   pages: 40,
   articles: 40,
   hubs: 40,
   'learning-videos': 40,
+  redirects: 45,
   global: 50,
+}
+
+const relationshipOwnerTargets = new Set<TargetRecord['target']>([
+  'pages',
+  'articles',
+  'hubs',
+  'venues',
+  'learning-videos',
+])
+
+const draftSkeletonData = (record: TargetRecord): Record<string, unknown> => {
+  const title =
+    typeof record.data.title === 'string' && record.data.title.trim()
+      ? record.data.title
+      : `Imported ${record.target} ${record.legacy.legacyId}`
+  const slug = typeof record.data.slug === 'string' ? record.data.slug : undefined
+  const base = {
+    _status: 'draft',
+    legacySource: {
+      ...record.legacy,
+      // A skeleton must always be replaced by the complete accepted record.
+      contentHash: null,
+    },
+    ...(slug ? { slug } : {}),
+    title,
+  }
+
+  switch (record.target) {
+    case 'pages':
+      return {
+        ...base,
+        layout: [
+          {
+            actions: [],
+            appearance: 'dark',
+            blockType: 'trayportHero',
+            heading: title,
+          },
+        ],
+        pageType: 'standard',
+      }
+    case 'articles':
+      return {
+        ...base,
+        articleType: 'insight',
+        contentMode: 'listing',
+      }
+    case 'hubs':
+      return {
+        ...base,
+        contentMode: 'map-only',
+      }
+    case 'venues':
+      return {
+        ...base,
+        contentMode: 'relationship-only',
+      }
+    case 'learning-videos':
+      return {
+        ...base,
+        accessMode: 'public',
+        contentMode: 'listing',
+        displayOrder: 0,
+      }
+    default:
+      throw new Error(`Cannot create a relationship skeleton for ${record.target}.`)
+  }
 }
 
 const resolveRunId = (requested?: string): string => {
@@ -83,37 +160,65 @@ const isToken = (value: unknown): value is LegacyReference => {
   return typeof object.$legacyRef === 'string' && typeof object.legacyId === 'number'
 }
 
-const resolveTokens = (
+type ResolvedTokenValue = {
+  containsUnresolved: boolean
+  value: unknown
+}
+
+const resolveTokenValue = (
   value: unknown,
   ids: Map<string, number | string>,
   unresolved: Set<string>,
-): unknown => {
+): ResolvedTokenValue => {
   if (isToken(value)) {
     const key = tokenKey(value.$legacyRef, value.legacyId)
     const resolved = ids.get(key)
     if (resolved === undefined) {
       unresolved.add(key)
-      return undefined
+      return { containsUnresolved: true, value: undefined }
     }
-    return resolved
+    return { containsUnresolved: false, value: resolved }
   }
 
   if (Array.isArray(value)) {
-    return value
-      .map((item) => resolveTokens(item, ids, unresolved))
-      .filter((item) => item !== undefined)
+    const resolvedItems = value
+      .map((item) => resolveTokenValue(item, ids, unresolved))
+      // Relationship arrays may contain objects whose required relationship is not
+      // available until a later pass. Drop that whole item instead of retaining an
+      // invalid shell such as { connectionType: 'd' } without its required hub.
+      .filter(({ containsUnresolved, value: child }) => !containsUnresolved && child !== undefined)
+      .map(({ value: child }) => child)
+
+    // An array is the ownership boundary for an item. Any unresolved child was
+    // safely removed, so parent objects and layout blocks can remain as a skeleton.
+    return { containsUnresolved: false, value: resolvedItems }
   }
 
   if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .map(([key, child]) => [key, resolveTokens(child, ids, unresolved)] as const)
-        .filter(([, child]) => child !== undefined),
-    )
+    let containsUnresolved = false
+    const entries = Object.entries(value as Record<string, unknown>)
+      .map(([key, child]) => {
+        const resolved = resolveTokenValue(child, ids, unresolved)
+        if (resolved.containsUnresolved) containsUnresolved = true
+        return [key, resolved] as const
+      })
+      .filter(([, resolved]) => !resolved.containsUnresolved && resolved.value !== undefined)
+      .map(([key, resolved]) => [key, resolved.value] as const)
+
+    return {
+      containsUnresolved,
+      value: Object.fromEntries(entries),
+    }
   }
 
-  return value
+  return { containsUnresolved: false, value }
 }
+
+const resolveTokens = (
+  value: unknown,
+  ids: Map<string, number | string>,
+  unresolved: Set<string>,
+): unknown => resolveTokenValue(value, ids, unresolved).value
 
 const isoInstantPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/
 
@@ -172,12 +277,34 @@ const comparableProjection = (current: unknown, desired: unknown): unknown => {
 export const isEquivalentPayloadData = (current: unknown, desired: unknown): boolean =>
   JSON.stringify(comparableProjection(current, desired)) === JSON.stringify(desired)
 
-const safeSourceFile = (record: TargetRecord): string | undefined => {
+type MediaSourceTransport = {
+  availability?: string
+  fileHash?: string | null
+  mimeType?: string
+  relativePath?: string | null
+}
+
+const hashFile = (filePath: string): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256')
+    const stream = fs.createReadStream(filePath)
+    stream.on('data', (chunk) => hash.update(chunk))
+    stream.on('error', reject)
+    stream.on('end', () => resolve(hash.digest('hex')))
+  })
+
+const safeSourceFile = async (record: TargetRecord): Promise<string | undefined> => {
   if (record.target !== 'media') return undefined
-  const source = record.data.source as
-    { availability?: string; mimeType?: string; relativePath?: string | null } | undefined
+  const source = record.data.source as MediaSourceTransport | undefined
   if (source?.availability === 'unavailable') {
-    return path.resolve(migrationConfig.projectRoot, 'migration/assets/missing-media.svg')
+    const placeholder = path.resolve(
+      migrationConfig.projectRoot,
+      'migration/assets/missing-media.svg',
+    )
+    if (!fs.existsSync(placeholder)) {
+      throw new Error(`Missing unavailable-media placeholder for ${record.legacy.legacyId}`)
+    }
+    return placeholder
   }
   if (!source?.relativePath) {
     return undefined
@@ -193,42 +320,97 @@ const safeSourceFile = (record: TargetRecord): string | undefined => {
       `Missing media source for WordPress attachment ${record.legacy.legacyId}: ${candidate}`,
     )
   }
-  return candidate
+  const resolvedCandidate = fs.realpathSync(candidate)
+  if (!resolvedCandidate.startsWith(`${root}${path.sep}`)) {
+    throw new Error(`Unsafe media source path for WordPress attachment ${record.legacy.legacyId}`)
+  }
+  if (!fs.statSync(resolvedCandidate).isFile()) {
+    throw new Error(
+      `Media source is not a regular file for WordPress attachment ${record.legacy.legacyId}`,
+    )
+  }
+  if (!source.fileHash) {
+    throw new Error(`Missing media fingerprint for WordPress attachment ${record.legacy.legacyId}`)
+  }
+  const actualHash = await hashFile(resolvedCandidate)
+  if (actualHash !== source.fileHash) {
+    throw new Error(
+      `Media source changed after extraction for WordPress attachment ${record.legacy.legacyId}`,
+    )
+  }
+  return resolvedCandidate
 }
 
-const sourceFileForOperation = (
-  record: TargetRecord,
-  existing?: PayloadDocument,
-): string | undefined => {
-  const sourceFile = safeSourceFile(record)
-  if (!existing || record.target !== 'media' || !sourceFile) return sourceFile
+const storedMediaMatchesSource = (record: TargetRecord, existing?: PayloadDocument): boolean => {
+  if (record.target !== 'media') return true
+  if (!existing) return false
 
-  const source = record.data.source as { availability?: string; mimeType?: string } | undefined
+  const source = record.data.source as MediaSourceTransport | undefined
   const hasStoredFile =
     typeof existing.filename === 'string' &&
     existing.filename.length > 0 &&
     typeof existing.url === 'string' &&
     existing.url.length > 0
-  if (!hasStoredFile) return sourceFile
+  if (!hasStoredFile) return false
+  if (source?.availability === 'unavailable') return true
+
+  return (
+    typeof source?.fileHash === 'string' &&
+    existing.sourceFileHash === source.fileHash &&
+    typeof existing.mimeType === 'string' &&
+    existing.mimeType === source.mimeType
+  )
+}
+
+const sourceFileForOperation = async (
+  record: TargetRecord,
+  existing?: PayloadDocument,
+): Promise<string | undefined> => {
+  const sourceFile = await safeSourceFile(record)
+  if (!existing || record.target !== 'media' || !sourceFile) return sourceFile
 
   // Metadata-only changes must not upload another object. Unavailable sources retain
-  // their existing placeholder; local sources are replaced only when their MIME type
-  // no longer matches the stored object. Binary checksums are not present in WordPress.
-  if (
-    source?.availability === 'unavailable' ||
-    (typeof existing.mimeType === 'string' && existing.mimeType === source?.mimeType)
-  ) {
-    return undefined
-  }
+  // their existing placeholder; local files are reused only when both their source
+  // fingerprint and MIME type match the already imported object.
+  if (storedMediaMatchesSource(record, existing)) return undefined
 
   return sourceFile
 }
+
+const recordLoadError = (
+  phase: 'skeleton pass' | 'first pass' | 'relationship pass',
+  record: TargetRecord,
+  error: unknown,
+): Error =>
+  new Error(
+    `Migration ${phase} failed for ${record.target}:${record.legacy.legacyId}: ${
+      error instanceof Error ? error.message : String(error)
+    }`,
+    { cause: error },
+  )
 
 const findExisting = async (
   payload: SystemPayload,
   record: TargetRecord,
 ): Promise<PayloadDocument | undefined> => {
   if (record.target === 'global') return undefined
+
+  if (record.target === 'redirects') {
+    const from = record.data.from
+    if (typeof from !== 'string' || !from.startsWith('/')) {
+      throw new Error(
+        `Redirect target ${record.legacy.legacyId} is missing a canonical source path.`,
+      )
+    }
+    const result = await payload.find({
+      collection: 'redirects',
+      depth: 0,
+      limit: 1,
+      overrideAccess: true,
+      where: { from: { equals: from } },
+    })
+    return result.docs[0]
+  }
 
   const result = await payload.find({
     collection: record.target,
@@ -248,17 +430,22 @@ const findExisting = async (
 export const load = async (options: LoadOptions = {}): Promise<void> => {
   const runId = resolveRunId(options.runId)
   const runDir = path.resolve(migrationConfig.workDir, runId)
+  verifyAcceptedRun(runId, runDir)
   const targets = readTargets(runDir).sort(
     (left, right) =>
       loadPriority[left.target] - loadPriority[right.target] ||
       left.legacy.legacyId - right.legacy.legacyId,
   )
+  // Verify every source binary before opening Payload or writing application-owned
+  // market data. This makes a stale or missing upload a pre-write failure instead
+  // of leaving a partially applied migration for the retry path to repair.
+  const mediaFiles = (
+    await Promise.all(
+      targets.filter((record) => record.target === 'media').map((record) => safeSourceFile(record)),
+    )
+  ).filter(Boolean)
   if (options.dryRun) {
     const marketReport = await loadMarketData(runDir, { dryRun: true })
-    const mediaFiles = targets
-      .filter((record) => record.target === 'media')
-      .map((record) => safeSourceFile(record))
-      .filter(Boolean)
 
     process.stdout.write(
       `${JSON.stringify(
@@ -284,6 +471,7 @@ export const load = async (options: LoadOptions = {}): Promise<void> => {
     const marketReport = await loadMarketData(runDir)
     const ids = new Map<string, number | string>()
     const changedRecords = new Set<string>()
+    const skeletonInsertions = new Set<string>()
     const report = {
       inserted: 0,
       updated: 0,
@@ -294,7 +482,40 @@ export const load = async (options: LoadOptions = {}): Promise<void> => {
       marketData: marketReport,
     }
 
-    // First pass: create stable target IDs without relationships.
+    // Establish IDs for route/content owners before loading full records. Hubs and
+    // venues form a legitimate relationship cycle, while pages may link forward to
+    // later pages. Minimal drafts make those IDs available without weakening any
+    // required nested relationship during the complete write below.
+    for (const record of targets) {
+      if (!relationshipOwnerTargets.has(record.target)) continue
+
+      const kind = referenceKindForTarget[record.target as TargetCollection]
+      const existing = await findExisting(payload, record)
+      if (existing) {
+        if (kind) ids.set(tokenKey(kind, record.legacy.legacyId), existing.id)
+        continue
+      }
+
+      let saved: PayloadDocument
+      try {
+        saved = await payload.create({
+          collection: record.target,
+          data: draftSkeletonData(record),
+          context: { disableRevalidate: true, migration: true },
+          draft: true,
+          overrideAccess: true,
+        })
+      } catch (error) {
+        throw recordLoadError('skeleton pass', record, error)
+      }
+
+      const recordKey = `${record.target}:${record.legacy.legacyId}`
+      skeletonInsertions.add(recordKey)
+      if (kind) ids.set(tokenKey(kind, record.legacy.legacyId), saved.id)
+    }
+
+    // Complete pass: all content-owner IDs now exist, so relationships can resolve
+    // even when the source graph contains cycles or forward links.
     for (const record of targets) {
       if (record.target === 'global') continue
 
@@ -308,19 +529,28 @@ export const load = async (options: LoadOptions = {}): Promise<void> => {
         '_status' in record.data ? (options.publish ? record.data._status : 'draft') : undefined
       const statusMatches =
         desiredStatus === undefined || (existing && existing._status === desiredStatus)
-      if (existing?.legacySource?.contentHash === record.legacy.contentHash && statusMatches) {
+      if (
+        record.target !== 'redirects' &&
+        existing?.legacySource?.contentHash === record.legacy.contentHash &&
+        statusMatches &&
+        storedMediaMatchesSource(record, existing)
+      ) {
         report.unchanged += 1
         continue
       }
 
       const unresolved = new Set<string>()
       const data = resolvePayloadData(record, ids, unresolved)
-      data.legacySource = record.legacy
+      if (record.target === 'redirects' && existing && isEquivalentPayloadData(existing, data)) {
+        report.unchanged += 1
+        continue
+      }
+      if (record.target !== 'redirects') data.legacySource = record.legacy
       if ('_status' in data && !options.publish) {
         data._status = 'draft'
       }
 
-      const filePath = sourceFileForOperation(record, existing)
+      const filePath = await sourceFileForOperation(record, existing)
       const operation = existing
         ? payload.update({
             collection: record.target,
@@ -340,12 +570,19 @@ export const load = async (options: LoadOptions = {}): Promise<void> => {
             overrideAccess: true,
           })
 
-      const saved = await operation
-      changedRecords.add(`${record.target}:${record.legacy.legacyId}`)
+      let saved: PayloadDocument
+      try {
+        saved = await operation
+      } catch (error) {
+        throw recordLoadError('first pass', record, error)
+      }
+      const recordKey = `${record.target}:${record.legacy.legacyId}`
+      changedRecords.add(recordKey)
       if (kind) {
         ids.set(tokenKey(kind, record.legacy.legacyId), saved.id)
       }
-      if (existing) report.updated += 1
+      if (skeletonInsertions.has(recordKey)) report.inserted += 1
+      else if (existing) report.updated += 1
       else report.inserted += 1
     }
 
@@ -391,7 +628,7 @@ export const load = async (options: LoadOptions = {}): Promise<void> => {
         report.unresolved.push(`${record.target}:${record.legacy.legacyId}`)
         continue
       }
-      data.legacySource = record.legacy
+      if (record.target !== 'redirects') data.legacySource = record.legacy
       if ('_status' in data && !options.publish) {
         data._status = 'draft'
       }
@@ -401,14 +638,18 @@ export const load = async (options: LoadOptions = {}): Promise<void> => {
         continue
       }
 
-      await payload.update({
-        collection: record.target,
-        id: existing.id,
-        data,
-        context: { disableRevalidate: true, migration: true },
-        draft: data._status === 'draft',
-        overrideAccess: true,
-      })
+      try {
+        await payload.update({
+          collection: record.target,
+          id: existing.id,
+          data,
+          context: { disableRevalidate: true, migration: true },
+          draft: data._status === 'draft',
+          overrideAccess: true,
+        })
+      } catch (error) {
+        throw recordLoadError('relationship pass', record, error)
+      }
       const recordKey = `${record.target}:${record.legacy.legacyId}`
       if (!changedRecords.has(recordKey)) {
         report.unchanged -= 1

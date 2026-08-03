@@ -2,9 +2,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { sourceRecordSchema, type SourcePost, type SourceRecord } from '../contracts/v1'
+import { assertRunNotAccepted, atomicWriteText, sealAcceptedRun } from '../lib/acceptedRun'
 import { migrationConfig } from '../lib/config'
-import { pocScope, type PocRoot } from '../scopes/poc'
-import { validateTransformed } from '../validate'
+import { pilotScope, type PilotRoot } from '../scopes/pilot'
+import { validateSource, validateTransformed } from '../validate'
 import {
   asArray,
   asBoolean,
@@ -15,15 +16,26 @@ import {
   legacyRef,
   liveSourceURL,
   mediaToken,
+  referenceId,
   sourceURL,
 } from './helpers'
 import { htmlToLexical, htmlToPlainText } from './lexical'
-import { mapArticleLayout, mapPageLayout, type ReusableLookup } from './blocks'
-import type { TargetRecord, TransformCoverage } from './types'
+import {
+  mapArticleLayout,
+  mapPageLayout,
+  type ManagedLinkLookup,
+  type ReusableLookup,
+} from './blocks'
+import type { LegacyReference, TargetRecord, TransformCoverage } from './types'
 
-const pocRootByLegacyId = new Map<number, PocRoot>(
-  pocScope.roots.map((root) => [root.legacyId, root]),
+const pilotRootByLegacyId = new Map<number, PilotRoot>(
+  pilotScope.roots.map((root) => [root.legacyId, root]),
 )
+
+const tradingInJouleLegacyAlias = {
+  from: '/learning-hub/watch/trading-in-joule/',
+  legacyId: 8454,
+} as const
 
 const pageTypeByArchetype = {
   'page.homepage': 'homepage',
@@ -121,34 +133,101 @@ const baseLegacy = (post: SourcePost) => ({
   modifiedGmt: post.modifiedAt,
 })
 
+const ensurePageHero = (
+  post: SourcePost,
+  layout: Array<Record<string, unknown>>,
+): Array<Record<string, unknown>> => {
+  if (layout.some(({ blockType }) => blockType === 'trayportHero')) return layout
+
+  const firstSection = layout[0]
+  const columns = Array.isArray(firstSection?.columns)
+    ? (firstSection.columns as Array<Record<string, unknown>>)
+    : []
+  const components = columns.flatMap((column) =>
+    Array.isArray(column.components) ? (column.components as Array<Record<string, unknown>>) : [],
+  )
+  const heading = components.find(({ blockType }) => blockType === 'heading')
+  const body = components.find(({ blockType }) => blockType === 'richText')
+  const media = components.find(({ blockType }) => blockType === 'media')
+  const consumed = new Set([heading, body, media].filter(Boolean))
+  const remainingColumns = columns
+    .map((column) => ({
+      ...column,
+      components: Array.isArray(column.components)
+        ? (column.components as Array<Record<string, unknown>>).filter(
+            (component) => !consumed.has(component),
+          )
+        : [],
+    }))
+    .filter((column) => column.components.length)
+  const remaining = [...layout]
+  if (firstSection) {
+    if (remainingColumns.length) remaining[0] = { ...firstSection, columns: remainingColumns }
+    else remaining.shift()
+  }
+
+  return [
+    {
+      blockType: 'trayportHero',
+      heading: asString(heading?.text) || post.title,
+      body: body?.body,
+      media: media?.media,
+      actions: [],
+      appearance: media?.media ? 'image' : 'light',
+    },
+    ...remaining,
+  ]
+}
+
 const mapPost = (
   post: SourcePost,
   coverage: TransformCoverage,
   hubConnections: Extract<SourceRecord, { entity: 'hub-connections' }> | undefined,
   mapHub: Extract<SourceRecord, { entity: 'map-hub' }> | undefined,
+  allMapHubs: Map<number, Extract<SourceRecord, { entity: 'map-hub' }>>,
   reusables: ReusableLookup,
+  links: ManagedLinkLookup,
 ): TargetRecord | null => {
   if (post.postType === 'page') {
     const isInsights = post.legacyId === 9248
-    const root = pocRootByLegacyId.get(post.legacyId)
+    const isNews = post.legacyId === 9244
+    const isLearningHub = post.legacyId === 3311
+    const root = pilotRootByLegacyId.get(post.legacyId)
     const pageType =
       root && root.archetype in pageTypeByArchetype
         ? pageTypeByArchetype[root.archetype as keyof typeof pageTypeByArchetype]
         : 'standard'
+    const mappedLayout = mapPageLayout(
+      post.acf,
+      coverage,
+      {
+        appendArticleListing: isInsights || isNews,
+        articleFamily: isNews ? 'news' : 'insights',
+        appendLearningVideoListing: isLearningHub,
+      },
+      reusables,
+      links,
+    )
+    const meta = seoFrom(post)
+    if (post.legacyId === 7609) {
+      meta.title = 'Frequently Asked Questions | Trayport'
+      meta.description =
+        'Find answers to common Trayport account, login, password, server and product-support questions.'
+    }
     const data = {
       title: post.title,
       path: post.path || `/${post.slug}/`,
-      layout: mapPageLayout(post.acf, coverage, { appendArticleListing: isInsights }, reusables),
+      layout: ensurePageHero(post, mappedLayout),
       publishedAt: post.publishedAt,
       pageType,
-      meta: seoFrom(post),
+      meta,
       _status: post.status === 'publish' ? 'published' : 'draft',
     }
     return finalizeTarget({ target: 'pages', legacy: baseLegacy(post), data })
   }
 
   if (post.postType === 'post') {
-    const root = pocRootByLegacyId.get(post.legacyId)
+    const root = pilotRootByLegacyId.get(post.legacyId)
     const isFullArticle = root?.archetype === 'article.full'
     if (!isFullArticle && !post.path) {
       throw new Error(
@@ -167,6 +246,13 @@ const mapPost = (
       asObject(header.header).text || header.text || post.acf.article_header || post.title,
     )
     const isFeatured = asBoolean(post.acf.featured)
+    const articleType = (post.taxonomies.category || []).includes(111)
+      ? 'news'
+      : (post.taxonomies.category || []).includes(119)
+        ? 'event'
+        : post.legacyId === 9351
+          ? 'webinar'
+          : 'insight'
     const data = {
       title: articleTitle || post.title,
       slug: post.slug,
@@ -177,15 +263,57 @@ const mapPost = (
       publishedAt: normalizedDisplayDate,
       location: asString(post.acf.location),
       categories,
-      articleType: post.legacyId === 9351 ? 'webinar' : 'insight',
+      articleType,
       contentMode: isFullArticle ? 'full' : 'listing',
       featured: isFeatured,
       featuredOrder: isFeatured ? post.featuredOrder : null,
-      layout: isFullArticle ? mapArticleLayout(post.acf.sections, coverage) : [],
+      layout: isFullArticle ? mapArticleLayout(post.acf.sections, coverage, links) : [],
       meta: seoFrom(post),
       _status: post.status === 'publish' ? 'published' : 'draft',
     }
     return finalizeTarget({ target: 'articles', legacy: baseLegacy(post), data })
+  }
+
+  if (post.postType === 'learning-hub-video') {
+    const root = pilotRootByLegacyId.get(post.legacyId)
+    const isFull = root?.archetype === 'learning-video.public-detail'
+    const productID = referenceId(post.acf.product, 'post')
+    const product = productID ? reusables.get(productID) : undefined
+    const categories = asArray(post.acf.categories)
+      .map((value) => legacyRef('learning-video-category', value))
+      .filter(Boolean)
+    const rawTags = asArray(post.acf.tags)
+      .map((value) => htmlToPlainText(asObject(value).name || value))
+      .filter(Boolean)
+    const stringTags = asString(post.acf.tags)
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean)
+    const data = {
+      title: htmlToPlainText(post.title),
+      summary: htmlToPlainText(post.acf.short_description),
+      description: isFull ? htmlToLexical(post.acf.description) : undefined,
+      contentMode: isFull ? 'full' : 'listing',
+      externalDestination: isFull
+        ? null
+        : `https://www.trayport.com/learning-hub/watch/${post.slug}/`,
+      accessMode: asString(post.acf.permissions) === '0' ? 'public' : 'subscriber',
+      video: null,
+      externalVideoURL: '',
+      poster: mediaToken(post.acf.image),
+      duration: asString(post.acf.duration),
+      categories,
+      product: htmlToPlainText(product?.title),
+      tags: [...new Set([...rawTags, ...stringTags])].map((label) => ({ label })),
+      displayOrder: Number(asString(post.acf.order)) || 0,
+      layout: [],
+      slug: post.slug,
+      path: isFull ? post.path || `/learning-hub-video/${post.slug}/` : null,
+      publishedAt: post.publishedAt,
+      meta: seoFrom(post),
+      _status: post.status === 'publish' ? 'published' : 'draft',
+    }
+    return finalizeTarget({ target: 'learning-videos', legacy: baseLegacy(post), data })
   }
 
   if (post.postType === 'hub') {
@@ -240,18 +368,50 @@ const mapPost = (
   }
 
   if (post.postType === 'venue') {
+    const root = pilotRootByLegacyId.get(post.legacyId)
+    const isPublic = root?.archetype === 'venue.public-detail'
     const type = asObject(post.acf.type)
     const venueType = legacyRef('venue-type', type.venue_type)
+    const normalizedConnections = new Map<
+      number,
+      { connectionType: string; hub: LegacyReference }
+    >()
+    for (const value of asArray(post.acf.connections)) {
+      const connection = asObject(value)
+      const hubID = referenceId(connection.hub, 'post')
+      const hub = hubID ? legacyRef('hub', hubID) : null
+      if (!hubID || !hub) continue
+      const connectionType = asString(connection.type || connection.connection_type) || 'd'
+      const existing = normalizedConnections.get(hubID)
+      if (!existing || connectionType === 'b') {
+        normalizedConnections.set(hubID, { connectionType, hub })
+      }
+    }
+    const connectedHubs = [...normalizedConnections.keys()]
+      .map((legacyId) => allMapHubs.get(legacyId))
+      .filter((value): value is Extract<SourceRecord, { entity: 'map-hub' }> => Boolean(value))
+    const summary = isPublic
+      ? asString(asObject(post.acf.page_settings).meta_description).trim()
+      : asString(post.acf.display_name) || post.title
     const data = {
       title: post.title,
       slug: post.slug,
-      path: null,
-      contentMode: 'relationship-only',
-      summary: asString(post.acf.display_name) || post.title,
+      path: isPublic ? post.path || `/venue/${post.slug}/` : null,
+      contentMode: isPublic ? 'page' : 'relationship-only',
+      summary,
+      description: isPublic ? htmlToLexical(summary) : undefined,
+      layout: [],
       website: asString(post.acf.website),
+      logo: mediaToken(post.acf.logo),
       venueTypes: venueType ? [venueType] : [],
-      assetClasses: [],
-      regions: [],
+      assetClasses: [
+        ...new Set(connectedHubs.map(({ assetClassLegacyId }) => assetClassLegacyId)),
+      ].map((id) => legacyRef('asset-class', id)),
+      regions: [...new Set(connectedHubs.map(({ regionLegacyId }) => regionLegacyId))].map((id) =>
+        legacyRef('region', id),
+      ),
+      marketConnections: [...normalizedConnections.values()],
+      meta: isPublic ? seoFrom(post) : undefined,
       _status: post.status === 'publish' ? 'published' : 'draft',
     }
     return finalizeTarget({ target: 'venues', legacy: baseLegacy(post), data })
@@ -285,10 +445,19 @@ const buildMenuTree = (
       children: buildMenuTree(items, item.legacyId),
     }))
 
+const normalizedCustomLinkURL = (value: string): string => {
+  const url = value.replace(/^https?:\/\/(?:www\.)?trayport\.local/, '') || '/'
+  if (!url.startsWith('/')) return url
+
+  const pathOnly = url.split(/[?#]/, 1)[0] || '/'
+  const collapsed = `/${pathOnly.replace(/^\/+/, '')}`.replace(/\/{2,}/g, '/')
+  return collapsed === '/' ? collapsed : `${collapsed.replace(/\/+$/, '')}/`
+}
+
 const customLink = (label: string, url: string, newTab = false): Record<string, unknown> => ({
   label,
   type: 'custom',
-  url: url.replace(/^https?:\/\/(?:www\.)?trayport\.local/, '') || '/',
+  url: normalizedCustomLinkURL(url),
   newTab,
 })
 
@@ -397,6 +566,7 @@ const mapHubTarget = (hub: Extract<SourceRecord, { entity: 'map-hub' }>): Target
     title: hub.title,
     slug: hub.slug,
     contentMode: 'map-only',
+    externalDestination: hub.path ? liveSourceURL(hub.path) : null,
     marketDataKey: `wordpress-hub:${hub.legacyId}`,
     assetClasses: assetClass ? [assetClass] : [],
     venueTypes: [],
@@ -428,6 +598,7 @@ const mapHubTarget = (hub: Extract<SourceRecord, { entity: 'map-hub' }>): Target
 export const transform = (requestedRunId?: string): { runId: string; targets: TargetRecord[] } => {
   const runId = resolveRunId(requestedRunId)
   const runDir = path.resolve(migrationConfig.workDir, runId)
+  assertRunNotAccepted(runId, runDir)
   const records = readRecords(runDir)
   const coverage: TransformCoverage = {
     componentLayouts: {},
@@ -459,6 +630,27 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
       )
       .map((record) => [record.legacyId, record]),
   )
+  const managedLinks: ManagedLinkLookup = new Map(
+    records
+      .filter(
+        (record): record is Extract<SourceRecord, { entity: 'post' }> => record.entity === 'post',
+      )
+      .flatMap((record) => {
+        const target =
+          record.postType === 'page'
+            ? { kind: 'page' as const, relationTo: 'pages' as const }
+            : record.postType === 'post'
+              ? { kind: 'article' as const, relationTo: 'articles' as const }
+              : record.postType === 'hub'
+                ? { kind: 'hub' as const, relationTo: 'hubs' as const }
+                : record.postType === 'venue'
+                  ? { kind: 'venue' as const, relationTo: 'venues' as const }
+                  : record.postType === 'learning-hub-video'
+                    ? { kind: 'learning-video' as const, relationTo: 'learning-videos' as const }
+                    : null
+        return target ? ([[record.legacyId, target]] as const) : []
+      }),
+  )
 
   for (const record of records) {
     if (record.entity === 'post') {
@@ -467,9 +659,46 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
         coverage,
         hubConnections,
         mapHubs.get(record.legacyId),
+        mapHubs,
         reusables,
+        managedLinks,
       )
       if (target) targets.push(target)
+      continue
+    }
+
+    if (record.entity === 'reusable' && record.postType === 'office') {
+      const address = asObject(record.data.address)
+      const data = {
+        title: record.title,
+        legalName: htmlToPlainText(record.data.name) || record.title,
+        addressPrefix: htmlToPlainText(record.data.address_prefix),
+        address: htmlToPlainText(address.address),
+        city: htmlToPlainText(address.city),
+        postcode: htmlToPlainText(address.post_code),
+        country: htmlToPlainText(address.country),
+        countryCode: htmlToPlainText(address.country_short).toUpperCase(),
+        coordinates: {
+          latitude: Number(address.lat),
+          longitude: Number(address.lng),
+        },
+        phone: htmlToPlainText(record.data.phone),
+        email: htmlToPlainText(record.data.email),
+        displayOrder: [4052, 4055, 4056, 4057].indexOf(record.legacyId),
+        _status: 'published',
+      }
+      targets.push(
+        finalizeTarget({
+          target: 'offices',
+          legacy: {
+            source: 'wordpress',
+            legacyId: record.legacyId,
+            originalUrl: sourceURL(record.path),
+            modifiedGmt: null,
+          },
+          data,
+        }),
+      )
       continue
     }
 
@@ -488,7 +717,9 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
         altSource: record.altSource,
         caption: record.caption ? htmlToLexical(record.caption) : undefined,
         externalURL: record.availability === 'unavailable' ? record.url : '',
+        sourceFileHash: record.fileHash,
         source: {
+          fileHash: record.fileHash,
           relativePath: record.relativePath,
           originalURL: record.url,
           mimeType: record.mimeType,
@@ -563,6 +794,32 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
         }),
       )
     }
+  }
+
+  const tradingInJoule = records.find(
+    (record): record is SourcePost =>
+      record.entity === 'post' &&
+      record.postType === 'learning-hub-video' &&
+      record.legacyId === tradingInJouleLegacyAlias.legacyId,
+  )
+  if (tradingInJoule) {
+    targets.push(
+      finalizeTarget({
+        target: 'redirects',
+        legacy: baseLegacy(tradingInJoule),
+        data: {
+          from: tradingInJouleLegacyAlias.from,
+          to: {
+            type: 'reference',
+            reference: {
+              relationTo: 'learning-videos',
+              value: legacyRef('learning-video', tradingInJoule.legacyId),
+            },
+          },
+          type: '301',
+        },
+      }),
+    )
   }
 
   const options = records.find(
@@ -680,15 +937,15 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
         }))
     })
 
-  fs.writeFileSync(
+  atomicWriteText(
     path.join(runDir, 'transformed.ndjson'),
     `${targets.map((target) => JSON.stringify(target)).join('\n')}\n`,
   )
-  fs.writeFileSync(
+  atomicWriteText(
     path.join(runDir, 'market-volume.ndjson'),
     `${marketRows.map((row) => JSON.stringify(row)).join('\n')}\n`,
   )
-  fs.writeFileSync(
+  atomicWriteText(
     path.join(runDir, 'reports', 'content-review.json'),
     `${JSON.stringify(
       {
@@ -712,7 +969,7 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
       2,
     )}\n`,
   )
-  fs.writeFileSync(
+  atomicWriteText(
     path.join(runDir, 'reports', 'transform-coverage.json'),
     `${JSON.stringify(
       {
@@ -740,10 +997,22 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
     )
   }
 
+  validateSource(runId, runDir, records)
   validateTransformed(runId, runDir, targets)
+  const accepted = sealAcceptedRun(runId, runDir)
 
   process.stdout.write(
-    `${JSON.stringify({ ok: true, runId, targetCount: targets.length, coverage }, null, 2)}\n`,
+    `${JSON.stringify(
+      {
+        ok: true,
+        runId,
+        acceptanceHash: accepted.acceptanceHash,
+        targetCount: targets.length,
+        coverage,
+      },
+      null,
+      2,
+    )}\n`,
   )
   return { runId, targets }
 }

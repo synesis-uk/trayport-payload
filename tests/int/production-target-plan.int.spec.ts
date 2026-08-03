@@ -25,8 +25,8 @@ describe('production target plan', () => {
       routes: 296,
       payloadDocuments: 294,
       virtualIndexes: 2,
-      pocReadyDocuments: 6,
-      planOnlyDocuments: 288,
+      pocReadyDocuments: 14,
+      planOnlyDocuments: 280,
       systemReadyRoutes: 2,
       managedTaxonomies: 33,
       learningVideoCategories: 11,
@@ -39,7 +39,7 @@ describe('production target plan', () => {
         .filter(({ contentState }) => contentState === 'poc-ready')
         .map(({ legacyId }) => legacyId)
         .sort((left, right) => (left || 0) - (right || 0)),
-    ).toEqual([1898, 1924, 2203, 2495, 9248, 9351])
+    ).toEqual([1898, 1924, 1926, 2203, 2205, 2495, 3311, 3363, 7609, 8454, 9244, 9248, 9351, 10030])
     expect(
       plan.routes
         .filter(({ ownerKind }) => ownerKind === 'virtual-index')
@@ -220,7 +220,7 @@ describe('production target plan', () => {
     )
   })
 
-  it('only marks a PoC root ready when its complete scoped identity still matches', () => {
+  it('only marks a pilot root ready when its complete scoped identity still matches', () => {
     const snapshot = productionFixture()
     const inventory = discoverProductionInventory(snapshot, productionScope)
     const joule = inventory.routes.find(({ legacyId }) => legacyId === 1924)
@@ -240,8 +240,8 @@ describe('production target plan', () => {
     expect(verification.status).toBe('failed')
     expect(verification.failures).toEqual(
       expect.arrayContaining([
-        'poc-ready-documents: expected 6, received 5',
-        'plan-only-documents: expected 288, received 289',
+        'poc-ready-documents: expected 14, received 13',
+        'plan-only-documents: expected 280, received 281',
         'poc-root:1924: expected 1, received 0',
       ]),
     )

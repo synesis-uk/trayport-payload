@@ -12,6 +12,7 @@ import { Hubs } from './collections/Hubs'
 import { LearningVideoCategories } from './collections/LearningVideoCategories'
 import { LearningVideos } from './collections/LearningVideos'
 import { Media } from './collections/Media'
+import { Offices } from './collections/Offices'
 import { Pages } from './collections/Pages'
 import { Regions } from './collections/Regions'
 import { RouteRegistry } from './collections/RouteRegistry'
@@ -89,6 +90,7 @@ export default buildConfig({
     Hubs,
     Venues,
     LearningVideos,
+    Offices,
     Media,
     ArticleCategories,
     LearningVideoCategories,

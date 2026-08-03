@@ -1,7 +1,12 @@
 export type LegacyReference = {
   $legacyRef:
     | 'media'
+    | 'page'
+    | 'article'
+    | 'hub'
     | 'venue'
+    | 'learning-video'
+    | 'office'
     | 'article-category'
     | 'learning-video-category'
     | 'asset-class'
@@ -12,6 +17,7 @@ export type LegacyReference = {
 
 export type TargetCollection =
   | 'media'
+  | 'redirects'
   | 'pages'
   | 'articles'
   | 'hubs'
@@ -19,6 +25,7 @@ export type TargetCollection =
   | 'article-categories'
   | 'learning-video-categories'
   | 'learning-videos'
+  | 'offices'
   | 'asset-classes'
   | 'venue-types'
   | 'regions'

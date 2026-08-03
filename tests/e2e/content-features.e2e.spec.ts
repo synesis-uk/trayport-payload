@@ -91,4 +91,96 @@ test.describe('imported dynamic content', () => {
       await expect(joule.getByRole('heading', { exact: true, level: 3, name: group })).toBeVisible()
     }
   })
+
+  test('News renders all 31 imported listing records through its managed index', async ({
+    page,
+  }) => {
+    await page.goto('/resources/news/')
+
+    const featuredCards = page.locator('.trayport-featured-articles .trayport-article-card')
+    const articleRows = page.locator('.trayport-article-list .trayport-article-row')
+    await expect(featuredCards).toHaveCount(1)
+    await expect(articleRows).toHaveCount(12)
+
+    while (await page.getByRole('button', { name: 'Load more news' }).isVisible()) {
+      await page.getByRole('button', { name: 'Load more news' }).click()
+    }
+
+    await expect(page.getByRole('button', { name: 'Load more news' })).toHaveCount(0)
+    await expect(articleRows).toHaveCount(30)
+    expect((await featuredCards.count()) + (await articleRows.count())).toBe(31)
+  })
+
+  test('Learning Hub renders 15 protected records and filters them by product', async ({
+    page,
+  }) => {
+    await page.goto('/learning-hub/')
+
+    const cards = page.locator('.trayport-video-grid .trayport-video-card')
+    await expect(cards).toHaveCount(15)
+    await expect(page.getByText('Trayport login required', { exact: true })).toHaveCount(15)
+
+    const managedVideo = cards.filter({ hasText: 'Trading in Joule' })
+    await expect(managedVideo).toHaveAttribute('href', '/learning-hub-video/trading-in-joule/')
+
+    await page.getByRole('combobox', { name: 'Product' }).selectOption('Joule')
+    await expect(cards).toHaveCount(4)
+  })
+
+  test('the selected Learning Hub detail is a protected metadata gate with a canonical alias', async ({
+    page,
+  }) => {
+    const redirect = await page.request.get('/learning-hub/watch/trading-in-joule/', {
+      maxRedirects: 0,
+    })
+    expect(redirect.status()).toBe(301)
+    const location = redirect.headers().location
+    expect(location).toBeTruthy()
+    expect(new URL(location!, 'http://localhost:3000').pathname).toBe(
+      '/learning-hub-video/trading-in-joule/',
+    )
+
+    const response = await page.goto('/learning-hub/watch/trading-in-joule/')
+
+    expect(response?.status()).toBe(200)
+    await expect(page).toHaveURL(/\/learning-hub-video\/trading-in-joule\/$/)
+    await expect(
+      page.getByRole('heading', {
+        exact: true,
+        level: 2,
+        name: 'This video is available to customers with a Trayport login.',
+      }),
+    ).toBeVisible()
+    await expect(page.locator('video, iframe[src*="video"], source[src]')).toHaveCount(0)
+  })
+
+  test('Office Locations renders all four structured office records', async ({ page }) => {
+    await page.goto('/company/offices/')
+
+    const offices = page.locator('.trayport-office')
+    await expect(offices).toHaveCount(4)
+    for (const office of [
+      'Trayport Limited',
+      'Trayport Austria GmbH',
+      'Trayport Germany GmbH',
+      'Trayport Pte Ltd',
+    ]) {
+      await expect(page.getByRole('heading', { exact: true, level: 3, name: office })).toBeVisible()
+    }
+  })
+
+  test('EEX renders 37 unique connected hubs in four market groups', async ({ page }) => {
+    await page.goto('/venue/eex/')
+
+    const marketGroups = page.locator('.trayport-venue-markets__groups > section')
+    await expect(marketGroups).toHaveCount(4)
+    for (const group of ['Bulk', 'Climate', 'Natural Gas', 'Power']) {
+      await expect(page.getByRole('heading', { exact: true, level: 3, name: group })).toBeVisible()
+    }
+    await expect(marketGroups.locator('li')).toHaveCount(37)
+    await expect(page.getByRole('link', { exact: true, name: 'German Power' })).toHaveAttribute(
+      'href',
+      '/market-coverage/german-power/',
+    )
+  })
 })

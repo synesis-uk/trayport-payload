@@ -72,6 +72,7 @@ export interface Config {
     hubs: Hub;
     venues: Venue;
     'learning-videos': LearningVideo;
+    offices: Office;
     media: Media;
     'article-categories': ArticleCategory;
     'learning-video-categories': LearningVideoCategory;
@@ -99,6 +100,7 @@ export interface Config {
     hubs: HubsSelect<false> | HubsSelect<true>;
     venues: VenuesSelect<false> | VenuesSelect<true>;
     'learning-videos': LearningVideosSelect<false> | LearningVideosSelect<true>;
+    offices: OfficesSelect<false> | OfficesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'article-categories': ArticleCategoriesSelect<false> | ArticleCategoriesSelect<true>;
     'learning-video-categories': LearningVideoCategoriesSelect<false> | LearningVideoCategoriesSelect<true>;
@@ -176,7 +178,7 @@ export interface Page {
    * Optional editorial summary used in listings and internal content previews.
    */
   summary?: string | null;
-  layout: (TrayportHeroBlock | ContentSectionBlock | ArticleListingBlock)[];
+  layout: (TrayportHeroBlock | ContentSectionBlock | ArticleListingBlock | LearningVideoListingBlock)[];
   parent?: (number | null) | Page;
   /**
    * Optional shorter title for menus and breadcrumbs.
@@ -261,9 +263,33 @@ export interface TrayportHeroBlock {
   actions?:
     | {
         label: string;
-        url: string;
+        link: {
+          type: 'reference' | 'custom';
+          reference?:
+            | ({
+                relationTo: 'pages';
+                value: number | Page;
+              } | null)
+            | ({
+                relationTo: 'articles';
+                value: number | Article;
+              } | null)
+            | ({
+                relationTo: 'hubs';
+                value: number | Hub;
+              } | null)
+            | ({
+                relationTo: 'venues';
+                value: number | Venue;
+              } | null)
+            | ({
+                relationTo: 'learning-videos';
+                value: number | LearningVideo;
+              } | null);
+          url?: string | null;
+          newTab?: boolean | null;
+        };
         style: 'primary' | 'secondary' | 'link';
-        newTab?: boolean | null;
         id?: string | null;
       }[]
     | null;
@@ -314,6 +340,7 @@ export interface Media {
    * Optional externally hosted source, primarily for video.
    */
   externalURL?: string | null;
+  sourceFileHash?: string | null;
   poster?: (number | null) | Media;
   legacySource?: {
     key?: string | null;
@@ -422,6 +449,98 @@ export interface FolderInterface {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "articles".
+ */
+export interface Article {
+  id: number;
+  title: string;
+  /**
+   * Used in article listings and link previews.
+   */
+  excerpt?: string | null;
+  heroMedia?: (number | null) | Media;
+  layout?: (TrayportHeroBlock | ContentSectionBlock | ArticleListingBlock | LearningVideoListingBlock)[] | null;
+  /**
+   * Listing-only records support indexes and featured content without requiring a migrated article body.
+   */
+  contentMode: 'listing' | 'full';
+  /**
+   * Optional fully qualified destination for listing-only records. These records never own an internal route.
+   */
+  externalDestination?: string | null;
+  articleType: 'insight' | 'webinar' | 'video' | 'case-study' | 'news' | 'event';
+  categories?: (number | ArticleCategory)[] | null;
+  /**
+   * Include this article in the curated featured area.
+   */
+  featured?: boolean | null;
+  /**
+   * Lower numbers appear first.
+   */
+  featuredOrder?: number | null;
+  /**
+   * Display name only. WordPress user accounts are deliberately not migrated.
+   */
+  byline?: string | null;
+  /**
+   * Optional event, webinar, or reporting location shown with the date.
+   */
+  location?: string | null;
+  relatedArticles?: (number | Article)[] | null;
+  relatedHubs?: (number | Hub)[] | null;
+  meta?: {
+    /**
+     * Optional override for search results and browser tabs.
+     */
+    title?: string | null;
+    /**
+     * A concise summary for search results and link previews.
+     */
+    description?: string | null;
+    image?: (number | null) | Media;
+    /**
+     * Only set this when the canonical URL differs from this page. Use a root-relative path or a complete HTTP(S) URL.
+     */
+    canonicalURL?: string | null;
+    noIndex?: boolean | null;
+    noFollow?: boolean | null;
+    /**
+     * Optional validated JSON-LD object. Script tags and executable markup are not accepted.
+     */
+    structuredData?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+  };
+  slug: string;
+  /**
+   * Public path beginning and ending with “/”. Nested paths are supported, for example /company/about-us/.
+   */
+  path?: string | null;
+  /**
+   * Check this before publishing or scheduling a change to an already-live path. Approval is retained for that exact old/new path pair, and the former path becomes a permanent redirect.
+   */
+  confirmPathRedirect?: boolean | null;
+  publishedAt?: string | null;
+  legacySource?: {
+    key?: string | null;
+    source?: string | null;
+    legacyId?: number | null;
+    originalUrl?: string | null;
+    modifiedGmt?: string | null;
+    contentHash?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ContentSectionBlock".
  */
 export interface ContentSectionBlock {
@@ -447,6 +566,7 @@ export interface ContentSectionBlock {
       | MarketCoverageComponent
       | EmbedComponent
       | DataChartComponent
+      | OfficeComponent
     )[];
     id?: string | null;
   }[];
@@ -499,15 +619,507 @@ export interface ActionsComponent {
   actions?:
     | {
         label: string;
-        url: string;
+        link: {
+          type: 'reference' | 'custom';
+          reference?:
+            | ({
+                relationTo: 'pages';
+                value: number | Page;
+              } | null)
+            | ({
+                relationTo: 'articles';
+                value: number | Article;
+              } | null)
+            | ({
+                relationTo: 'hubs';
+                value: number | Hub;
+              } | null)
+            | ({
+                relationTo: 'venues';
+                value: number | Venue;
+              } | null)
+            | ({
+                relationTo: 'learning-videos';
+                value: number | LearningVideo;
+              } | null);
+          url?: string | null;
+          newTab?: boolean | null;
+        };
         style: 'primary' | 'secondary' | 'link';
-        newTab?: boolean | null;
         id?: string | null;
       }[]
     | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'actions';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hubs".
+ */
+export interface Hub {
+  id: number;
+  title: string;
+  /**
+   * Map-only hubs are market markers and relationship records. Page hubs also render a public editorial page.
+   */
+  contentMode: 'map-only' | 'page';
+  /**
+   * Temporary live-site fallback used by managed relationships until this hub owns a migrated route.
+   */
+  externalDestination?: string | null;
+  summary?: string | null;
+  heroMedia?: (number | null) | Media;
+  layout?: (TrayportHeroBlock | ContentSectionBlock | ArticleListingBlock | LearningVideoListingBlock)[] | null;
+  code?: string | null;
+  /**
+   * Stable key for future market-data queries. The market data itself is stored outside Payload.
+   */
+  marketDataKey?: string | null;
+  assetClasses?: (number | AssetClass)[] | null;
+  venueTypes?: (number | VenueType)[] | null;
+  regions?: (number | Region)[] | null;
+  relatedHubs?: (number | Hub)[] | null;
+  showOnMap?: boolean | null;
+  map?: {
+    locationLabel?: string | null;
+    centre?: {
+      latitude?: number | null;
+      longitude?: number | null;
+    };
+    zoom?: number | null;
+    markers?:
+      | {
+          label?: string | null;
+          location: {
+            latitude: number;
+            longitude: number;
+          };
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Editorial connectivity only. Pricing and time-series market data remain outside the CMS.
+   */
+  connections?:
+    | {
+        venue: number | Venue;
+        connectionType: 'd' | 'a' | 'b';
+        supportsJoule?: boolean | null;
+        supportsAutoTrader?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  meta?: {
+    /**
+     * Optional override for search results and browser tabs.
+     */
+    title?: string | null;
+    /**
+     * A concise summary for search results and link previews.
+     */
+    description?: string | null;
+    image?: (number | null) | Media;
+    /**
+     * Only set this when the canonical URL differs from this page. Use a root-relative path or a complete HTTP(S) URL.
+     */
+    canonicalURL?: string | null;
+    noIndex?: boolean | null;
+    noFollow?: boolean | null;
+    /**
+     * Optional validated JSON-LD object. Script tags and executable markup are not accepted.
+     */
+    structuredData?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+  };
+  slug: string;
+  /**
+   * Public path beginning and ending with “/”. Nested paths are supported, for example /company/about-us/.
+   */
+  path?: string | null;
+  /**
+   * Check this before publishing or scheduling a change to an already-live path. Approval is retained for that exact old/new path pair, and the former path becomes a permanent redirect.
+   */
+  confirmPathRedirect?: boolean | null;
+  publishedAt?: string | null;
+  legacySource?: {
+    key?: string | null;
+    source?: string | null;
+    legacyId?: number | null;
+    originalUrl?: string | null;
+    modifiedGmt?: string | null;
+    contentHash?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ArticleListingBlock".
+ */
+export interface ArticleListingBlock {
+  family: 'insights' | 'news' | 'events' | 'all';
+  heading?: string | null;
+  intro?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  pageSize: number;
+  showCategoryFilter?: boolean | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'articleListing';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LearningVideoListingBlock".
+ */
+export interface LearningVideoListingBlock {
+  heading?: string | null;
+  intro?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  pageSize: number;
+  showProductFilter?: boolean | null;
+  showCategoryFilter?: boolean | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'learningVideoListing';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "asset-classes".
+ */
+export interface AssetClass {
+  id: number;
+  title: string;
+  description?: string | null;
+  displayOrder?: number | null;
+  slug: string;
+  legacySource?: {
+    key?: string | null;
+    source?: string | null;
+    legacyId?: number | null;
+    originalUrl?: string | null;
+    modifiedGmt?: string | null;
+    contentHash?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "venue-types".
+ */
+export interface VenueType {
+  id: number;
+  title: string;
+  description?: string | null;
+  displayOrder?: number | null;
+  slug: string;
+  legacySource?: {
+    key?: string | null;
+    source?: string | null;
+    legacyId?: number | null;
+    originalUrl?: string | null;
+    modifiedGmt?: string | null;
+    contentHash?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "regions".
+ */
+export interface Region {
+  id: number;
+  title: string;
+  code?: string | null;
+  description?: string | null;
+  map?: {
+    centre?: {
+      latitude?: number | null;
+      longitude?: number | null;
+    };
+    zoom?: number | null;
+  };
+  slug: string;
+  legacySource?: {
+    key?: string | null;
+    source?: string | null;
+    legacyId?: number | null;
+    originalUrl?: string | null;
+    modifiedGmt?: string | null;
+    contentHash?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "venues".
+ */
+export interface Venue {
+  id: number;
+  title: string;
+  /**
+   * Relationship-only records support hub connectivity. Public details additionally own a complete frontend route.
+   */
+  contentMode: 'relationship-only' | 'page';
+  summary?: string | null;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  layout?: (TrayportHeroBlock | ContentSectionBlock | ArticleListingBlock | LearningVideoListingBlock)[] | null;
+  code?: string | null;
+  website?: string | null;
+  logo?: (number | null) | Media;
+  venueTypes?: (number | VenueType)[] | null;
+  assetClasses?: (number | AssetClass)[] | null;
+  regions?: (number | Region)[] | null;
+  location?: {
+    label?: string | null;
+    coordinates?: {
+      latitude?: number | null;
+      longitude?: number | null;
+    };
+  };
+  /**
+   * Markets available through this venue. Non-routable hubs retain a reviewed live-site fallback.
+   */
+  marketConnections?:
+    | {
+        hub: number | Hub;
+        connectionType: 'd' | 'a' | 'b';
+        id?: string | null;
+      }[]
+    | null;
+  displayOrder?: number | null;
+  slug: string;
+  /**
+   * Public path beginning and ending with “/”. Nested paths are supported, for example /company/about-us/.
+   */
+  path?: string | null;
+  /**
+   * Check this before publishing or scheduling a change to an already-live path. Approval is retained for that exact old/new path pair, and the former path becomes a permanent redirect.
+   */
+  confirmPathRedirect?: boolean | null;
+  publishedAt?: string | null;
+  meta?: {
+    /**
+     * Optional override for search results and browser tabs.
+     */
+    title?: string | null;
+    /**
+     * A concise summary for search results and link previews.
+     */
+    description?: string | null;
+    image?: (number | null) | Media;
+    /**
+     * Only set this when the canonical URL differs from this page. Use a root-relative path or a complete HTTP(S) URL.
+     */
+    canonicalURL?: string | null;
+    noIndex?: boolean | null;
+    noFollow?: boolean | null;
+    /**
+     * Optional validated JSON-LD object. Script tags and executable markup are not accepted.
+     */
+    structuredData?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+  };
+  legacySource?: {
+    key?: string | null;
+    source?: string | null;
+    legacyId?: number | null;
+    originalUrl?: string | null;
+    modifiedGmt?: string | null;
+    contentHash?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "learning-videos".
+ */
+export interface LearningVideo {
+  id: number;
+  title: string;
+  summary?: string | null;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Listing-only records populate the Learning Hub while their detail page remains on the live site.
+   */
+  contentMode: 'listing' | 'full';
+  /**
+   * HTTPS destination for a listing-only record.
+   */
+  externalDestination?: string | null;
+  /**
+   * Protected records may publish as metadata-only gate pages. They cannot expose a managed video or external video URL until protected delivery is implemented.
+   */
+  accessMode: 'public' | 'authenticated' | 'subscriber';
+  /**
+   * Public videos only. Protected delivery is not implemented and protected records cannot reference this public media library.
+   */
+  video?: (number | null) | Media;
+  /**
+   * Optional HTTPS video destination when media is hosted outside Payload.
+   */
+  externalVideoURL?: string | null;
+  poster?: (number | null) | Media;
+  /**
+   * Human-readable duration, for example 12:34.
+   */
+  duration?: string | null;
+  categories?: (number | LearningVideoCategory)[] | null;
+  product?: string | null;
+  tags?:
+    | {
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  displayOrder: number;
+  layout?: (TrayportHeroBlock | ContentSectionBlock | ArticleListingBlock | LearningVideoListingBlock)[] | null;
+  meta?: {
+    /**
+     * Optional override for search results and browser tabs.
+     */
+    title?: string | null;
+    /**
+     * A concise summary for search results and link previews.
+     */
+    description?: string | null;
+    image?: (number | null) | Media;
+    /**
+     * Only set this when the canonical URL differs from this page. Use a root-relative path or a complete HTTP(S) URL.
+     */
+    canonicalURL?: string | null;
+    noIndex?: boolean | null;
+    noFollow?: boolean | null;
+    /**
+     * Optional validated JSON-LD object. Script tags and executable markup are not accepted.
+     */
+    structuredData?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+  };
+  slug: string;
+  /**
+   * Public path beginning and ending with “/”. Nested paths are supported, for example /company/about-us/.
+   */
+  path?: string | null;
+  /**
+   * Check this before publishing or scheduling a change to an already-live path. Approval is retained for that exact old/new path pair, and the former path becomes a permanent redirect.
+   */
+  confirmPathRedirect?: boolean | null;
+  publishedAt?: string | null;
+  legacySource?: {
+    key?: string | null;
+    source?: string | null;
+    legacyId?: number | null;
+    originalUrl?: string | null;
+    modifiedGmt?: string | null;
+    contentHash?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "learning-video-categories".
+ */
+export interface LearningVideoCategory {
+  id: number;
+  title: string;
+  description?: string | null;
+  displayOrder?: number | null;
+  slug: string;
+  legacySource?: {
+    key?: string | null;
+    source?: string | null;
+    legacyId?: number | null;
+    originalUrl?: string | null;
+    modifiedGmt?: string | null;
+    contentHash?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -532,7 +1144,7 @@ export interface TrayportMediaComponent {
 export interface FeatureListComponent {
   layout?: ('grid' | 'stacked' | 'logos') | null;
   items: {
-    title: string;
+    title?: string | null;
     body?: {
       root: {
         type: string;
@@ -548,10 +1160,35 @@ export interface FeatureListComponent {
       };
       [k: string]: unknown;
     } | null;
-    icon?: string | null;
+    icon?: ('lightbulb' | 'trend' | 'clock' | 'chart' | 'scan') | null;
     media?: (number | null) | Media;
-    url?: string | null;
-    linkLabel?: string | null;
+    link?: {
+      label?: string | null;
+      type?: ('reference' | 'custom') | null;
+      reference?:
+        | ({
+            relationTo: 'pages';
+            value: number | Page;
+          } | null)
+        | ({
+            relationTo: 'articles';
+            value: number | Article;
+          } | null)
+        | ({
+            relationTo: 'hubs';
+            value: number | Hub;
+          } | null)
+        | ({
+            relationTo: 'venues';
+            value: number | Venue;
+          } | null)
+        | ({
+            relationTo: 'learning-videos';
+            value: number | LearningVideo;
+          } | null);
+      url?: string | null;
+      newTab?: boolean | null;
+    };
     id?: string | null;
   }[];
   id?: string | null;
@@ -595,6 +1232,7 @@ export interface FAQComponent {
       };
       [k: string]: unknown;
     };
+    media?: (number | null) | Media;
     id?: string | null;
   }[];
   id?: string | null;
@@ -624,7 +1262,32 @@ export interface EntityListComponent {
       };
       [k: string]: unknown;
     } | null;
-    url?: string | null;
+    link?: {
+      type?: ('reference' | 'custom') | null;
+      reference?:
+        | ({
+            relationTo: 'pages';
+            value: number | Page;
+          } | null)
+        | ({
+            relationTo: 'articles';
+            value: number | Article;
+          } | null)
+        | ({
+            relationTo: 'hubs';
+            value: number | Hub;
+          } | null)
+        | ({
+            relationTo: 'venues';
+            value: number | Venue;
+          } | null)
+        | ({
+            relationTo: 'learning-videos';
+            value: number | LearningVideo;
+          } | null);
+      url?: string | null;
+      newTab?: boolean | null;
+    };
     media?: (number | null) | Media;
     id?: string | null;
   }[];
@@ -737,43 +1400,39 @@ export interface MarketCoverageComponent {
   actions?:
     | {
         label: string;
-        url: string;
+        link: {
+          type: 'reference' | 'custom';
+          reference?:
+            | ({
+                relationTo: 'pages';
+                value: number | Page;
+              } | null)
+            | ({
+                relationTo: 'articles';
+                value: number | Article;
+              } | null)
+            | ({
+                relationTo: 'hubs';
+                value: number | Hub;
+              } | null)
+            | ({
+                relationTo: 'venues';
+                value: number | Venue;
+              } | null)
+            | ({
+                relationTo: 'learning-videos';
+                value: number | LearningVideo;
+              } | null);
+          url?: string | null;
+          newTab?: boolean | null;
+        };
         style: 'primary' | 'secondary' | 'link';
-        newTab?: boolean | null;
         id?: string | null;
       }[]
     | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'marketCoverage';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "regions".
- */
-export interface Region {
-  id: number;
-  title: string;
-  code?: string | null;
-  description?: string | null;
-  map?: {
-    centre?: {
-      latitude?: number | null;
-      longitude?: number | null;
-    };
-    zoom?: number | null;
-  };
-  slug: string;
-  legacySource?: {
-    key?: string | null;
-    source?: string | null;
-    legacyId?: number | null;
-    originalUrl?: string | null;
-    modifiedGmt?: string | null;
-    contentHash?: string | null;
-  };
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -806,111 +1465,36 @@ export interface DataChartComponent {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ArticleListingBlock".
+ * via the `definition` "OfficeComponent".
  */
-export interface ArticleListingBlock {
-  heading?: string | null;
-  intro?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  pageSize: number;
-  showCategoryFilter?: boolean | null;
+export interface OfficeComponent {
+  office: number | Office;
+  appearance: 'standard' | 'featured';
   id?: string | null;
   blockName?: string | null;
-  blockType: 'articleListing';
+  blockType: 'office';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "articles".
+ * via the `definition` "offices".
  */
-export interface Article {
+export interface Office {
   id: number;
   title: string;
-  /**
-   * Used in article listings and link previews.
-   */
-  excerpt?: string | null;
-  heroMedia?: (number | null) | Media;
-  layout?: (TrayportHeroBlock | ContentSectionBlock | ArticleListingBlock)[] | null;
-  /**
-   * Listing-only records support indexes and featured content without requiring a migrated article body.
-   */
-  contentMode: 'listing' | 'full';
-  /**
-   * Optional fully qualified destination for listing-only records. These records never own an internal route.
-   */
-  externalDestination?: string | null;
-  articleType: 'insight' | 'webinar' | 'video' | 'case-study' | 'news';
-  categories?: (number | ArticleCategory)[] | null;
-  /**
-   * Include this article in the curated featured area.
-   */
-  featured?: boolean | null;
-  /**
-   * Lower numbers appear first.
-   */
-  featuredOrder?: number | null;
-  /**
-   * Display name only. WordPress user accounts are deliberately not migrated.
-   */
-  byline?: string | null;
-  /**
-   * Optional event, webinar, or reporting location shown with the date.
-   */
-  location?: string | null;
-  relatedArticles?: (number | Article)[] | null;
-  relatedHubs?: (number | Hub)[] | null;
-  meta?: {
-    /**
-     * Optional override for search results and browser tabs.
-     */
-    title?: string | null;
-    /**
-     * A concise summary for search results and link previews.
-     */
-    description?: string | null;
-    image?: (number | null) | Media;
-    /**
-     * Only set this when the canonical URL differs from this page. Use a root-relative path or a complete HTTP(S) URL.
-     */
-    canonicalURL?: string | null;
-    noIndex?: boolean | null;
-    noFollow?: boolean | null;
-    /**
-     * Optional validated JSON-LD object. Script tags and executable markup are not accepted.
-     */
-    structuredData?:
-      | {
-          [k: string]: unknown;
-        }
-      | unknown[]
-      | string
-      | number
-      | boolean
-      | null;
+  legalName: string;
+  addressPrefix?: string | null;
+  address: string;
+  city?: string | null;
+  postcode?: string | null;
+  country: string;
+  countryCode?: string | null;
+  coordinates?: {
+    latitude?: number | null;
+    longitude?: number | null;
   };
-  slug: string;
-  /**
-   * Public path beginning and ending with “/”. Nested paths are supported, for example /company/about-us/.
-   */
-  path?: string | null;
-  /**
-   * Check this before publishing or scheduling a change to an already-live path. Approval is retained for that exact old/new path pair, and the former path becomes a permanent redirect.
-   */
-  confirmPathRedirect?: boolean | null;
-  publishedAt?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  displayOrder: number;
   legacySource?: {
     key?: string | null;
     source?: string | null;
@@ -932,341 +1516,6 @@ export interface ArticleCategory {
   title: string;
   description?: string | null;
   parent?: (number | null) | ArticleCategory;
-  displayOrder?: number | null;
-  slug: string;
-  legacySource?: {
-    key?: string | null;
-    source?: string | null;
-    legacyId?: number | null;
-    originalUrl?: string | null;
-    modifiedGmt?: string | null;
-    contentHash?: string | null;
-  };
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "hubs".
- */
-export interface Hub {
-  id: number;
-  title: string;
-  /**
-   * Map-only hubs are market markers and relationship records. Page hubs also render a public editorial page.
-   */
-  contentMode: 'map-only' | 'page';
-  summary?: string | null;
-  heroMedia?: (number | null) | Media;
-  layout?: (TrayportHeroBlock | ContentSectionBlock | ArticleListingBlock)[] | null;
-  code?: string | null;
-  /**
-   * Stable key for future market-data queries. The market data itself is stored outside Payload.
-   */
-  marketDataKey?: string | null;
-  assetClasses?: (number | AssetClass)[] | null;
-  venueTypes?: (number | VenueType)[] | null;
-  regions?: (number | Region)[] | null;
-  relatedHubs?: (number | Hub)[] | null;
-  showOnMap?: boolean | null;
-  map?: {
-    locationLabel?: string | null;
-    centre?: {
-      latitude?: number | null;
-      longitude?: number | null;
-    };
-    zoom?: number | null;
-    markers?:
-      | {
-          label?: string | null;
-          location: {
-            latitude: number;
-            longitude: number;
-          };
-          id?: string | null;
-        }[]
-      | null;
-  };
-  /**
-   * Editorial connectivity only. Pricing and time-series market data remain outside the CMS.
-   */
-  connections?:
-    | {
-        venue: number | Venue;
-        connectionType: 'd' | 'a' | 'b';
-        supportsJoule?: boolean | null;
-        supportsAutoTrader?: boolean | null;
-        id?: string | null;
-      }[]
-    | null;
-  meta?: {
-    /**
-     * Optional override for search results and browser tabs.
-     */
-    title?: string | null;
-    /**
-     * A concise summary for search results and link previews.
-     */
-    description?: string | null;
-    image?: (number | null) | Media;
-    /**
-     * Only set this when the canonical URL differs from this page. Use a root-relative path or a complete HTTP(S) URL.
-     */
-    canonicalURL?: string | null;
-    noIndex?: boolean | null;
-    noFollow?: boolean | null;
-    /**
-     * Optional validated JSON-LD object. Script tags and executable markup are not accepted.
-     */
-    structuredData?:
-      | {
-          [k: string]: unknown;
-        }
-      | unknown[]
-      | string
-      | number
-      | boolean
-      | null;
-  };
-  slug: string;
-  /**
-   * Public path beginning and ending with “/”. Nested paths are supported, for example /company/about-us/.
-   */
-  path?: string | null;
-  /**
-   * Check this before publishing or scheduling a change to an already-live path. Approval is retained for that exact old/new path pair, and the former path becomes a permanent redirect.
-   */
-  confirmPathRedirect?: boolean | null;
-  publishedAt?: string | null;
-  legacySource?: {
-    key?: string | null;
-    source?: string | null;
-    legacyId?: number | null;
-    originalUrl?: string | null;
-    modifiedGmt?: string | null;
-    contentHash?: string | null;
-  };
-  updatedAt: string;
-  createdAt: string;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "asset-classes".
- */
-export interface AssetClass {
-  id: number;
-  title: string;
-  description?: string | null;
-  displayOrder?: number | null;
-  slug: string;
-  legacySource?: {
-    key?: string | null;
-    source?: string | null;
-    legacyId?: number | null;
-    originalUrl?: string | null;
-    modifiedGmt?: string | null;
-    contentHash?: string | null;
-  };
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "venue-types".
- */
-export interface VenueType {
-  id: number;
-  title: string;
-  description?: string | null;
-  displayOrder?: number | null;
-  slug: string;
-  legacySource?: {
-    key?: string | null;
-    source?: string | null;
-    legacyId?: number | null;
-    originalUrl?: string | null;
-    modifiedGmt?: string | null;
-    contentHash?: string | null;
-  };
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "venues".
- */
-export interface Venue {
-  id: number;
-  title: string;
-  /**
-   * Relationship-only records support hub connectivity. Public details additionally own a complete frontend route.
-   */
-  contentMode: 'relationship-only' | 'page';
-  summary?: string | null;
-  description?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  layout?: (TrayportHeroBlock | ContentSectionBlock | ArticleListingBlock)[] | null;
-  code?: string | null;
-  website?: string | null;
-  logo?: (number | null) | Media;
-  venueTypes?: (number | VenueType)[] | null;
-  assetClasses?: (number | AssetClass)[] | null;
-  regions?: (number | Region)[] | null;
-  location?: {
-    label?: string | null;
-    coordinates?: {
-      latitude?: number | null;
-      longitude?: number | null;
-    };
-  };
-  displayOrder?: number | null;
-  slug: string;
-  /**
-   * Public path beginning and ending with “/”. Nested paths are supported, for example /company/about-us/.
-   */
-  path?: string | null;
-  /**
-   * Check this before publishing or scheduling a change to an already-live path. Approval is retained for that exact old/new path pair, and the former path becomes a permanent redirect.
-   */
-  confirmPathRedirect?: boolean | null;
-  publishedAt?: string | null;
-  meta?: {
-    /**
-     * Optional override for search results and browser tabs.
-     */
-    title?: string | null;
-    /**
-     * A concise summary for search results and link previews.
-     */
-    description?: string | null;
-    image?: (number | null) | Media;
-    /**
-     * Only set this when the canonical URL differs from this page. Use a root-relative path or a complete HTTP(S) URL.
-     */
-    canonicalURL?: string | null;
-    noIndex?: boolean | null;
-    noFollow?: boolean | null;
-    /**
-     * Optional validated JSON-LD object. Script tags and executable markup are not accepted.
-     */
-    structuredData?:
-      | {
-          [k: string]: unknown;
-        }
-      | unknown[]
-      | string
-      | number
-      | boolean
-      | null;
-  };
-  legacySource?: {
-    key?: string | null;
-    source?: string | null;
-    legacyId?: number | null;
-    originalUrl?: string | null;
-    modifiedGmt?: string | null;
-    contentHash?: string | null;
-  };
-  updatedAt: string;
-  createdAt: string;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "learning-videos".
- */
-export interface LearningVideo {
-  id: number;
-  title: string;
-  summary?: string | null;
-  /**
-   * Only public videos can be published until identity checks and protected media delivery are implemented. Other access modes can be prepared as drafts.
-   */
-  accessMode: 'public' | 'authenticated' | 'subscriber';
-  video?: (number | null) | Media;
-  /**
-   * Optional HTTPS video destination when media is hosted outside Payload.
-   */
-  externalVideoURL?: string | null;
-  /**
-   * Human-readable duration, for example 12:34.
-   */
-  duration?: string | null;
-  categories?: (number | LearningVideoCategory)[] | null;
-  layout?: (TrayportHeroBlock | ContentSectionBlock | ArticleListingBlock)[] | null;
-  meta?: {
-    /**
-     * Optional override for search results and browser tabs.
-     */
-    title?: string | null;
-    /**
-     * A concise summary for search results and link previews.
-     */
-    description?: string | null;
-    image?: (number | null) | Media;
-    /**
-     * Only set this when the canonical URL differs from this page. Use a root-relative path or a complete HTTP(S) URL.
-     */
-    canonicalURL?: string | null;
-    noIndex?: boolean | null;
-    noFollow?: boolean | null;
-    /**
-     * Optional validated JSON-LD object. Script tags and executable markup are not accepted.
-     */
-    structuredData?:
-      | {
-          [k: string]: unknown;
-        }
-      | unknown[]
-      | string
-      | number
-      | boolean
-      | null;
-  };
-  slug: string;
-  /**
-   * Public path beginning and ending with “/”. Nested paths are supported, for example /company/about-us/.
-   */
-  path?: string | null;
-  /**
-   * Check this before publishing or scheduling a change to an already-live path. Approval is retained for that exact old/new path pair, and the former path becomes a permanent redirect.
-   */
-  confirmPathRedirect?: boolean | null;
-  publishedAt?: string | null;
-  legacySource?: {
-    key?: string | null;
-    source?: string | null;
-    legacyId?: number | null;
-    originalUrl?: string | null;
-    modifiedGmt?: string | null;
-    contentHash?: string | null;
-  };
-  updatedAt: string;
-  createdAt: string;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "learning-video-categories".
- */
-export interface LearningVideoCategory {
-  id: number;
-  title: string;
-  description?: string | null;
   displayOrder?: number | null;
   slug: string;
   legacySource?: {
@@ -1329,6 +1578,7 @@ export interface RouteRegistry {
     | 'article.full'
     | 'article.listing-metadata'
     | 'learning-video.public-detail'
+    | 'learning-video.listing-metadata'
     | 'hub.public-page'
     | 'hub.map-only'
     | 'venue.structured-record'
@@ -1520,6 +1770,10 @@ export interface PayloadLockedDocument {
         value: number | LearningVideo;
       } | null)
     | ({
+        relationTo: 'offices';
+        value: number | Office;
+      } | null)
+    | ({
         relationTo: 'media';
         value: number | Media;
       } | null)
@@ -1614,6 +1868,7 @@ export interface PagesSelect<T extends boolean = true> {
         trayportHero?: T | TrayportHeroBlockSelect<T>;
         contentSection?: T | ContentSectionBlockSelect<T>;
         articleListing?: T | ArticleListingBlockSelect<T>;
+        learningVideoListing?: T | LearningVideoListingBlockSelect<T>;
       };
   parent?: T;
   navigationLabel?: T;
@@ -1661,9 +1916,15 @@ export interface TrayportHeroBlockSelect<T extends boolean = true> {
     | T
     | {
         label?: T;
-        url?: T;
+        link?:
+          | T
+          | {
+              type?: T;
+              reference?: T;
+              url?: T;
+              newTab?: T;
+            };
         style?: T;
-        newTab?: T;
         id?: T;
       };
   appearance?: T;
@@ -1701,6 +1962,7 @@ export interface ContentSectionBlockSelect<T extends boolean = true> {
               marketCoverage?: T | MarketCoverageComponentSelect<T>;
               embed?: T | EmbedComponentSelect<T>;
               dataChart?: T | DataChartComponentSelect<T>;
+              office?: T | OfficeComponentSelect<T>;
             };
         id?: T;
       };
@@ -1737,9 +1999,15 @@ export interface ActionsComponentSelect<T extends boolean = true> {
     | T
     | {
         label?: T;
-        url?: T;
+        link?:
+          | T
+          | {
+              type?: T;
+              reference?: T;
+              url?: T;
+              newTab?: T;
+            };
         style?: T;
-        newTab?: T;
         id?: T;
       };
   id?: T;
@@ -1770,8 +2038,15 @@ export interface FeatureListComponentSelect<T extends boolean = true> {
         body?: T;
         icon?: T;
         media?: T;
-        url?: T;
-        linkLabel?: T;
+        link?:
+          | T
+          | {
+              label?: T;
+              type?: T;
+              reference?: T;
+              url?: T;
+              newTab?: T;
+            };
         id?: T;
       };
   id?: T;
@@ -1803,6 +2078,7 @@ export interface FAQComponentSelect<T extends boolean = true> {
     | {
         question?: T;
         answer?: T;
+        media?: T;
         id?: T;
       };
   id?: T;
@@ -1819,7 +2095,14 @@ export interface EntityListComponentSelect<T extends boolean = true> {
     | {
         title?: T;
         description?: T;
-        url?: T;
+        link?:
+          | T
+          | {
+              type?: T;
+              reference?: T;
+              url?: T;
+              newTab?: T;
+            };
         media?: T;
         id?: T;
       };
@@ -1904,9 +2187,15 @@ export interface MarketCoverageComponentSelect<T extends boolean = true> {
     | T
     | {
         label?: T;
-        url?: T;
+        link?:
+          | T
+          | {
+              type?: T;
+              reference?: T;
+              url?: T;
+              newTab?: T;
+            };
         style?: T;
-        newTab?: T;
         id?: T;
       };
   id?: T;
@@ -1938,12 +2227,36 @@ export interface DataChartComponentSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "OfficeComponent_select".
+ */
+export interface OfficeComponentSelect<T extends boolean = true> {
+  office?: T;
+  appearance?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ArticleListingBlock_select".
  */
 export interface ArticleListingBlockSelect<T extends boolean = true> {
+  family?: T;
   heading?: T;
   intro?: T;
   pageSize?: T;
+  showCategoryFilter?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LearningVideoListingBlock_select".
+ */
+export interface LearningVideoListingBlockSelect<T extends boolean = true> {
+  heading?: T;
+  intro?: T;
+  pageSize?: T;
+  showProductFilter?: T;
   showCategoryFilter?: T;
   id?: T;
   blockName?: T;
@@ -1962,6 +2275,7 @@ export interface ArticlesSelect<T extends boolean = true> {
         trayportHero?: T | TrayportHeroBlockSelect<T>;
         contentSection?: T | ContentSectionBlockSelect<T>;
         articleListing?: T | ArticleListingBlockSelect<T>;
+        learningVideoListing?: T | LearningVideoListingBlockSelect<T>;
       };
   contentMode?: T;
   externalDestination?: T;
@@ -2009,6 +2323,7 @@ export interface ArticlesSelect<T extends boolean = true> {
 export interface HubsSelect<T extends boolean = true> {
   title?: T;
   contentMode?: T;
+  externalDestination?: T;
   summary?: T;
   heroMedia?: T;
   layout?:
@@ -2017,6 +2332,7 @@ export interface HubsSelect<T extends boolean = true> {
         trayportHero?: T | TrayportHeroBlockSelect<T>;
         contentSection?: T | ContentSectionBlockSelect<T>;
         articleListing?: T | ArticleListingBlockSelect<T>;
+        learningVideoListing?: T | LearningVideoListingBlockSelect<T>;
       };
   code?: T;
   marketDataKey?: T;
@@ -2102,6 +2418,7 @@ export interface VenuesSelect<T extends boolean = true> {
         trayportHero?: T | TrayportHeroBlockSelect<T>;
         contentSection?: T | ContentSectionBlockSelect<T>;
         articleListing?: T | ArticleListingBlockSelect<T>;
+        learningVideoListing?: T | LearningVideoListingBlockSelect<T>;
       };
   code?: T;
   website?: T;
@@ -2119,6 +2436,13 @@ export interface VenuesSelect<T extends boolean = true> {
               latitude?: T;
               longitude?: T;
             };
+      };
+  marketConnections?:
+    | T
+    | {
+        hub?: T;
+        connectionType?: T;
+        id?: T;
       };
   displayOrder?: T;
   slug?: T;
@@ -2157,17 +2481,30 @@ export interface VenuesSelect<T extends boolean = true> {
 export interface LearningVideosSelect<T extends boolean = true> {
   title?: T;
   summary?: T;
+  description?: T;
+  contentMode?: T;
+  externalDestination?: T;
   accessMode?: T;
   video?: T;
   externalVideoURL?: T;
+  poster?: T;
   duration?: T;
   categories?: T;
+  product?: T;
+  tags?:
+    | T
+    | {
+        label?: T;
+        id?: T;
+      };
+  displayOrder?: T;
   layout?:
     | T
     | {
         trayportHero?: T | TrayportHeroBlockSelect<T>;
         contentSection?: T | ContentSectionBlockSelect<T>;
         articleListing?: T | ArticleListingBlockSelect<T>;
+        learningVideoListing?: T | LearningVideoListingBlockSelect<T>;
       };
   meta?:
     | T
@@ -2200,6 +2537,42 @@ export interface LearningVideosSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "offices_select".
+ */
+export interface OfficesSelect<T extends boolean = true> {
+  title?: T;
+  legalName?: T;
+  addressPrefix?: T;
+  address?: T;
+  city?: T;
+  postcode?: T;
+  country?: T;
+  countryCode?: T;
+  coordinates?:
+    | T
+    | {
+        latitude?: T;
+        longitude?: T;
+      };
+  phone?: T;
+  email?: T;
+  displayOrder?: T;
+  legacySource?:
+    | T
+    | {
+        key?: T;
+        source?: T;
+        legacyId?: T;
+        originalUrl?: T;
+        modifiedGmt?: T;
+        contentHash?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
@@ -2210,6 +2583,7 @@ export interface MediaSelect<T extends boolean = true> {
   caption?: T;
   attribution?: T;
   externalURL?: T;
+  sourceFileHash?: T;
   poster?: T;
   legacySource?:
     | T
@@ -2604,6 +2978,14 @@ export interface Navigation {
             | ({
                 relationTo: 'hubs';
                 value: number | Hub;
+              } | null)
+            | ({
+                relationTo: 'venues';
+                value: number | Venue;
+              } | null)
+            | ({
+                relationTo: 'learning-videos';
+                value: number | LearningVideo;
               } | null);
           url?: string | null;
           newTab?: boolean | null;
@@ -2634,6 +3016,14 @@ export interface Navigation {
                   | ({
                       relationTo: 'hubs';
                       value: number | Hub;
+                    } | null)
+                  | ({
+                      relationTo: 'venues';
+                      value: number | Venue;
+                    } | null)
+                  | ({
+                      relationTo: 'learning-videos';
+                      value: number | LearningVideo;
                     } | null);
                 url?: string | null;
                 newTab?: boolean | null;
@@ -2664,6 +3054,14 @@ export interface Navigation {
             | ({
                 relationTo: 'hubs';
                 value: number | Hub;
+              } | null)
+            | ({
+                relationTo: 'venues';
+                value: number | Venue;
+              } | null)
+            | ({
+                relationTo: 'learning-videos';
+                value: number | LearningVideo;
               } | null);
           url?: string | null;
           newTab?: boolean | null;
@@ -2687,6 +3085,14 @@ export interface Navigation {
         | ({
             relationTo: 'hubs';
             value: number | Hub;
+          } | null)
+        | ({
+            relationTo: 'venues';
+            value: number | Venue;
+          } | null)
+        | ({
+            relationTo: 'learning-videos';
+            value: number | LearningVideo;
           } | null);
       url?: string | null;
       newTab?: boolean | null;
@@ -2734,6 +3140,14 @@ export interface Footer {
                   | ({
                       relationTo: 'hubs';
                       value: number | Hub;
+                    } | null)
+                  | ({
+                      relationTo: 'venues';
+                      value: number | Venue;
+                    } | null)
+                  | ({
+                      relationTo: 'learning-videos';
+                      value: number | LearningVideo;
                     } | null);
                 url?: string | null;
                 newTab?: boolean | null;
@@ -2761,6 +3175,14 @@ export interface Footer {
             | ({
                 relationTo: 'hubs';
                 value: number | Hub;
+              } | null)
+            | ({
+                relationTo: 'venues';
+                value: number | Venue;
+              } | null)
+            | ({
+                relationTo: 'learning-videos';
+                value: number | LearningVideo;
               } | null);
           url?: string | null;
           newTab?: boolean | null;
@@ -2840,6 +3262,14 @@ export interface SiteSetting {
           | ({
               relationTo: 'hubs';
               value: number | Hub;
+            } | null)
+          | ({
+              relationTo: 'venues';
+              value: number | Venue;
+            } | null)
+          | ({
+              relationTo: 'learning-videos';
+              value: number | LearningVideo;
             } | null);
         url?: string | null;
         newTab?: boolean | null;
