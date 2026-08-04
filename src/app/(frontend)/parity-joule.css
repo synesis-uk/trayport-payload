@@ -1,0 +1,830 @@
+/*
+ * Joule golden-route parity.
+ *
+ * These rules are deliberately scoped to the imported WordPress route. They
+ * preserve the shared block model while the broader design system settles,
+ * and can be removed without changing the content schema or renderer.
+ */
+
+.trayport-page[data-page-path='/products/joule/'] {
+  --joule-dark: #1f2a44;
+  --joule-deep: #002d72;
+  --joule-blue: #0057b8;
+  --joule-light-blue: #009cde;
+  --joule-cyan: #00c1d5;
+  --gutter: 1rem;
+}
+
+/* WordPress spacing values are intentionally discrete rather than fluid. */
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-section--space-top-tight {
+  padding-top: 1rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-section--space-top-regular {
+  padding-top: 4rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-section--space-top-large {
+  padding-top: 8rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-section--space-bottom-tight {
+  padding-bottom: 1rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-section--space-bottom-regular {
+  padding-bottom: 4rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-section--space-bottom-large {
+  padding-bottom: 8rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-section .trayport-grid {
+  gap: 4rem;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section--has-feature-list.trayport-section--has-actions:has(.trayport-carousel):not(
+    #joule-mobile
+  )
+  .trayport-column__content,
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section:has(.trayport-feature--overlay)
+  .trayport-column__content {
+  gap: 2rem;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section--has-feature-list.trayport-section--has-actions:has(.trayport-carousel):not(
+    #joule-mobile
+  )
+  .trayport-heading:has(> .trayport-eyebrow) {
+  row-gap: 2rem;
+}
+
+/* Typography and compact labels mirror the current public route. */
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-richtext {
+  line-height: 1.75;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-richtext--lead {
+  font-size: 1.125rem;
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  line-height: 1.75rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-heading--h1 > :is(h1, h2, h3, h4) {
+  font-size: 3rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-heading:has(> .trayport-eyebrow) {
+  row-gap: 1.5rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-heading > .trayport-eyebrow {
+  background: var(--joule-blue);
+  color: #fff;
+  display: block;
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.5rem;
+  margin: 0;
+  padding: 0.375rem 0.75rem;
+  text-transform: none;
+  width: fit-content;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > #joule-mobile
+  .trayport-heading
+  > .trayport-eyebrow {
+  background: var(--color-chart-1);
+  color: var(--joule-dark);
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-feature__body h3 {
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 2rem;
+  margin-bottom: 1.125rem;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  .trayport-feature:not(.trayport-feature--overlay) {
+  border: 0;
+  padding: 0.5rem 1rem;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section--has-data-table
+  .trayport-column--has-feature-list
+  .trayport-feature__body
+  h3 {
+  margin-bottom: 1.625rem;
+  position: relative;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section--has-data-table
+  .trayport-column--has-feature-list
+  .trayport-feature__body
+  h3::after {
+  background: linear-gradient(
+    90deg,
+    var(--joule-cyan) 0 33.333%,
+    #f7ea48 33.333% 66.666%,
+    #ff6021 66.666%
+  );
+  bottom: -0.625rem;
+  content: '';
+  height: 0.125rem;
+  left: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-faq summary {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1rem;
+  min-height: 4rem;
+  padding-block: 0.5rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-faq {
+  border-top: 0;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-faq__toggle {
+  color: var(--joule-dark);
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-faq details:last-child {
+  border-bottom: 0;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section--has-faq
+  .trayport-column--has-rich-text
+  > .trayport-column__content::after {
+  content: '';
+  display: block;
+  flex-basis: 1.75rem;
+  height: 1.75rem;
+}
+
+/* Hero */
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-hero .trayport-hero__inner {
+  align-items: flex-start;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-hero .trayport-hero__content {
+  padding-top: 7.1875rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-hero .trayport-hero__badge {
+  background: var(--joule-cyan);
+  border-radius: 9999px;
+  color: var(--joule-dark);
+  font-size: 0.875rem;
+  font-weight: 400;
+  height: 2.125rem;
+  line-height: 1.5rem;
+  padding: 0.3125rem 1.25rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-hero .trayport-hero__badge svg {
+  color: var(--joule-dark);
+  height: 1.25rem;
+  margin-left: -0.5rem;
+  width: 1.5625rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-hero .trayport-hero__content h1 {
+  font-size: 3rem;
+  font-weight: 300;
+  letter-spacing: 0;
+  line-height: 1.1;
+  padding-bottom: 1.5rem;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-hero
+  .trayport-hero__content
+  h1::after {
+  background: linear-gradient(
+    90deg,
+    var(--joule-cyan) 0 33.333%,
+    #f7ea48 33.333% 66.666%,
+    #ff6021 66.666%
+  );
+  bottom: -0.125rem;
+  display: block;
+  height: 0.125rem;
+  margin: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-hero .trayport-hero__content h1 {
+  position: relative;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-hero
+  .trayport-hero__content
+  .trayport-richtext--lead {
+  font-size: 1.25rem;
+  font-weight: 300;
+  letter-spacing: 0;
+  line-height: 1.75rem;
+  margin-top: 1.625rem;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-hero
+  .trayport-hero__content
+  .trayport-richtext--lead
+  p {
+  font-size: inherit;
+}
+
+/* Actions retain the shared semantics but use the reference's compact scale. */
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-actions {
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section
+  .trayport-column__content
+  > .trayport-actions {
+  margin-top: 0;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-action {
+  border-radius: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  gap: 0.5rem;
+  line-height: 1.25rem;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-action > span + svg {
+  display: none;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-section .trayport-action--primary {
+  background: var(--joule-deep);
+}
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-hero .trayport-action--secondary {
+  background: var(--joule-blue);
+  border-color: var(--joule-blue);
+  color: #fff;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > .trayport-hero .trayport-action--info,
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section--has-media.trayport-section--has-actions:not(
+    .trayport-section--has-feature-list
+  ):has(.trayport-section__surface--tone-dark)
+  .trayport-action--info {
+  background: var(--joule-cyan);
+  border-color: var(--joule-cyan);
+  color: var(--joule-dark);
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section--has-media.trayport-section--has-actions:not(
+    .trayport-section--has-feature-list
+  ):has(.trayport-section__surface--tone-dark)
+  .trayport-action--accent {
+  background: var(--joule-light-blue);
+  border-color: var(--joule-light-blue);
+  color: var(--joule-dark);
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section--has-feature-list.trayport-section--has-actions:has(.trayport-carousel):not(
+    #joule-mobile
+  )
+  .trayport-actions
+  > .trayport-action--accent {
+  background: transparent;
+  border-color: transparent;
+  color: var(--joule-dark);
+  font-size: 1rem;
+  font-weight: 400;
+  padding-inline: 0;
+}
+
+/* The imported price matrix is data, but visually behaves as a compact tile matrix. */
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section:has(.trayport-table-wrap)
+  .trayport-column--has-data-table {
+  background: #fafafa;
+  border: 0.0625rem solid #eee;
+  border-radius: 0;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section:has(.trayport-table-wrap)
+  .trayport-column--has-data-table
+  > .trayport-column__content {
+  padding: 0.5rem 0.5rem 1.25rem;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section:has(.trayport-table-wrap)
+  .trayport-column--has-feature-list
+  .trayport-feature__body
+  .trayport-richtext
+  p:not(:last-child) {
+  margin-bottom: 0.7rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-table {
+  border-collapse: separate;
+  display: block;
+  min-width: 0;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-table caption,
+.trayport-page[data-page-path='/products/joule/'] .trayport-data-grid__caption {
+  color: var(--joule-dark);
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1.75rem;
+  padding-block: 1rem;
+  text-align: center;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-table tbody,
+.trayport-page[data-page-path='/products/joule/'] .trayport-data-grid {
+  display: grid;
+  gap: 1.5rem 2.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0.75rem;
+  padding-inline: 1.25rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-table tr {
+  display: contents;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-table td,
+.trayport-page[data-page-path='/products/joule/'] .trayport-data-grid > li {
+  background: var(--joule-blue);
+  border: 0;
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1.75rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Keep the enhanced, accessible carousel while matching the reference controls. */
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-carousel {
+  position: relative;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-carousel__viewport {
+  margin-inline: 0.5rem;
+  width: calc(100% - 1rem);
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-carousel__status {
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  height: 0.0625rem;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 0.0625rem;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-carousel__controls {
+  inset: 0;
+  margin: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-carousel__button {
+  background: #fff;
+  border: 0.0625rem solid var(--joule-dark);
+  border-radius: 9999px;
+  color: var(--joule-dark);
+  height: 2rem;
+  min-height: 2rem;
+  min-width: 2rem;
+  padding: 0;
+  pointer-events: auto;
+  position: absolute;
+  top: 1rem;
+  width: 2rem;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  .trayport-carousel__button[aria-label='Previous slide'] {
+  left: 0;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  .trayport-carousel__button[aria-label='Next slide'] {
+  right: 0;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section--has-feature-list.trayport-section--has-actions:has(.trayport-carousel):not(
+    #joule-mobile
+  )
+  .trayport-carousel__slide
+  .trayport-feature__body {
+  padding-inline: 0;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > #joule-mobile .trayport-carousel__button {
+  background: transparent;
+  border-color: #fff;
+  color: #fff;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > #features
+  .trayport-column--has-rich-text
+  > .trayport-column__content
+  > .trayport-richtext {
+  padding-bottom: 0;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > #features
+  .trayport-column--has-rich-text
+  > .trayport-column__content
+  > .trayport-richtext
+  > ul {
+  margin-left: -1rem;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > #features
+  .trayport-column--has-rich-text
+  > .trayport-column__content
+  > .trayport-richtext
+  > p:first-child {
+  margin-bottom: 1.25rem;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > #features
+  .trayport-column--has-rich-text
+  > .trayport-column__content
+  > .trayport-richtext
+  > p
+  + p {
+  margin-bottom: 0.5rem;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > #features
+  .trayport-column--has-rich-text
+  > .trayport-column__content
+  > .trayport-richtext
+  > p:last-child {
+  margin-bottom: 0;
+}
+
+/* Media and bounded dark surfaces. */
+
+.trayport-page[data-page-path='/products/joule/'] .trayport-media--landscape > div,
+.trayport-page[data-page-path='/products/joule/'] .trayport-feature__media {
+  border-radius: 0;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > #joule-mobile .trayport-media--landscape > div {
+  background: transparent;
+}
+
+.trayport-page[data-page-path='/products/joule/'] > #joule-mobile .trayport-section__surface,
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section--has-media.trayport-section--has-actions:not(
+    .trayport-section--has-feature-list
+  ):has(.trayport-section__surface--tone-dark)
+  .trayport-section__surface {
+  background: var(--joule-dark);
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section:has(.trayport-feature--overlay)
+  .trayport-feature__overlay-link {
+  color: var(--joule-dark);
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section:has(.trayport-feature--overlay)
+  .trayport-feature__overlay-link::after {
+  background: transparent;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section:has(.trayport-feature--overlay)
+  .trayport-feature__overlay-body {
+  background: #fff;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.25rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.trayport-page[data-page-path='/products/joule/']
+  > .trayport-section:has(.trayport-feature--overlay)
+  .trayport-features {
+  gap: 2rem;
+}
+
+@media (min-width: 48rem) {
+  .trayport-page[data-page-path='/products/joule/'] {
+    --gutter: 3rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section--has-faq
+    .trayport-richtext--lead {
+    font-size: 1.25rem;
+    line-height: 2rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section--has-faq
+    .trayport-column--has-rich-text
+    > .trayport-column__content::after {
+    flex-basis: 0;
+    height: 0;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] .trayport-faq summary {
+    font-size: 1.125rem;
+    line-height: 1.25rem;
+    min-height: 4.25rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section:not(
+      :has(> .trayport-container > .trayport-section__surface--padding-medium)
+    )
+    > .trayport-container {
+    max-width: none;
+    padding-inline: 5rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > #joule-mobile
+    .trayport-section__surface--padding-medium {
+    padding: 3rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] > .trayport-section--space-bottom-tight {
+    padding-bottom: 2rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] > .trayport-section--has-faq .trayport-grid {
+    min-height: 20.375rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section--has-data-table
+    .trayport-grid {
+    min-height: 46.4375rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section--has-feature-list.trayport-section--has-actions:has(.trayport-carousel):not(
+      #joule-mobile
+    )
+    .trayport-column__content,
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section:has(.trayport-feature--overlay)
+    .trayport-column__content {
+    gap: 4rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section--has-feature-list.trayport-section--has-actions:has(.trayport-carousel):not(
+      #joule-mobile
+    )
+    .trayport-heading:has(> .trayport-eyebrow) {
+    row-gap: 4rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] .trayport-carousel__viewport {
+    margin-inline: 3rem;
+    width: calc(100% - 6rem);
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section--has-feature-list.trayport-section--has-actions:has(.trayport-carousel):not(
+      #joule-mobile
+    )
+    .trayport-carousel,
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section--has-feature-list.trayport-section--has-actions:has(.trayport-carousel):not(
+      #joule-mobile
+    )
+    .trayport-carousel__viewport,
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section--has-feature-list.trayport-section--has-actions:has(.trayport-carousel):not(
+      #joule-mobile
+    )
+    .trayport-carousel__slide {
+    min-height: 9.875rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] > #joule-mobile .trayport-carousel,
+  .trayport-page[data-page-path='/products/joule/'] > #joule-mobile .trayport-carousel__viewport,
+  .trayport-page[data-page-path='/products/joule/'] > #joule-mobile .trayport-carousel__slide {
+    min-height: 13.625rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] > #joule-mobile .trayport-carousel {
+    --trayport-carousel-visible-items: 2;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] > #joule-mobile .trayport-carousel__slide {
+    flex-basis: calc((100% - 1.25rem) / 2);
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > #joule-mobile
+    .trayport-carousel__slide
+    .trayport-feature {
+    padding-block: 1rem 0.5rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > #joule-mobile
+    .trayport-column--has-rich-text
+    > .trayport-column__content
+    > .trayport-richtext {
+    letter-spacing: -0.025em;
+    margin-inline: 0;
+    max-width: 50rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section:has(.trayport-feature--overlay)
+    .trayport-features {
+    min-height: 14.4375rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section--has-media.trayport-section--has-actions:not(
+      .trayport-section--has-feature-list
+    ):has(.trayport-section__surface--tone-dark)
+    > .trayport-container {
+    max-width: none;
+    padding-inline: 4.375rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section--has-media.trayport-section--has-actions:not(
+      .trayport-section--has-feature-list
+    ):has(.trayport-section__surface--tone-dark)
+    .trayport-section__surface--padding-medium {
+    padding: 3rem;
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .trayport-page[data-page-path='/products/joule/'] > .trayport-hero + .trayport-section {
+    margin-top: 1rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] > .trayport-section .trayport-grid {
+    column-gap: 4rem;
+    row-gap: 2rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section:has(> .trayport-container > .trayport-section__surface--padding-medium)
+    > .trayport-container {
+    padding-inline: 0.5rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section:has(> .trayport-container > .trayport-section__surface--padding-medium)
+    .trayport-section__surface--padding-medium {
+    padding: 1rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] > .trayport-hero .trayport-hero__inner {
+    padding-block: 1.25rem 0.25rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] > .trayport-hero .trayport-hero__content {
+    padding-top: 0;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] > .trayport-hero .trayport-hero__badge {
+    display: none;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] > .trayport-hero .trayport-hero__content h1 {
+    font-size: 1.875rem;
+    font-weight: 600;
+    line-height: 1.75rem;
+    padding-bottom: 0;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-hero
+    .trayport-hero__content
+    h1::after {
+    bottom: -1.125rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-hero
+    .trayport-hero__content
+    .trayport-richtext--lead {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    margin-top: 2.125rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-hero
+    .trayport-hero__content
+    .trayport-richtext--lead
+    p:last-child {
+    margin-bottom: 0;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] > .trayport-hero .trayport-actions {
+    margin-top: 1rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section--has-feature-list.trayport-section--has-actions:has(.trayport-carousel):not(
+      #joule-mobile
+    )
+    .trayport-actions
+    > .trayport-action--accent {
+    min-height: 1.75rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] .trayport-actions {
+    align-items: center;
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] .trayport-action {
+    width: auto;
+  }
+
+  .trayport-page[data-page-path='/products/joule/'] .trayport-heading--h1 > :is(h1, h2, h3, h4) {
+    font-size: 1.875rem;
+    line-height: 1.75rem;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section--has-feature-list.trayport-section--has-actions:has(.trayport-carousel):not(
+      #joule-mobile
+    )
+    .trayport-carousel__slide
+    .trayport-feature__body {
+    padding-inline: 0;
+  }
+
+  .trayport-page[data-page-path='/products/joule/']
+    > .trayport-section--has-data-table
+    .trayport-column--has-feature-list
+    .trayport-features
+    .trayport-richtext,
+  .trayport-page[data-page-path='/products/joule/']
+    > #joule-mobile
+    + .trayport-section
+    .trayport-richtext {
+    letter-spacing: -0.025em;
+  }
+}

@@ -1,29 +1,31 @@
-'use client'
-
 import { cn } from '@/utilities/ui'
 import { Slot } from '@radix-ui/react-slot'
 import { type VariantProps, cva } from 'class-variance-authority'
 import * as React from 'react'
 
+import { ControlIcon } from '@/components/icons/ControlIcon'
+
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 ring-ring/10 dark:ring-ring/20 dark:outline-ring/40 outline-ring/50 focus-visible:ring-4 focus-visible:outline-1 aria-invalid:focus-visible:ring-0",
+  "duration-fast inline-flex min-h-control items-center justify-center gap-2 rounded-control border border-transparent text-sm font-semibold whitespace-nowrap no-underline transition-[background-color,border-color,color,box-shadow,translate] ease-standard outline-none focus-visible:focus-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 motion-safe:active:translate-y-px [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
+        default:
+          'bg-trayport-blue text-white shadow-xs hover:bg-trayport-deep focus-visible:bg-trayport-deep',
         destructive: 'bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90',
         outline:
-          'border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground',
-        secondary: 'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
+          'border-current bg-transparent text-trayport-deep hover:border-trayport-blue hover:bg-trayport-soft hover:text-trayport-blue',
+        secondary:
+          'border-trayport-soft bg-trayport-soft text-trayport-deep hover:border-trayport-light-blue hover:bg-trayport-light-blue hover:text-trayport-deep',
+        ghost: 'text-trayport-deep hover:bg-trayport-soft hover:text-trayport-blue',
+        link: 'min-h-0 border-0 p-0 text-trayport-blue underline-offset-4 hover:underline',
       },
       size: {
         clear: '',
-        default: 'h-10 px-4 py-2 has-[>svg]:px-3',
-        sm: 'h-9 rounded-md px-3 has-[>svg]:px-2.5',
-        lg: 'h-11 rounded-md px-8 has-[>svg]:px-4',
-        icon: 'size-10',
+        default: 'px-4 py-2.5 has-[>svg]:px-3.5',
+        sm: 'min-h-control-sm px-3 py-1.5 text-[0.8125rem] has-[>svg]:px-2.5',
+        lg: 'min-h-control-lg px-6 py-3 has-[>svg]:px-5',
+        icon: 'size-control p-0',
       },
     },
     defaultVariants: {
@@ -36,17 +38,59 @@ const buttonVariants = cva(
 export interface ButtonProps
   extends React.ComponentProps<'button'>, VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  isLoading?: boolean
+  loadingLabel?: string
 }
 
-const Button: React.FC<ButtonProps> = ({ asChild = false, className, size, variant, ...props }) => {
+const Button: React.FC<ButtonProps> = ({
+  asChild = false,
+  children,
+  className,
+  disabled,
+  isLoading = false,
+  loadingLabel = 'Loading',
+  onClick,
+  size,
+  tabIndex,
+  variant,
+  ...props
+}) => {
   const Comp = asChild ? Slot : 'button'
 
   return (
     <Comp
-      data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      aria-busy={isLoading || undefined}
+      aria-disabled={asChild && (disabled || isLoading) ? true : undefined}
+      data-slot="button"
+      data-loading={isLoading ? '' : undefined}
+      disabled={asChild ? undefined : disabled || isLoading}
+      onClick={(event) => {
+        if (asChild && (disabled || isLoading)) {
+          event.preventDefault()
+          event.stopPropagation()
+          return
+        }
+        onClick?.(event)
+      }}
+      tabIndex={asChild && (disabled || isLoading) ? -1 : tabIndex}
       {...props}
-    />
+    >
+      {asChild ? (
+        children
+      ) : isLoading ? (
+        <>
+          <ControlIcon
+            aria-hidden
+            className="animate-spin motion-reduce:animate-none"
+            name="spinner"
+          />
+          <span className={cn(size === 'icon' && 'sr-only')}>{loadingLabel}</span>
+        </>
+      ) : (
+        children
+      )}
+    </Comp>
   )
 }
 

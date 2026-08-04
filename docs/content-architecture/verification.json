@@ -65,8 +65,14 @@
     },
     {
       "id": "route-owner:page-documents",
-      "expected": 51,
-      "actual": 51,
+      "expected": 50,
+      "actual": 50,
+      "passed": true
+    },
+    {
+      "id": "route-owner:temporary-contact-redirect",
+      "expected": 1,
+      "actual": 1,
       "passed": true
     },
     {

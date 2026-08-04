@@ -1,5 +1,8 @@
 import type { Block } from 'payload'
 
+import { imageOrVideoUploadField, imageUploadField } from '@/fields/mediaUpload'
+import { safeExternalMediaURL, validateExternalVideoMediaURL } from '@/routing/urlPolicy'
+
 import { blockActions } from './actions'
 import { sectionComponents } from './components'
 
@@ -16,6 +19,30 @@ export const TrayportHero: Block = {
       type: 'text',
     },
     {
+      name: 'badgeLabel',
+      type: 'text',
+      admin: {
+        description: 'Optional compact label displayed above the hero heading.',
+      },
+    },
+    {
+      name: 'badgeIcon',
+      type: 'select',
+      options: [
+        { label: 'People', value: 'people' },
+        { label: 'Trading screen', value: 'tradingScreen' },
+      ],
+    },
+    {
+      name: 'badgeTone',
+      type: 'select',
+      defaultValue: 'secondary',
+      options: [
+        { label: 'Secondary', value: 'secondary' },
+        { label: 'Info', value: 'info' },
+      ],
+    },
+    {
       name: 'heading',
       type: 'textarea',
       required: true,
@@ -24,14 +51,29 @@ export const TrayportHero: Block = {
       name: 'body',
       type: 'richText',
     },
-    {
+    imageOrVideoUploadField({
       name: 'media',
-      type: 'upload',
-      relationTo: 'media',
-    },
+    }),
     {
       name: 'externalVideoURL',
       type: 'text',
+      hooks: {
+        beforeValidate: [
+          ({ value }) =>
+            safeExternalMediaURL(value, 'video') ||
+            (typeof value === 'string' ? value.trim() : value),
+        ],
+      },
+      validate: (value: string | null | undefined) => validateExternalVideoMediaURL(value),
+    },
+    {
+      name: 'mediaAspect',
+      type: 'select',
+      defaultValue: 'twoToOne',
+      options: [
+        { label: '2:1', value: 'twoToOne' },
+        { label: '16:9', value: 'sixteenToNine' },
+      ],
     },
     blockActions,
     {
@@ -58,6 +100,10 @@ export const TrayportHero: Block = {
     {
       name: 'appearance',
       type: 'select',
+      admin: {
+        description:
+          'Image displays the selected media behind the hero. Dark and Light are text-led treatments and do not display hero media.',
+      },
       defaultValue: 'dark',
       options: [
         { label: 'Dark', value: 'dark' },
@@ -82,16 +128,16 @@ export const ContentSection: Block = {
       type: 'text',
     },
     {
-      name: 'theme',
+      name: 'surfaceTone',
       type: 'select',
-      defaultValue: 'light',
+      dbName: 'theme',
+      defaultValue: 'none',
       options: [
-        { label: 'Light', value: 'light' },
+        { label: 'None', value: 'none' },
+        { label: 'White', value: 'white' },
         { label: 'Soft blue', value: 'softBlue' },
         { label: 'Dark blue', value: 'dark' },
-        { label: 'White', value: 'white' },
       ],
-      required: true,
     },
     {
       name: 'wrapperTheme',
@@ -106,25 +152,12 @@ export const ContentSection: Block = {
       ],
       required: true,
     },
-    {
-      name: 'appearance',
-      type: 'select',
-      dbName: 'presentation',
-      defaultValue: 'default',
-      options: [
-        { label: 'Default', value: 'default' },
-        { label: 'Inset card', value: 'inset' },
-      ],
-      required: true,
-    },
-    {
+    imageUploadField({
       name: 'backgroundMedia',
-      type: 'upload',
-      relationTo: 'media',
       admin: {
         description: 'Optional managed background asset; presentation and opacity remain bounded.',
       },
-    },
+    }),
     {
       name: 'backgroundOpacity',
       type: 'select',
@@ -139,6 +172,26 @@ export const ContentSection: Block = {
       required: true,
     },
     {
+      name: 'surfaceRadius',
+      type: 'select',
+      dbName: 'surface_radius',
+      defaultValue: 'default',
+      options: [
+        { label: 'Default', value: 'default' },
+        { label: 'Extra large', value: 'xl' },
+      ],
+    },
+    {
+      name: 'surfacePadding',
+      type: 'select',
+      dbName: 'surface_padding',
+      defaultValue: 'none',
+      options: [
+        { label: 'None', value: 'none' },
+        { label: 'Medium', value: 'medium' },
+      ],
+    },
+    {
       name: 'width',
       type: 'select',
       defaultValue: 'wide',
@@ -151,21 +204,42 @@ export const ContentSection: Block = {
       required: true,
     },
     {
-      name: 'spacing',
+      name: 'spacingTop',
       type: 'select',
+      dbName: 'spacing_top',
       defaultValue: 'regular',
       options: [
-        { label: 'Compact', value: 'compact' },
+        { label: 'Tight', value: 'tight' },
         { label: 'Regular', value: 'regular' },
-        { label: 'Generous', value: 'generous' },
+        { label: 'Large', value: 'large' },
       ],
-      required: true,
+    },
+    {
+      name: 'spacingBottom',
+      type: 'select',
+      dbName: 'spacing_bottom',
+      defaultValue: 'regular',
+      options: [
+        { label: 'Tight', value: 'tight' },
+        { label: 'Regular', value: 'regular' },
+        { label: 'Large', value: 'large' },
+      ],
+    },
+    {
+      name: 'columnGap',
+      type: 'select',
+      dbName: 'column_gap',
+      defaultValue: 'regular',
+      options: [
+        { label: 'Tight', value: 'tight' },
+        { label: 'Regular', value: 'regular' },
+      ],
     },
     {
       name: 'columns',
       type: 'array',
       minRows: 1,
-      maxRows: 6,
+      maxRows: 8,
       required: true,
       admin: {
         initCollapsed: true,
@@ -179,9 +253,77 @@ export const ContentSection: Block = {
           required: true,
         },
         {
+          name: 'horizontalAlign',
+          type: 'select',
+          dbName: 'horizontal_align',
+          defaultValue: 'left',
+          options: ['left', 'center'],
+        },
+        {
+          name: 'verticalAlign',
+          type: 'select',
+          dbName: 'vertical_align',
+          defaultValue: 'start',
+          options: ['start', 'center'],
+        },
+        {
+          name: 'heightMode',
+          type: 'select',
+          dbName: 'height_mode',
+          defaultValue: 'fill',
+          options: ['fill', 'content'],
+        },
+        {
+          name: 'componentGap',
+          type: 'select',
+          dbName: 'component_gap',
+          defaultValue: 'regular',
+          options: ['none', 'regular'],
+        },
+        {
+          name: 'padding',
+          type: 'select',
+          defaultValue: 'none',
+          options: ['none', 'medium'],
+        },
+        {
+          name: 'surface',
+          type: 'select',
+          defaultValue: 'none',
+          options: ['none', 'muted', 'soft'],
+        },
+        {
+          name: 'border',
+          type: 'select',
+          defaultValue: 'none',
+          options: ['none', 'subtle'],
+        },
+        imageUploadField({
+          name: 'backgroundMedia',
+        }),
+        {
+          name: 'backgroundOpacity',
+          type: 'select',
+          dbName: 'bg_opacity',
+          defaultValue: 'none',
+          options: ['none', '10', '20', '50'],
+        },
+        {
+          name: 'radius',
+          type: 'select',
+          defaultValue: 'default',
+          options: ['default', 'xl'],
+        },
+        {
           name: 'components',
           type: 'blocks',
           blocks: sectionComponents,
+          filterOptions: ({ data }) =>
+            data?.pageType === 'interactive'
+              ? true
+              : sectionComponents
+                  .filter(({ slug }) => slug !== 'marketMatrix')
+                  .map(({ slug }) => slug),
           required: true,
           admin: {
             initCollapsed: true,

@@ -1,0 +1,267 @@
+@theme {
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+
+  --font-sans: var(--font-inter);
+
+  --text-display: clamp(2.4rem, 5vw, 4.25rem);
+  --text-display--line-height: 1.04;
+  --text-display--letter-spacing: -0.035em;
+  --text-title: clamp(2.125rem, 3vw, 3rem);
+  --text-title--line-height: 1.08;
+  --text-title--letter-spacing: -0.025em;
+  --text-section: clamp(1.75rem, 2.4vw, 2.25rem);
+  --text-section--line-height: 1.15;
+  --text-section--letter-spacing: -0.025em;
+  --text-subsection: clamp(1.375rem, 1.8vw, 1.75rem);
+  --text-subsection--line-height: 1.2;
+  --text-subsection--letter-spacing: -0.02em;
+  --font-weight-heading: 600;
+  --font-weight-action: 650;
+  --tracking-eyebrow: 0.08em;
+
+  --container-reading: 47.5rem;
+  --container-page: 77.5rem;
+  --container-wide: 87.5rem;
+  --container-frame: 106.25rem;
+
+  --radius-control: 0.25rem;
+  --radius-media: 0.5rem;
+  --radius-panel: 0.75rem;
+  --radius-pill: 9999px;
+
+  --spacing-gutter: var(--gutter);
+  --spacing-control-sm: 2.25rem;
+  --spacing-control: 2.75rem;
+  --spacing-control-lg: 3rem;
+  --spacing-section-compact: 2.5rem;
+  --spacing-section-regular: 4rem;
+  --spacing-section-generous: 5rem;
+  --spacing-section-compact-wide: 4rem;
+  --spacing-section-regular-wide: 6rem;
+  --spacing-section-generous-wide: 7.5rem;
+
+  --shadow-editorial: 0 0.5rem 1.75rem rgb(31 42 68 / 8%);
+  --shadow-overlay: 0 1rem 3rem rgb(0 45 114 / 18%);
+  --shadow-sticky: 0 0.35rem 1.5rem rgb(0 27 66 / 15%);
+
+  --duration-instant: 80ms;
+  --duration-fast: 160ms;
+  --duration-moderate: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1.2);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-map-land: var(--map-land);
+  --color-map-water: var(--map-water);
+  --color-map-line: var(--map-line);
+  --color-map-marker: var(--map-marker);
+  --color-matrix-joule: var(--matrix-joule);
+  --color-matrix-auto-trader: var(--matrix-auto-trader);
+  --color-matrix-combined: var(--matrix-combined);
+
+  --color-trayport-ink: var(--trayport-ink);
+  --color-trayport-deep: var(--trayport-deep);
+  --color-trayport-blue: var(--trayport-blue);
+  --color-trayport-light-blue: var(--trayport-light-blue);
+  --color-trayport-cyan: var(--trayport-cyan);
+  --color-trayport-green: var(--trayport-green);
+  --color-trayport-yellow: var(--trayport-yellow);
+  --color-trayport-orange: var(--trayport-orange);
+  --color-trayport-soft: var(--trayport-soft);
+  --color-trayport-footer: var(--trayport-footer);
+}
+
+:root {
+  color-scheme: light;
+  --font-inter: 'InterVariable';
+
+  --trayport-ink: #1f2a44;
+  --trayport-deep: #002d72;
+  --trayport-blue: #0057b8;
+  --trayport-light-blue: #009cde;
+  --trayport-cyan: #00c1d5;
+  --trayport-green: #32b77b;
+  --trayport-yellow: #f7ea48;
+  --trayport-orange: #ff6021;
+  --trayport-soft: #eff7ff;
+  --trayport-footer: #1b2935;
+
+  --background: #ffffff;
+  --foreground: var(--trayport-ink);
+  --card: #ffffff;
+  --card-foreground: var(--trayport-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--trayport-ink);
+  --primary: var(--trayport-blue);
+  --primary-foreground: #ffffff;
+  --secondary: var(--trayport-soft);
+  --secondary-foreground: var(--trayport-ink);
+  --muted: var(--trayport-soft);
+  --muted-foreground: #626262;
+  --accent: var(--trayport-cyan);
+  --accent-foreground: var(--trayport-deep);
+  --destructive: #c4362d;
+  --destructive-foreground: #ffffff;
+  --border: #e1e1e1;
+  --input: #d5dbe4;
+  --ring: var(--trayport-orange);
+  --success: var(--trayport-green);
+  --warning: var(--trayport-yellow);
+  --error: #c4362d;
+
+  --chart-1: #c6d9f1;
+  --chart-2: #558ed5;
+  --chart-3: #17375e;
+  --chart-4: var(--trayport-orange);
+  --chart-5: var(--trayport-yellow);
+  --chart-hub-1: #1f2a44;
+  --chart-hub-2: #002d72;
+  --chart-hub-3: #0057b8;
+  --chart-hub-4: #009cde;
+  --chart-hub-5: #00c1d5;
+  --chart-hub-6: #f7ea48;
+  --chart-hub-7: #ff671f;
+  --chart-hub-8: #b2397e;
+  --chart-hub-9: #e6516d;
+  --chart-grid: #e7edf4;
+  --map-land: #e8f2fb;
+  --map-water: #f7fbff;
+  --map-line: var(--trayport-light-blue);
+  --map-marker: var(--trayport-orange);
+  --matrix-joule: #ccf1ff;
+  --matrix-auto-trader: #e7ffc9;
+  --matrix-combined: #ffe0b2;
+
+  --border-subtle: var(--border);
+  --border-strong: #aab5c4;
+  --border-inverse: rgb(255 255 255 / 38%);
+  --stroke-hairline: 0.0625rem;
+  --stroke-accent: 0.125rem;
+
+  --focus-ring-color: var(--trayport-orange);
+  --focus-ring-width: 0.125rem;
+  --focus-ring-offset: 0.125rem;
+  --state-disabled-opacity: 0.5;
+  --state-muted-opacity: 0.6;
+  --state-hover-opacity: 0.75;
+  --state-active-translate: 0.0625rem;
+
+  --layer-base: 0;
+  --layer-raised: 10;
+  --layer-sticky: 40;
+  --layer-shell: 100;
+  --layer-consent: 200;
+  --layer-overlay-backdrop: 299;
+  --layer-overlay: 300;
+  --layer-dropdown: 310;
+  --layer-toast: 400;
+  --layer-skip-link: 500;
+
+  /* Compatibility aliases while the reference-led CSS is migrated. */
+  --color-ink: var(--trayport-ink);
+  --color-brand-deep: var(--trayport-deep);
+  --color-brand: var(--trayport-blue);
+  --color-brand-light: var(--trayport-light-blue);
+  --color-cyan: var(--trayport-cyan);
+  --color-green: var(--trayport-green);
+  --color-yellow: var(--trayport-yellow);
+  --color-orange: var(--trayport-orange);
+  --color-surface: var(--background);
+  --color-surface-soft: var(--trayport-soft);
+  --color-text-muted: var(--muted-foreground);
+  --color-footer-base: var(--trayport-footer);
+  --parity-page-max: 106.25rem;
+  --gutter: 1.25rem;
+  --header-height: 5.375rem;
+}
+
+@utility z-raised {
+  z-index: var(--layer-raised);
+}
+
+@utility z-sticky {
+  z-index: var(--layer-sticky);
+}
+
+@utility z-shell {
+  z-index: var(--layer-shell);
+}
+
+@utility z-consent {
+  z-index: var(--layer-consent);
+}
+
+@utility z-overlay-backdrop {
+  z-index: var(--layer-overlay-backdrop);
+}
+
+@utility z-dropdown {
+  z-index: var(--layer-dropdown);
+}
+
+@utility z-overlay {
+  z-index: var(--layer-overlay);
+}
+
+@utility z-toast {
+  z-index: var(--layer-toast);
+}
+
+@utility z-skip-link {
+  z-index: var(--layer-skip-link);
+}
+
+@utility focus-ring {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@utility focus-ring-error {
+  outline: var(--focus-ring-width) solid var(--error);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (width >= 40rem) {
+  :root {
+    --gutter: 2rem;
+  }
+}
+
+@media (width >= 64rem) {
+  :root {
+    --gutter: 3rem;
+  }
+}

@@ -3,7 +3,18 @@ import type { GlobalConfig } from 'payload'
 
 import { publicGlobalRead } from '@/access/publicGlobalRead'
 import { adminsOrEditors } from '@/access/roles'
+import {
+  CONTENT_SITEMAP_CACHE_TAG,
+  contentRouteCacheTag,
+  IMMEDIATE_CACHE_TAG_EXPIRY,
+  ROUTE_REGISTRY_CACHE_TAG,
+} from '@/data/cacheTags'
 import { seoField } from '@/fields/seo'
+import {
+  captureGlobalPublicProjectionIntent,
+  publicProjectionCanChange,
+  takeGlobalPublicProjectionIntent,
+} from '@/hooks/publicProjection'
 import { ensureSystemRouteClaims, systemRouteDefinitions } from '@/routing/registry'
 
 export const RouteIndexes: GlobalConfig = {
@@ -70,15 +81,35 @@ export const RouteIndexes: GlobalConfig = {
     },
   ],
   hooks: {
+    beforeOperation: [captureGlobalPublicProjectionIntent],
     afterChange: [
-      async ({ doc, req }) => {
-        if (req.context.disableRevalidate) return doc
+      async ({ context, doc, previousDoc, req }) => {
+        const intent = takeGlobalPublicProjectionIntent({
+          context,
+          slug: 'route-indexes',
+        })
+
+        if (context.disableRevalidate) return doc
+
+        if (
+          !publicProjectionCanChange({
+            context,
+            current: doc,
+            intent,
+            previous: previousDoc,
+            req,
+          })
+        ) {
+          return doc
+        }
 
         await ensureSystemRouteClaims(req.payload, req)
         for (const route of systemRouteDefinitions) {
           revalidatePath(route.path)
+          revalidateTag(contentRouteCacheTag(route.path), IMMEDIATE_CACHE_TAG_EXPIRY)
         }
-        revalidateTag('content-sitemap', 'max')
+        revalidateTag(ROUTE_REGISTRY_CACHE_TAG, IMMEDIATE_CACHE_TAG_EXPIRY)
+        revalidateTag(CONTENT_SITEMAP_CACHE_TAG, IMMEDIATE_CACHE_TAG_EXPIRY)
         return doc
       },
     ],

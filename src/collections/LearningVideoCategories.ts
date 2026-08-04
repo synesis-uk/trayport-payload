@@ -5,6 +5,11 @@ import { admins, adminsOrEditors } from '@/access/roles'
 import { createLegacySourceField } from '@/fields/legacySource'
 import { trayportSlugField } from '@/fields/slug'
 
+import {
+  revalidateCacheDependency,
+  revalidateDeletedCacheDependency,
+} from './hooks/revalidateDependencies'
+
 export const LearningVideoCategories: CollectionConfig = {
   slug: 'learning-video-categories',
   access: {
@@ -44,4 +49,8 @@ export const LearningVideoCategories: CollectionConfig = {
     trayportSlugField(),
     createLegacySourceField(),
   ],
+  hooks: {
+    afterChange: [revalidateCacheDependency()],
+    afterDelete: [revalidateDeletedCacheDependency],
+  },
 }

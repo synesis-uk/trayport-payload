@@ -5,6 +5,11 @@ import { anyone } from '@/access/anyone'
 import { createLegacySourceField } from '@/fields/legacySource'
 import { trayportSlugField } from '@/fields/slug'
 
+import {
+  revalidateCacheDependency,
+  revalidateDeletedCacheDependency,
+} from './hooks/revalidateDependencies'
+
 export const VenueTypes: CollectionConfig = {
   slug: 'venue-types',
   access: {
@@ -44,4 +49,8 @@ export const VenueTypes: CollectionConfig = {
     trayportSlugField(),
     createLegacySourceField(),
   ],
+  hooks: {
+    afterChange: [revalidateCacheDependency()],
+    afterDelete: [revalidateDeletedCacheDependency],
+  },
 }

@@ -51,7 +51,11 @@ import { extract } from '../../migration/extract'
 import { inventoryProduction } from '../../migration/inventory'
 import { isEquivalentPayloadData, load } from '../../migration/load'
 import { transform } from '../../migration/transform'
-import { assertTransformedReferenceClosure, validateRun } from '../../migration/validate'
+import {
+  assertTransformedDataChartContracts,
+  assertTransformedReferenceClosure,
+  validateRun,
+} from '../../migration/validate'
 
 const temporaryRunDirectories: string[] = []
 
@@ -462,6 +466,107 @@ describe('migration retry and artifact safety', () => {
         },
       ]),
     ).toThrow(/unresolved transformed relationship media:404/i)
+  })
+
+  it('requires transformed data charts to use a managed relationship and a complete valid range', () => {
+    const legacy = (legacyId: number) => ({
+      contentHash: String(legacyId).padStart(64, '0'),
+      legacyId,
+      modifiedGmt: null,
+      originalUrl: `http://trayport.local/${legacyId}/`,
+      source: 'wordpress' as const,
+    })
+    const chart = {
+      assetClass: { $legacyRef: 'asset-class', legacyId: 21 },
+      assetClassLegacyId: 21,
+      blockType: 'dataChart',
+      chartType: 'stackedColumn',
+      dataType: 'volume',
+      displayInterval: 'quarter',
+      excludedHubs: [],
+      fromQuarter: 1,
+      fromYear: 2024,
+      includedHubs: [],
+      seriesDimension: 'executionType',
+      toQuarter: 4,
+      toYear: 2025,
+    }
+    const targetsFor = (dataChart: Record<string, unknown>): TargetRecord[] => [
+      { data: { title: 'Power' }, legacy: legacy(21), target: 'asset-classes' },
+      { data: { title: 'A hub' }, legacy: legacy(2500), target: 'hubs' },
+      {
+        data: {
+          layout: [
+            {
+              blockType: 'contentSection',
+              columns: [{ components: [dataChart] }],
+            },
+          ],
+        },
+        legacy: legacy(1),
+        target: 'pages',
+      },
+    ]
+
+    expect(assertTransformedDataChartContracts(targetsFor(chart))).toBe(1)
+    expect(() =>
+      assertTransformedDataChartContracts(
+        targetsFor({ ...chart, assetClass: null, assetClassLegacyId: null }),
+      ),
+    ).toThrow(/managed asset-class relationship/i)
+    expect(() =>
+      assertTransformedDataChartContracts(targetsFor({ ...chart, toQuarter: undefined })),
+    ).toThrow(/complete range or no range/i)
+    expect(() =>
+      assertTransformedDataChartContracts(targetsFor({ ...chart, fromQuarter: 5 })),
+    ).toThrow(/quarters from 1 through 4/i)
+    expect(() =>
+      assertTransformedDataChartContracts(targetsFor({ ...chart, fromYear: 1999 })),
+    ).toThrow(/years from 2000 through 2100/i)
+    expect(() =>
+      assertTransformedDataChartContracts(
+        targetsFor({ ...chart, fromQuarter: 4, fromYear: 2025, toQuarter: 1, toYear: 2025 }),
+      ),
+    ).toThrow(/must not start after it ends/i)
+    expect(() =>
+      assertTransformedDataChartContracts(
+        targetsFor({
+          ...chart,
+          fromQuarter: null,
+          fromYear: null,
+          toQuarter: null,
+          toYear: null,
+        }),
+      ),
+    ).toThrow(/must omit all range fields/i)
+    expect(() =>
+      assertTransformedDataChartContracts(targetsFor({ ...chart, chartType: 'column' })),
+    ).toThrow(/execution-type.*volume stacked columns/i)
+    expect(() =>
+      assertTransformedDataChartContracts(
+        targetsFor({
+          ...chart,
+          includedHubs: [{ $legacyRef: 'hub', legacyId: 2500 }],
+        }),
+      ),
+    ).toThrow(/execution-type.*cannot filter hubs/i)
+    expect(() =>
+      assertTransformedDataChartContracts(
+        targetsFor({
+          ...chart,
+          chartType: 'line',
+          dataType: 'price',
+          excludedHubs: [{ $legacyRef: 'hub', legacyId: 2500 }],
+          includedHubs: [{ $legacyRef: 'hub', legacyId: 2500 }],
+          seriesDimension: 'hub',
+        }),
+      ),
+    ).toThrow(/cannot include and exclude the same hub/i)
+    expect(() =>
+      assertTransformedDataChartContracts(
+        targetsFor({ ...chart, chartType: 'column', dataType: 'price', seriesDimension: 'hub' }),
+      ),
+    ).toThrow(/hub data chart.*volume columns or a price line/i)
   })
 
   it('refuses to reuse an extraction run directory before contacting WordPress', () => {

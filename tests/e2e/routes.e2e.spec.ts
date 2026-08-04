@@ -1,14 +1,26 @@
 import { expect, test } from '@playwright/test'
+import { createHash } from 'node:crypto'
 
-import { representativeRoutes } from '../helpers/site'
+import { managedRedirectRoutes, representativeRoutes } from '../helpers/site'
 
 const pagePresentations = {
   '/': { className: 'trayport-page--home', type: 'homepage' },
   '/company/about-us/': { className: 'trayport-page--standard', type: 'standard' },
+  '/company/careers/': { className: 'trayport-page--standard', type: 'standard' },
   '/company/offices/': { className: 'trayport-page--standard', type: 'standard' },
+  '/contact/': { className: 'trayport-page--standard', type: 'standard' },
+  '/legal/': { className: 'trayport-page--legal', type: 'legal' },
+  '/legal/cookie-policy/': { className: 'trayport-page--legal', type: 'legal' },
+  '/legal/legal-notice/': { className: 'trayport-page--legal', type: 'legal' },
+  '/legal/modern-slavery/': { className: 'trayport-page--legal', type: 'legal' },
   '/products/joule/': { className: 'trayport-page--product', type: 'product' },
   '/products/tradesignal/': { className: 'trayport-page--product', type: 'product' },
+  '/regions/asia-pacific/': { className: 'trayport-page--standard', type: 'standard' },
+  '/regions/europe/': { className: 'trayport-page--standard', type: 'standard' },
+  '/regions/north-america/': { className: 'trayport-page--standard', type: 'standard' },
   '/resources/faqs/': { className: 'trayport-page--standard', type: 'standard' },
+  '/resources/market-matrix/': { className: 'trayport-page--interactive', type: 'interactive' },
+  '/terms-of-use-disclaimer/': { className: 'trayport-page--legal', type: 'legal' },
 } as const
 
 test.describe('representative WordPress content routes', () => {
@@ -121,6 +133,40 @@ test.describe('representative WordPress content routes', () => {
     expect(sitemap).not.toContain('/not-a-real-trayport-content-route/')
   })
 
+  test('the immutable brand artwork bypasses the managed-route preflight', async ({
+    isMobile,
+    request,
+  }) => {
+    test.skip(isMobile, 'The application-owned asset boundary needs one HTTP pass.')
+
+    const response = await request.get('/brand/bg-poly-angle-opacity-02.png')
+    expect(response.status()).toBe(200)
+    expect(response.headers()['content-type']).toContain('image/png')
+    expect(
+      createHash('sha256')
+        .update(await response.body())
+        .digest('hex'),
+    ).toBe('327fbdfef7fb970a7a49e186825ba930745c91cacc40270561289e78e11af2dd')
+  })
+
+  for (const redirect of managedRedirectRoutes) {
+    test(`${redirect.path} preserves WordPress ${redirect.legacyId} as a temporary managed redirect`, async ({
+      page,
+      request,
+    }) => {
+      const direct = await request.get(redirect.path, { maxRedirects: 0 })
+      expect(direct.status()).toBe(redirect.status)
+      expect(new URL(direct.headers().location, 'http://trayport.test').pathname).toBe(
+        redirect.target,
+      )
+
+      const response = await page.goto(redirect.path)
+      expect(response?.status()).toBe(200)
+      expect(new URL(page.url()).pathname).toBe(redirect.target)
+      await expect(page.getByRole('heading', { level: 1, name: 'Contact Us' })).toBeVisible()
+    })
+  }
+
   test('an unknown content path returns the designed 404 response', async ({ page }) => {
     const response = await page.goto('/not-a-real-trayport-content-route/')
 
@@ -136,6 +182,46 @@ test.describe('representative WordPress content routes', () => {
       'href',
       '/',
     )
+  })
+
+  test('unknown file-like paths remain 404 when preview cookies are forged', async ({
+    request,
+  }) => {
+    const path = '/not-a-real-trayport-asset.pdf'
+
+    for (const cookie of [
+      undefined,
+      '__prerender_bypass=forged',
+      'trayport-preview-route=forged',
+    ]) {
+      const response = await request.get(path, {
+        headers: cookie ? { Cookie: cookie } : undefined,
+      })
+
+      expect(response.status()).toBe(404)
+      expect(await response.text()).toContain("We couldn't find that page.")
+    }
+  })
+
+  test('unknown children of reserved application namespaces still return 404', async ({
+    request,
+  }) => {
+    for (const path of [
+      '/_not-found/definitely-missing/',
+      '/design-system/definitely-missing/',
+      '/next/definitely-missing/',
+    ]) {
+      const response = await request.get(path)
+
+      expect(response.status(), path).toBe(404)
+      expect(await response.text(), path).toContain("We couldn't find that page.")
+    }
+  })
+
+  test('the internal not-found target cannot be requested as a successful page', async ({
+    request,
+  }) => {
+    expect((await request.get('/_not-found/')).status()).toBe(404)
   })
 
   test('the mobile layout has no document-level horizontal overflow', async ({

@@ -2,9 +2,24 @@ import type { GlobalConfig } from 'payload'
 
 import { publicGlobalRead } from '@/access/publicGlobalRead'
 import { adminsOrEditors } from '@/access/roles'
+import { imageUploadField } from '@/fields/mediaUpload'
 import { navigationLinkField } from '@/fields/navigationLink'
+import { captureGlobalPublicProjectionIntent } from '@/hooks/publicProjection'
+import {
+  externalHTTPSDestinationPolicy,
+  internalOrHTTPSDestinationPolicy,
+  normalizeDestinationValue,
+  validateDestination,
+  validateExternalHTTPSURL,
+} from '@/routing/urlPolicy'
 
 import { revalidateGlobal } from './hooks/revalidateGlobal'
+
+const validateCookiePolicyURL = (value: unknown): true | string =>
+  validateDestination(value, {
+    message: 'Use a normalized internal path or complete HTTPS URL without credentials.',
+    policy: internalOrHTTPSDestinationPolicy,
+  })
 
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
@@ -34,21 +49,27 @@ export const SiteSettings: GlobalConfig = {
               name: 'tagline',
               type: 'text',
             },
-            {
+            imageUploadField({
               name: 'logo',
-              type: 'upload',
-              relationTo: 'media',
-            },
-            {
+              admin: {
+                description: 'Reserved for a future managed-brand-assets slice.',
+                hidden: true,
+              },
+            }),
+            imageUploadField({
               name: 'logoOnDark',
-              type: 'upload',
-              relationTo: 'media',
-            },
-            {
+              admin: {
+                description: 'Reserved for a future managed-brand-assets slice.',
+                hidden: true,
+              },
+            }),
+            imageUploadField({
               name: 'favicon',
-              type: 'upload',
-              relationTo: 'media',
-            },
+              admin: {
+                description: 'Reserved for a future managed-brand-assets slice.',
+                hidden: true,
+              },
+            }),
           ],
         },
         {
@@ -68,11 +89,9 @@ export const SiteSettings: GlobalConfig = {
                   type: 'textarea',
                   maxLength: 180,
                 },
-                {
+                imageUploadField({
                   name: 'image',
-                  type: 'upload',
-                  relationTo: 'media',
-                },
+                }),
               ],
             },
           ],
@@ -135,7 +154,14 @@ export const SiteSettings: GlobalConfig = {
                 {
                   name: 'url',
                   type: 'text',
+                  hooks: {
+                    beforeValidate: [
+                      ({ value }) =>
+                        normalizeDestinationValue(value, externalHTTPSDestinationPolicy),
+                    ],
+                  },
                   required: true,
+                  validate: (value: unknown) => validateExternalHTTPSURL(value, true),
                 },
               ],
               maxRows: 8,
@@ -181,13 +207,68 @@ export const SiteSettings: GlobalConfig = {
                   defaultValue: true,
                 },
                 {
+                  name: 'title',
+                  type: 'text',
+                  defaultValue: 'Trayport Cookie Consent',
+                  admin: {
+                    condition: (_data, siblingData) => Boolean(siblingData?.enabled),
+                  },
+                },
+                {
                   name: 'message',
                   type: 'textarea',
+                  admin: {
+                    condition: (_data, siblingData) => Boolean(siblingData?.enabled),
+                    description: 'Notice copy before the managed cookie-policy link.',
+                  },
                 },
                 {
                   name: 'policyPage',
                   type: 'relationship',
+                  admin: {
+                    condition: (_data, siblingData) => Boolean(siblingData?.enabled),
+                  },
                   relationTo: 'pages',
+                },
+                {
+                  name: 'policyURL',
+                  type: 'text',
+                  admin: {
+                    condition: (_data, siblingData) => Boolean(siblingData?.enabled),
+                    description:
+                      'Fallback destination when the policy page is outside the managed content set.',
+                  },
+                  hooks: {
+                    beforeValidate: [
+                      ({ value }) =>
+                        normalizeDestinationValue(value, internalOrHTTPSDestinationPolicy),
+                    ],
+                  },
+                  validate: validateCookiePolicyURL,
+                },
+                {
+                  name: 'policyLinkLabel',
+                  type: 'text',
+                  defaultValue: 'Cookie Policy',
+                  admin: {
+                    condition: (_data, siblingData) => Boolean(siblingData?.enabled),
+                  },
+                },
+                {
+                  name: 'acceptLabel',
+                  type: 'text',
+                  defaultValue: 'Accept All',
+                  admin: {
+                    condition: (_data, siblingData) => Boolean(siblingData?.enabled),
+                  },
+                },
+                {
+                  name: 'rejectLabel',
+                  type: 'text',
+                  defaultValue: 'Reject All',
+                  admin: {
+                    condition: (_data, siblingData) => Boolean(siblingData?.enabled),
+                  },
                 },
               ],
             },
@@ -197,6 +278,7 @@ export const SiteSettings: GlobalConfig = {
     },
   ],
   hooks: {
+    beforeOperation: [captureGlobalPublicProjectionIntent],
     afterChange: [revalidateGlobal('site-settings')],
   },
   versions: {

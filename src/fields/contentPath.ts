@@ -1,5 +1,7 @@
 import type { TextField } from 'payload'
 
+import { isReservedApplicationPath, reservedApplicationPathMessage } from '@/routing/reservedPaths'
+
 const pathPattern = /^\/(?:[^/?#\\\u0000-\u001F\u007F]+\/)*$/u
 const absoluteReferencePattern = /^(?:[a-z][a-z\d+.-]*:|\/\/|\/+[a-z][a-z\d+.-]*:\/)/i
 const controlCharacterPattern = /[\u0000-\u001F\u007F]/u
@@ -91,6 +93,10 @@ export const validateContentPath = (
 
   if (value.split('/').filter(Boolean).some(invalidPathSegment)) {
     return 'Paths cannot contain dot segments, whitespace, backslashes, control characters, or encoded separators.'
+  }
+
+  if (isReservedApplicationPath(value)) {
+    return reservedApplicationPathMessage
   }
 
   return true

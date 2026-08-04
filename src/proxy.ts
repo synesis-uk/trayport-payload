@@ -1,28 +1,79 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+import { unstable_cache } from 'next/cache'
 import { Pool } from 'pg'
 
-import { normalizeContentPath } from '@/fields/contentPath'
+import { REDIRECTS_CACHE_TAG, ROUTE_REGISTRY_CACHE_TAG } from '@/data/cacheTags'
+import { normalizeContentPath, validateContentPath } from '@/fields/contentPath'
+import { previewRouteCookieName, verifyPreviewRouteToken } from '@/routing/previewAccess'
+import { isApplicationProxyBypassPath } from '@/routing/reservedPaths'
+import { internalOrHTTPSDestinationPolicy, safeDestination } from '@/routing/urlPolicy'
 
-type ManagedRedirectRow = {
+type PublishedRouteRow = {
   destination: string | null
-  type: '301' | '302'
+  ownerKind: 'content' | 'redirect' | 'virtual'
+  path: string
+  type: '301' | '302' | null
 }
 
-const bypassFirstSegments = new Set(['_next', 'admin', 'api', 'next'])
-const bypassExactPaths = new Set([
-  '/content-sitemap.xml',
-  '/favicon.ico',
-  '/robots.txt',
-  '/sitemap.xml',
-])
+type PublishedRouteDisposition = Omit<PublishedRouteRow, 'path'>
+type PublishedRouteSnapshot = Record<string, PublishedRouteDisposition>
 
-export const isRedirectProxyBypassPath = (pathname: string): boolean => {
-  const withoutTrailingSlash =
-    pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
-  const firstSegment = withoutTrailingSlash.split('/')[1]
+export const REDIRECT_PROXY_CACHE_REVALIDATE_SECONDS = 300
+export const REDIRECT_PROXY_POOL_TIMEOUTS = {
+  connectionTimeoutMillis: 3_000,
+  query_timeout: 5_000,
+  statement_timeout: 4_000,
+} as const
+export const redirectProxyCacheKey = ['route-status-proxy', 'published-snapshot', 'v4'] as const
+export const redirectProxyCacheTag = REDIRECTS_CACHE_TAG
+export const routeRegistryProxyCacheTag = ROUTE_REGISTRY_CACHE_TAG
 
-  return bypassExactPaths.has(withoutTrailingSlash) || bypassFirstSegments.has(firstSegment)
+export const redirectProxyCacheContract = {
+  lookup: 'bounded-published-route-snapshot',
+  key: redirectProxyCacheKey,
+  pathKeyedEntries: false,
+  poolTimeouts: REDIRECT_PROXY_POOL_TIMEOUTS,
+  revalidate: REDIRECT_PROXY_CACHE_REVALIDATE_SECONDS,
+  tags: [redirectProxyCacheTag, routeRegistryProxyCacheTag],
+} as const
+
+export const routeStatusPreflightContract = {
+  draftCookie: previewRouteCookieName,
+  unknownStatus: 404,
+} as const
+
+export const isRedirectProxyBypassPath = isApplicationProxyBypassPath
+
+export const resolveSafeRedirectDestination = ({
+  destination,
+  requestURL,
+  routeLookup,
+  sourcePath,
+}: {
+  destination: unknown
+  requestURL: string
+  routeLookup: (path: string) => PublishedRouteDisposition | undefined
+  sourcePath: string
+}): URL | null => {
+  const safe = safeDestination(destination, internalOrHTTPSDestinationPolicy)
+  if (!safe) return null
+
+  const url = new URL(safe, requestURL)
+  const requestOrigin = new URL(requestURL).origin
+  if (url.origin !== requestOrigin) return url
+
+  const normalizedDestination = normalizeContentPath(url.pathname)
+  if (
+    typeof normalizedDestination !== 'string' ||
+    validateContentPath(normalizedDestination) !== true
+  ) {
+    return null
+  }
+  if (normalizedDestination === sourcePath) return null
+  if (routeLookup(normalizedDestination)?.ownerKind === 'redirect') return null
+
+  return url
 }
 
 const redirectPool = (): Pool => {
@@ -34,23 +85,28 @@ const redirectPool = (): Pool => {
     shared.trayportRedirectPool = new Pool({
       connectionString: process.env.DATABASE_URL,
       max: 2,
+      ...REDIRECT_PROXY_POOL_TIMEOUTS,
     })
   }
 
   return shared.trayportRedirectPool
 }
 
-const publishedRedirect = async (path: string): Promise<ManagedRedirectRow | null> => {
-  const result = await redirectPool().query<ManagedRedirectRow>(
+const queryPublishedRoutes = async (): Promise<PublishedRouteSnapshot> => {
+  const result = await redirectPool().query<PublishedRouteRow>(
     `SELECT
+       "source_claim"."path" AS "path",
+       "source_claim"."owner_kind"::text AS "ownerKind",
        "redirects"."type"::text AS "type",
        CASE
          WHEN "redirects"."to_type"::text = 'custom' THEN "redirects"."to_url"
          ELSE "destination_claim"."path"
        END AS "destination"
      FROM "route_registry" AS "source_claim"
-     INNER JOIN "redirects"
-       ON "source_claim"."owner_document_id" = "redirects"."id"::text
+     LEFT JOIN "redirects"
+       ON "source_claim"."owner_kind" = 'redirect'
+       AND "source_claim"."owner_document_id" = "redirects"."id"::text
+       AND "redirects"."from" = "source_claim"."path"
      LEFT JOIN "redirects_rels" AS "relation"
        ON "relation"."parent_id" = "redirects"."id"
        AND "relation"."path" = 'to.reference'
@@ -64,18 +120,41 @@ const publishedRedirect = async (path: string): Promise<ManagedRedirectRow | nul
          OR ("destination_claim"."owner_collection" = 'venues' AND "destination_claim"."owner_document_id" = "relation"."venues_id"::text)
          OR ("destination_claim"."owner_collection" = 'learning-videos' AND "destination_claim"."owner_document_id" = "relation"."learning_videos_id"::text)
        )
-     WHERE
-       "source_claim"."path" = $1
-       AND "source_claim"."owner_kind" = 'redirect'
-       AND "source_claim"."owner_collection" = 'redirects'
-       AND "source_claim"."state" = 'published'
-       AND "redirects"."from" = $1
-     LIMIT 1`,
+     WHERE "source_claim"."state" = 'published'`,
+  )
+
+  return Object.fromEntries(
+    result.rows.map(({ path, ...disposition }) => [path, disposition]),
+  ) as PublishedRouteSnapshot
+}
+
+const hasManagedPreviewRoute = async (path: string): Promise<boolean> => {
+  const result = await redirectPool().query<{ exists: boolean }>(
+    `SELECT EXISTS (
+       SELECT 1
+       FROM "route_registry"
+       WHERE "path" = $1
+     ) AS "exists"`,
     [path],
   )
 
-  return result.rows[0] || null
+  return result.rows[0]?.exists === true
 }
+
+// Every request reads one bounded snapshot rather than creating a cache entry
+// for each attacker-controlled miss. Content-route and redirect hooks invalidate
+// their respective tags so a publish, path move, unpublish, delete, or redirect
+// edit cannot leave the proxy preflight stale. Query failures intentionally
+// propagate so infrastructure errors are never presented as false 404s.
+const publishedRoutes = unstable_cache(queryPublishedRoutes, [...redirectProxyCacheKey], {
+  revalidate: REDIRECT_PROXY_CACHE_REVALIDATE_SECONDS,
+  tags: [redirectProxyCacheTag, routeRegistryProxyCacheTag],
+})
+
+const renderGlobalNotFound = (request: NextRequest): NextResponse =>
+  NextResponse.rewrite(new URL('/_not-found/', request.url), {
+    status: routeStatusPreflightContract.unknownStatus,
+  })
 
 export const proxy = async (request: NextRequest): Promise<NextResponse> => {
   if (isRedirectProxyBypassPath(request.nextUrl.pathname)) return NextResponse.next()
@@ -85,14 +164,45 @@ export const proxy = async (request: NextRequest): Promise<NextResponse> => {
     return NextResponse.next()
   }
 
-  const redirect = await publishedRedirect(normalized)
-  if (!redirect?.destination || (redirect.type !== '301' && redirect.type !== '302')) {
+  const routeSnapshot = await publishedRoutes()
+  const route = routeSnapshot[normalized]
+
+  // `loading.tsx` and the request-time content boundary may begin streaming before
+  // `notFound()` resolves. Mark a published-route miss before rendering so the
+  // designed not-found body retains the correct HTTP status. A draft-only claim
+  // bypasses this published preflight only with the short-lived, path-bound token
+  // issued after the preview endpoint authenticates the CMS user.
+  if (!route) {
+    const previewToken = request.cookies.get(routeStatusPreflightContract.draftCookie)?.value
+    const hasAuthorizedPreview = verifyPreviewRouteToken({
+      path: normalized,
+      secret: process.env.PREVIEW_SECRET,
+      token: previewToken,
+    })
+
+    if (hasAuthorizedPreview && (await hasManagedPreviewRoute(normalized))) {
+      return NextResponse.next()
+    }
+    return renderGlobalNotFound(request)
+  }
+
+  if (route.ownerKind !== 'redirect') {
     return NextResponse.next()
   }
 
-  return NextResponse.redirect(new URL(redirect.destination, request.url), Number(redirect.type))
+  const destination = resolveSafeRedirectDestination({
+    destination: route.destination,
+    requestURL: request.url,
+    routeLookup: (path) => routeSnapshot[path],
+    sourcePath: normalized,
+  })
+  if (!destination || (route.type !== '301' && route.type !== '302')) {
+    return renderGlobalNotFound(request)
+  }
+
+  return NextResponse.redirect(destination, Number(route.type))
 }
 
 export const config = {
-  matcher: ['/:path*'],
+  matcher: ['/((?!_next(?:/|$)|api(?:/|$)|admin(?:/|$)).*)'],
 }

@@ -2,8 +2,16 @@ import type { GlobalConfig } from 'payload'
 
 import { publicGlobalRead } from '@/access/publicGlobalRead'
 import { adminsOrEditors } from '@/access/roles'
+import { footerAccentOptions, footerIconOptions } from '@/config/footer'
 import { createLegacySourceField } from '@/fields/legacySource'
+import { imageUploadField } from '@/fields/mediaUpload'
 import { navigationLinkField } from '@/fields/navigationLink'
+import { captureGlobalPublicProjectionIntent } from '@/hooks/publicProjection'
+import {
+  externalHTTPSDestinationPolicy,
+  normalizeDestinationValue,
+  validateExternalHTTPSURL,
+} from '@/routing/urlPolicy'
 
 import { revalidateGlobal } from './hooks/revalidateGlobal'
 
@@ -22,7 +30,7 @@ export const Footer: GlobalConfig = {
       name: 'intro',
       type: 'textarea',
       admin: {
-        description: 'Short brand statement shown alongside the footer navigation.',
+        description: 'Legal disclaimer shown in the footer supporting row.',
       },
     },
     {
@@ -35,15 +43,38 @@ export const Footer: GlobalConfig = {
         {
           name: 'title',
           type: 'text',
-          required: true,
+          admin: {
+            description: 'Optional visible column heading.',
+          },
         },
+        navigationLinkField({
+          includeLabel: false,
+          name: 'titleLink',
+          required: false,
+        }),
         {
           name: 'links',
           type: 'array',
           admin: {
             initCollapsed: true,
           },
-          fields: [navigationLinkField({ includeLabel: true })],
+          fields: [
+            navigationLinkField({ includeLabel: true }),
+            {
+              name: 'icon',
+              type: 'select',
+              admin: {
+                description: 'Bounded semantic Font Awesome icon used before the link label.',
+              },
+              options: [...footerIconOptions],
+            },
+            {
+              name: 'accent',
+              type: 'select',
+              defaultValue: 'white',
+              options: [...footerAccentOptions],
+            },
+          ],
           maxRows: 12,
         },
       ],
@@ -67,6 +98,20 @@ export const Footer: GlobalConfig = {
       },
     },
     {
+      name: 'companyRegistrationText',
+      type: 'textarea',
+      admin: {
+        description: 'Company registration statement shown in the lower footer.',
+      },
+    },
+    {
+      name: 'parentCompanyText',
+      type: 'textarea',
+      admin: {
+        description: 'Parent-company statement shown in the lower footer.',
+      },
+    },
+    {
       name: 'certificationMarks',
       type: 'array',
       fields: [
@@ -75,15 +120,19 @@ export const Footer: GlobalConfig = {
           type: 'text',
           required: true,
         },
-        {
+        imageUploadField({
           name: 'image',
-          type: 'upload',
-          relationTo: 'media',
           required: true,
-        },
+        }),
         {
           name: 'url',
           type: 'text',
+          hooks: {
+            beforeValidate: [
+              ({ value }) => normalizeDestinationValue(value, externalHTTPSDestinationPolicy),
+            ],
+          },
+          validate: (value: string | null | undefined) => validateExternalHTTPSURL(value),
         },
       ],
       maxRows: 6,
@@ -91,6 +140,7 @@ export const Footer: GlobalConfig = {
     createLegacySourceField(),
   ],
   hooks: {
+    beforeOperation: [captureGlobalPublicProjectionIntent],
     afterChange: [revalidateGlobal('footer')],
   },
   versions: {

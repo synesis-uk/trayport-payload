@@ -4,6 +4,12 @@ import { admins, adminsOrEditors, publicOrCMSUsers } from '@/access/roles'
 import { coordinatesField } from '@/fields/coordinates'
 import { createLegacySourceField } from '@/fields/legacySource'
 
+import {
+  captureDependencyPublicProjectionIntent,
+  revalidateCacheDependency,
+  revalidateDeletedCacheDependency,
+} from './hooks/revalidateDependencies'
+
 export const Offices: CollectionConfig = {
   slug: 'offices',
   access: {
@@ -102,6 +108,11 @@ export const Offices: CollectionConfig = {
     },
     createLegacySourceField(),
   ],
+  hooks: {
+    afterChange: [revalidateCacheDependency({ versioned: true })],
+    afterDelete: [revalidateDeletedCacheDependency],
+    beforeChange: [captureDependencyPublicProjectionIntent],
+  },
   versions: {
     drafts: true,
     maxPerDoc: 30,

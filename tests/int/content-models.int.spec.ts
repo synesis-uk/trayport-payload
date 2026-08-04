@@ -218,6 +218,7 @@ describe.sequential('Trayport content models', () => {
 
     const category = await payload.create({
       collection: 'article-categories',
+      context: mutationContext,
       data: {
         slug: `category-${stamp}`,
         title: 'Native category',
@@ -229,6 +230,7 @@ describe.sequential('Trayport content models', () => {
     track(() =>
       payload.delete({
         collection: 'article-categories',
+        context: mutationContext,
         id: category.id,
         overrideAccess: true,
       }),
@@ -236,6 +238,7 @@ describe.sequential('Trayport content models', () => {
 
     const assetClass = await payload.create({
       collection: 'asset-classes',
+      context: mutationContext,
       data: {
         slug: `asset-class-${stamp}`,
         title: 'Native asset class',
@@ -247,6 +250,7 @@ describe.sequential('Trayport content models', () => {
     track(() =>
       payload.delete({
         collection: 'asset-classes',
+        context: mutationContext,
         id: assetClass.id,
         overrideAccess: true,
       }),
@@ -254,6 +258,7 @@ describe.sequential('Trayport content models', () => {
 
     const venueType = await payload.create({
       collection: 'venue-types',
+      context: mutationContext,
       data: {
         slug: `venue-type-${stamp}`,
         title: 'Native venue type',
@@ -265,6 +270,7 @@ describe.sequential('Trayport content models', () => {
     track(() =>
       payload.delete({
         collection: 'venue-types',
+        context: mutationContext,
         id: venueType.id,
         overrideAccess: true,
       }),
@@ -272,6 +278,7 @@ describe.sequential('Trayport content models', () => {
 
     const region = await payload.create({
       collection: 'regions',
+      context: mutationContext,
       data: {
         slug: `region-${stamp}`,
         title: 'Native region',
@@ -283,6 +290,7 @@ describe.sequential('Trayport content models', () => {
     track(() =>
       payload.delete({
         collection: 'regions',
+        context: mutationContext,
         id: region.id,
         overrideAccess: true,
       }),
@@ -290,6 +298,7 @@ describe.sequential('Trayport content models', () => {
 
     const media = await payload.create({
       collection: 'media',
+      context: mutationContext,
       data: {
         alt: '',
         decorative: true,
@@ -304,6 +313,7 @@ describe.sequential('Trayport content models', () => {
     track(() =>
       payload.delete({
         collection: 'media',
+        context: mutationContext,
         id: media.id,
         overrideAccess: true,
       }),
@@ -311,6 +321,7 @@ describe.sequential('Trayport content models', () => {
 
     await payload.update({
       collection: 'media',
+      context: mutationContext,
       data: {
         sourceFileHash: 'b'.repeat(64),
       },
@@ -347,6 +358,7 @@ describe.sequential('Trayport content models', () => {
     const legacyId = stamp % 1_000_000_000
     const assetClass = await payload.create({
       collection: 'asset-classes',
+      context: mutationContext,
       data: {
         legacySource: {
           contentHash: `hash-${stamp}`,
@@ -362,6 +374,7 @@ describe.sequential('Trayport content models', () => {
     track(() =>
       payload.delete({
         collection: 'asset-classes',
+        context: mutationContext,
         id: assetClass.id,
         overrideAccess: true,
       }),

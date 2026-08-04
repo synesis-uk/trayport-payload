@@ -5,12 +5,18 @@ import { trayportLayoutBlocks } from '@/blocks/Trayport/config'
 import { contentPathField } from '@/fields/contentPath'
 import { coordinatesField } from '@/fields/coordinates'
 import { createLegacySourceField } from '@/fields/legacySource'
+import { imageOrVideoUploadField } from '@/fields/mediaUpload'
 import { publishedAtField } from '@/fields/publishedAt'
 import { confirmPathRedirectField } from '@/fields/routeControls'
 import { seoField } from '@/fields/seo'
 import { trayportSlugField } from '@/fields/slug'
 import { validateRoutableDocument } from '@/routing/archetypes'
 import { releaseRoutableRoute, syncRoutableRoute } from '@/routing/registry'
+import {
+  externalHTTPSDestinationPolicy,
+  normalizeDestinationValue,
+  validateExternalHTTPSURL,
+} from '@/routing/urlPolicy'
 import { generateContentPreviewPath } from '@/utilities/generateContentPreviewPath'
 
 import {
@@ -88,8 +94,12 @@ export const Hubs: CollectionConfig = {
           'Temporary live-site fallback used by managed relationships until this hub owns a migrated route.',
         position: 'sidebar',
       },
-      validate: (value: string | null | undefined) =>
-        !value || /^https:\/\/[^/?#]+(?:[/?#].*)?$/i.test(value) || 'Use a complete HTTPS URL.',
+      hooks: {
+        beforeValidate: [
+          ({ value }) => normalizeDestinationValue(value, externalHTTPSDestinationPolicy),
+        ],
+      },
+      validate: (value: string | null | undefined) => validateExternalHTTPSURL(value),
     },
     {
       type: 'tabs',
@@ -101,11 +111,9 @@ export const Hubs: CollectionConfig = {
               name: 'summary',
               type: 'textarea',
             },
-            {
+            imageOrVideoUploadField({
               name: 'heroMedia',
-              type: 'upload',
-              relationTo: 'media',
-            },
+            }),
             {
               name: 'layout',
               type: 'blocks',
@@ -220,10 +228,16 @@ export const Hubs: CollectionConfig = {
             {
               name: 'connections',
               type: 'array',
+              access: {
+                create: () => false,
+                update: () => false,
+              },
               admin: {
                 description:
-                  'Editorial connectivity only. Pricing and time-series market data remain outside the CMS.',
+                  'Legacy derived projection retained for migration provenance. Edit connectivity on each Venue; the market matrix reads Venue connections only.',
+                hidden: true,
                 initCollapsed: true,
+                readOnly: true,
               },
               fields: [
                 {
@@ -300,13 +314,10 @@ export const Hubs: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [validateRoutableDocument('hubs')],
-    afterChange: [
-      syncRoutableRoute('hubs'),
-      revalidateRoutableContent('content-sitemap', ['/market-coverage/']),
-    ],
+    afterChange: [syncRoutableRoute('hubs'), revalidateRoutableContent(['/market-coverage/'])],
     afterDelete: [
       releaseRoutableRoute('hubs'),
-      revalidateDeletedRoutableContent('content-sitemap', ['/market-coverage/']),
+      revalidateDeletedRoutableContent(['/market-coverage/']),
     ],
   },
   versions: {

@@ -85,10 +85,14 @@ export const classifyInventoryNode = (
       node.template === 'layouts/article.blade.php' ||
       node.template === 'layouts/cookie-consent.blade.php'
     const legalPath = path?.startsWith('/legal/') === true || path === '/terms-of-use-disclaimer/'
-    const conversionPath = path === '/contact/' || path === '/request-a-demo/'
+    // Contact is a managed contact-details page. Its two unused HubSpot forms are
+    // deliberately omitted. Request A Demo is a temporary managed redirect to Contact
+    // until a first-party submission path is implemented.
+    const temporaryContactRedirect = path === '/request-a-demo/'
     return {
-      archetype:
-        path === '/'
+      archetype: temporaryContactRedirect
+        ? 'redirect.temporary-contact'
+        : path === '/'
           ? 'page.homepage'
           : node.template === 'layouts/market-matrix.blade.php'
             ? 'page.interactive-market-matrix'
@@ -96,12 +100,10 @@ export const classifyInventoryNode = (
               ? 'page.content-index'
               : legalTemplate || legalPath
                 ? 'page.legal'
-                : conversionPath
-                  ? 'page.conversion'
-                  : path?.startsWith('/products/')
-                    ? 'page.product'
-                    : 'page.standard',
-      targetOwner: 'pages',
+                : path?.startsWith('/products/')
+                  ? 'page.product'
+                  : 'page.standard',
+      targetOwner: temporaryContactRedirect ? 'redirects' : 'pages',
     }
   }
   if (node.postType === 'post') {

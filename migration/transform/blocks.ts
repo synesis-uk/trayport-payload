@@ -10,16 +10,18 @@ import {
 } from './helpers'
 import { htmlToLexical, htmlToPlainText } from './lexical'
 import type { LegacyReference, TransformCoverage } from './types'
+import { migrationDestination } from './url'
 
 type TargetComponent = Record<string, unknown> & { blockType: string }
 type TargetSection = Record<string, unknown> & { blockType: string }
 export type ReusableLookup = Map<number, SourceReusable>
 export type ManagedLinkLookup = Map<
   number,
-  {
-    kind: LegacyReference['$legacyRef']
-    relationTo: 'articles' | 'hubs' | 'learning-videos' | 'pages' | 'venues'
-  }
+  | {
+      kind: LegacyReference['$legacyRef']
+      relationTo: 'articles' | 'hubs' | 'learning-videos' | 'pages' | 'venues'
+    }
+  | { url: string }
 >
 
 // WordPress `map-all` is the standard dark connection-map background used by the live site.
@@ -34,6 +36,11 @@ const CONNECTION_MAP_LINE_COLORS = new Set([
   '#ff671f',
   '#f7ea48',
 ])
+const REGION_PAGE_LEGACY_ID_BY_REGION_LEGACY_ID: Record<number, number> = {
+  843: 2221,
+  844: 5981,
+  845: 5983,
+}
 
 const count = (target: Record<string, number>, key: string): void => {
   target[key] = (target[key] || 0) + 1
@@ -45,24 +52,155 @@ const normalizedFeatureIcon = (value: unknown): string | undefined => {
   return ['lightbulb', 'trend', 'clock', 'chart', 'scan'].includes(icon) ? icon : undefined
 }
 
-const liveFallbackURL = (value: string): string => {
-  if (/^(?:#|mailto:|tel:)/i.test(value)) return value
-  try {
-    const url = new URL(value, 'http://trayport.local')
-    if (
-      ['trayport.local', 'prod.trayport.com', 'trayport.com', 'www.trayport.com'].includes(
-        url.hostname,
-      )
-    ) {
-      return new URL(
-        `${url.pathname}${url.search}${url.hash}`,
-        'https://www.trayport.com',
-      ).toString()
-    }
-  } catch {
-    return value
+const normalizedFeatureDisplay = (
+  value: unknown,
+  media: unknown,
+  icon: string | undefined,
+): 'icon' | 'image' | 'plain' => {
+  const display = asString(value)
+  if (display === 'image' && media) return 'image'
+  if (display === 'icon' && icon) return 'icon'
+  return 'plain'
+}
+
+const normalizedStandaloneIcon = (value: unknown): string | undefined => {
+  const icons: Record<string, string> = {
+    'fire-flame': 'gas',
+    industry: 'emissions',
+    lightbulb: 'power',
   }
-  return value
+
+  return icons[asString(value)]
+}
+
+const normalizedActionIcon = (value: unknown): string | undefined => {
+  const icons: Record<string, string> = {
+    'chart-mixed': 'chart',
+    'earth-europe': 'europe',
+    forward: 'forward',
+    gear: 'settings',
+    people: 'people',
+    play: 'play',
+    users: 'people',
+  }
+
+  return icons[asString(value)]
+}
+
+const normalizedBadgeIcon = (value: unknown): string | undefined => {
+  const icons: Record<string, string> = {
+    'display-chart-up-circle-currency': 'tradingScreen',
+    people: 'people',
+  }
+
+  return icons[asString(value)]
+}
+
+type DataChartRange = {
+  fromQuarter: number
+  fromYear: number
+  toQuarter: number
+  toYear: number
+}
+
+const normalizedChartYear = (value: NormalizedValue): number | null => {
+  const year = Number(value)
+  if (!Number.isInteger(year) || year <= 0) return null
+  const normalized = year < 100 ? 2000 + year : year
+  return normalized >= 2000 && normalized <= 2100 ? normalized : null
+}
+
+const normalizedChartQuarter = (value: NormalizedValue): number | null => {
+  const quarter = Number(value)
+  return Number.isInteger(quarter) && quarter >= 1 && quarter <= 4 ? quarter : null
+}
+
+const completeDataChartRange = (
+  fromYearValue: NormalizedValue,
+  fromQuarterValue: NormalizedValue,
+  toYearValue: NormalizedValue,
+  toQuarterValue: NormalizedValue,
+): DataChartRange | null => {
+  const fromYear = normalizedChartYear(fromYearValue)
+  const fromQuarter = normalizedChartQuarter(fromQuarterValue)
+  const toYear = normalizedChartYear(toYearValue)
+  const toQuarter = normalizedChartQuarter(toQuarterValue)
+
+  if (fromYear === null || fromQuarter === null || toYear === null || toQuarter === null) {
+    return null
+  }
+  if (fromYear * 4 + fromQuarter > toYear * 4 + toQuarter) return null
+
+  return { fromQuarter, fromYear, toQuarter, toYear }
+}
+
+const dataChartRangeFromLegacy = (
+  component: Record<string, NormalizedValue>,
+): DataChartRange | null => {
+  const interval = asString(component.interval) || 'all'
+
+  if (interval === 'year') {
+    const year = normalizedChartYear(component.year)
+    return year === null ? null : completeDataChartRange(year, 1, year, 4)
+  }
+
+  if (interval === 'year_range') {
+    const range = asObject(component.year_range)
+    return completeDataChartRange(range.from_year, 1, range.to_year, 4)
+  }
+
+  if (interval === 'quarter') {
+    const quarter = asObject(component.single_quarter)
+    return completeDataChartRange(
+      quarter.sq_year,
+      quarter.sq_quarter,
+      quarter.sq_year,
+      quarter.sq_quarter,
+    )
+  }
+
+  if (interval === 'quarter_range') {
+    const range = asObject(component.quarter_range)
+    return completeDataChartRange(
+      range.qr_from_year,
+      range.qr_from_quarter,
+      range.qr_to_year,
+      range.qr_to_quarter,
+    )
+  }
+
+  // `all` deliberately has no bounds. The legacy `latest_*` intervals are resolved against live
+  // market data at request time, so a static migration must also leave them unbounded.
+  return null
+}
+
+const dataChartHubReferences = (value: NormalizedValue): LegacyReference[] =>
+  asArray(value).flatMap((hub) => {
+    const reference = legacyRef('hub', hub)
+    return reference ? [reference] : []
+  })
+
+const dataChartDisplayInterval = (value: NormalizedValue): 'month' | 'quarter' | 'year' => {
+  const intervals: Record<string, 'month' | 'quarter' | 'year'> = {
+    months: 'month',
+    quarters: 'quarter',
+    ytd: 'year',
+  }
+  return intervals[asString(value)] || 'quarter'
+}
+
+const normalizedHeadingAppearance = (value: unknown): 'h1' | 'h2' | 'h3' | 'h4' => {
+  const size = asString(value)
+  return ['h1', 'h2', 'h3', 'h4'].includes(size) ? (size as 'h1' | 'h2' | 'h3' | 'h4') : 'h2'
+}
+
+const normalizedHeadingLevel = (
+  tagValue: unknown,
+  appearance: 'h1' | 'h2' | 'h3' | 'h4',
+): 'h2' | 'h3' | 'h4' => {
+  const tag = asString(tagValue)
+  if (['h2', 'h3', 'h4'].includes(tag)) return tag as 'h2' | 'h3' | 'h4'
+  return appearance === 'h3' || appearance === 'h4' ? appearance : 'h2'
 }
 
 const linkFromValue = (
@@ -79,24 +217,38 @@ const linkFromValue = (
   }
 
   const legacyStyle = asString(object.style)
-  const style =
-    legacyStyle === 'secondary' ? 'secondary' : legacyStyle === 'primary' ? 'primary' : 'link'
+  const style = ['primary', 'secondary', 'accent', 'info', 'link'].includes(legacyStyle)
+    ? legacyStyle
+    : legacyStyle === 'cta'
+      ? 'accent'
+      : 'link'
+  const icon = normalizedActionIcon(object.icon)
 
   const numericValue = Number(asString(link.value)) || referenceId(link.value, 'post') || 0
   const target =
     Number.isInteger(numericValue) && !url.startsWith('#') ? links.get(numericValue) : null
+  const fallbackDestination = target ? null : migrationDestination(url)
+  if (!target && !fallbackDestination) {
+    return null
+  }
   const managedLink = target
-    ? {
-        type: 'reference',
-        reference: {
-          relationTo: target.relationTo,
-          value: legacyRef(target.kind, numericValue),
-        },
-        newTab: asString(link.target) === '_blank',
-      }
+    ? 'url' in target
+      ? {
+          type: 'custom',
+          url: target.url,
+          newTab: asString(link.target) === '_blank',
+        }
+      : {
+          type: 'reference',
+          reference: {
+            relationTo: target.relationTo,
+            value: legacyRef(target.kind, numericValue),
+          },
+          newTab: asString(link.target) === '_blank',
+        }
     : {
         type: 'custom',
-        url: liveFallbackURL(url),
+        url: fallbackDestination,
         newTab: asString(link.target) === '_blank',
       }
 
@@ -104,6 +256,7 @@ const linkFromValue = (
     label,
     link: managedLink,
     style,
+    ...(icon ? { icon } : {}),
   }
 }
 
@@ -136,7 +289,7 @@ const entityItemsFrom = (
           item.path ||
           item.url,
       )
-      const rawValue = redirect.value || redirect.post || redirect.page
+      const rawValue = redirect.value || redirect.post || redirect.page || redirect
       const mappedLink = rawURL
         ? linkFromValue(
             {
@@ -162,6 +315,152 @@ const entityItemsFrom = (
     .filter(Boolean) as Record<string, unknown>[]
 }
 
+const productFeatureItemsFrom = (
+  value: unknown,
+  reusables: ReusableLookup,
+  links: ManagedLinkLookup,
+): Record<string, unknown>[] => {
+  const references = Array.isArray(value) ? value : value ? [value] : []
+
+  return references
+    .map((candidate) => {
+      const item = asObject(candidate)
+      const reusableId = referenceId(item, 'post')
+      const reusable = reusableId ? reusables.get(reusableId) : undefined
+      const data = reusable?.data || item
+      const title = htmlToPlainText(data.name || reusable?.title || item.title || item.name)
+      if (!title) return null
+
+      const redirect = asObject(asArray(data.page_redirect)[0])
+      const externalLink = asObject(data.external_link)
+      const rawURL = asString(
+        externalLink.url ||
+          redirect.path ||
+          data.website ||
+          reusable?.path ||
+          item.path ||
+          item.url,
+      )
+      const rawValue = redirect.value || redirect.post || redirect.page || redirect
+      const action = rawURL
+        ? linkFromValue(
+            {
+              icon: data.icon,
+              new_link: {
+                ...redirect,
+                title,
+                url: rawURL,
+                value: rawValue,
+              },
+              style: 'link',
+            },
+            links,
+          )
+        : null
+
+      return {
+        title,
+        display: 'image',
+        media: mediaToken(data.display_logo || data.image || data.logo),
+        showAction: Boolean(action),
+        actionStyle: action ? asString(action.style) || 'link' : 'link',
+        ...(action?.icon ? { actionIcon: action.icon } : {}),
+        ...(action
+          ? {
+              link: {
+                ...(asObject(action.link) as Record<string, unknown>),
+                label: asString(action.label) || title,
+              },
+            }
+          : {}),
+      }
+    })
+    .filter(Boolean) as Record<string, unknown>[]
+}
+
+const boundedNumber = (value: unknown, fallback: number, min: number, max: number): number => {
+  const rawValue = asString(value)
+  if (!rawValue) return fallback
+  const numericValue = Number(rawValue)
+  return Number.isFinite(numericValue) ? Math.min(Math.max(numericValue, min), max) : fallback
+}
+
+const marketCoverageFrom = (
+  component: Record<string, NormalizedValue>,
+  presentation: 'mapOnly' | 'summary',
+): TargetComponent => {
+  const style = asString(component.style) === 'light' ? 'light' : 'dark'
+  const assetClasses = asArray(component.asset_classes)
+    .map((term) => legacyRef('asset-class', term))
+    .filter(Boolean)
+  const venueTypes = asArray(component.venue_types)
+    .map((term) => legacyRef('venue-type', term))
+    .filter(Boolean)
+  const regions = asArray(component.regions)
+    .map((term) => legacyRef('region', term))
+    .filter(Boolean)
+  const sourceLineColor = asObject(component.line_color || component.color)
+  const rawLineColor = asString(
+    asString(sourceLineColor.type) === 'shades'
+      ? sourceLineColor.shade
+      : sourceLineColor.color || sourceLineColor.shade || component.line_color,
+  ).toLowerCase()
+  const lineColor = CONNECTION_MAP_LINE_COLORS.has(rawLineColor) ? rawLineColor : '#009cde'
+  const rawShowLines = component.show_lines
+  const showLines =
+    rawShowLines === undefined || rawShowLines === null || rawShowLines === ''
+      ? true
+      : asBoolean(rawShowLines)
+  const height = asObject(component.height)
+
+  return {
+    blockType: 'marketCoverage',
+    presentation,
+    title: 'Explore our connectivity',
+    style,
+    backgroundMedia: style === 'dark' ? mediaToken(LEGACY_MAP_ALL_BACKGROUND_MEDIA_ID) : null,
+    height: boundedNumber(height.fixed_height || component.height, 300, 100, 600),
+    markerSize: boundedNumber(component.marker_size, 5, 2, 8),
+    showLines,
+    lineColor,
+    lineWidth: boundedNumber(component.line_width, 0.5, 0, 1),
+    lineOpacity: boundedNumber(component.line_opacity, 0.5, 0, 1),
+    assetClasses,
+    venueTypes,
+    regions,
+    actions: [],
+  }
+}
+
+const regionFeatureItemsFrom = (value: unknown): Record<string, unknown>[] =>
+  asArray(value)
+    .map((candidate) => {
+      const region = asObject(candidate)
+      const sourceLegacyId = referenceId(region, 'post')
+      const pageLegacyId = sourceLegacyId
+        ? REGION_PAGE_LEGACY_ID_BY_REGION_LEGACY_ID[sourceLegacyId]
+        : undefined
+      const title = htmlToPlainText(region.title || region.name)
+      if (!pageLegacyId || !title) return null
+
+      return {
+        display: 'plain',
+        title,
+        showAction: true,
+        actionStyle: 'link',
+        link: {
+          label: `Explore ${title}`,
+          type: 'reference',
+          reference: {
+            relationTo: 'pages',
+            value: legacyRef('page', pageLegacyId),
+          },
+          newTab: false,
+        },
+      }
+    })
+    .filter(Boolean) as Record<string, unknown>[]
+
 const featureItems = (
   component: Record<string, NormalizedValue>,
   links: ManagedLinkLookup,
@@ -181,6 +480,7 @@ const featureItems = (
       const media = mediaToken(imageGroup.image || item.image || item.logo)
       const button = linkFromValue(item.button, links)
       const icon = normalizedFeatureIcon(item.icon)
+      const showAction = asBoolean(item.show_button) && Boolean(button)
 
       if (!title && !description && !media) {
         return null
@@ -189,8 +489,12 @@ const featureItems = (
       return {
         title,
         body: htmlToLexical(description),
+        display: normalizedFeatureDisplay(item.display, media, icon),
         ...(icon ? { icon } : {}),
         media,
+        showAction,
+        actionStyle: button ? asString(button.style) || 'link' : 'link',
+        ...(button?.icon ? { actionIcon: button.icon } : {}),
         ...(button
           ? {
               link: {
@@ -223,12 +527,13 @@ const mapComponent = (
       const header = asObject(component.header)
       const text = htmlToPlainText(header.text)
       if (!text) return []
-      const tag = asString(header.tag)
+      const appearance = normalizedHeadingAppearance(header.size)
       return [
         {
           blockType: 'heading',
           text,
-          level: ['h2', 'h3', 'h4'].includes(tag) ? tag : 'h2',
+          level: normalizedHeadingLevel(header.tag, appearance),
+          appearance,
         },
       ]
     }
@@ -239,12 +544,15 @@ const mapComponent = (
       const data = asObject(field)
       const text = htmlToPlainText(data.text || field)
       if (!text) return []
+      const appearance =
+        layout === 'preheader' ? 'h4' : normalizedHeadingAppearance(data.size || 'h3')
       return [
         {
           blockType: 'heading',
           eyebrow: layout === 'preheader' ? text : '',
           text,
-          level: layout === 'preheader' ? 'h4' : 'h3',
+          level: layout === 'preheader' ? 'h4' : normalizedHeadingLevel(data.tag, appearance),
+          appearance,
         },
       ]
     }
@@ -287,7 +595,6 @@ const mapComponent = (
             {
               blockType: 'media',
               media,
-              caption: asString(reusable?.data.name || reusable?.title),
               aspect: 'wide',
             },
           ]
@@ -308,7 +615,7 @@ const mapComponent = (
         ? [
             {
               blockType: 'featureList',
-              layout: asString(component.layout) === 'stacked' ? 'stacked' : 'grid',
+              presentation: items.length >= 4 ? 'carousel' : 'grid',
               items,
             },
           ]
@@ -348,11 +655,38 @@ const mapComponent = (
         .filter(Boolean) as Record<string, unknown>[]
       return items.length ? [{ blockType: 'faq', items }] : []
     }
+    case 'products': {
+      const category = asObject(component.category)
+      const items = productFeatureItemsFrom(category.specific || category.single, reusables, links)
+      return items.length
+        ? [
+            {
+              blockType: 'featureList',
+              presentation: 'grid',
+              items,
+            },
+          ]
+        : []
+    }
     case 'people':
-    case 'products':
     case 'clients': {
       const category = asObject(component.category)
-      const items = entityItemsFrom(category.specific || category.single, reusables, links)
+      const source =
+        layout === 'people' && asString(category.type) === 'team'
+          ? [...reusables.values()]
+              .filter(
+                ({ data, postType }) =>
+                  postType === 'people' &&
+                  asString(data.team) === asString(asObject(category.team).team),
+              )
+              .map(({ legacyId, path, title }) => ({
+                $ref: 'post',
+                id: legacyId,
+                path,
+                title,
+              }))
+          : category.specific || category.single
+      const items = entityItemsFrom(source, reusables, links)
       return items.length
         ? [
             {
@@ -416,67 +750,20 @@ const mapComponent = (
     case 'divider':
       return [{ blockType: 'divider', style: 'line' }]
     case 'connections': {
-      const style = asString(component.style) === 'light' ? 'light' : 'dark'
-      const assetClasses = asArray(component.asset_classes)
-        .map((term) => legacyRef('asset-class', term))
-        .filter(Boolean)
-      const venueTypes = asArray(component.venue_types)
-        .map((term) => legacyRef('venue-type', term))
-        .filter(Boolean)
-      const regions = asArray(component.regions)
-        .map((term) => legacyRef('region', term))
-        .filter(Boolean)
-      const sourceLineColor = asObject(component.line_color || component.color)
-      const rawLineColor = asString(
-        asString(sourceLineColor.type) === 'shades'
-          ? sourceLineColor.shade
-          : sourceLineColor.color || sourceLineColor.shade || component.line_color,
-      ).toLowerCase()
-      const lineColor = CONNECTION_MAP_LINE_COLORS.has(rawLineColor) ? rawLineColor : '#009cde'
-      const boundedNumber = (
-        value: NormalizedValue | undefined,
-        fallback: number,
-        min: number,
-        max: number,
-      ): number => {
-        const rawValue = asString(value)
-        if (!rawValue) return fallback
-        const numericValue = Number(rawValue)
-        return Number.isFinite(numericValue) ? Math.min(Math.max(numericValue, min), max) : fallback
-      }
-      const rawShowLines = component.show_lines
-      const showLines =
-        rawShowLines === undefined || rawShowLines === null || rawShowLines === ''
-          ? true
-          : asBoolean(rawShowLines)
-
-      return [
-        {
-          blockType: 'marketCoverage',
-          title: 'Explore our connectivity',
-          style,
-          backgroundMedia: style === 'dark' ? mediaToken(LEGACY_MAP_ALL_BACKGROUND_MEDIA_ID) : null,
-          height: boundedNumber(component.height, 300, 100, 600),
-          markerSize: boundedNumber(component.marker_size, 5, 2, 8),
-          showLines,
-          lineColor,
-          lineWidth: boundedNumber(component.line_width, 0.5, 0, 1),
-          lineOpacity: boundedNumber(component.line_opacity, 0.5, 0, 1),
-          assetClasses,
-          venueTypes,
-          regions,
-          actions: [],
-        },
-      ]
+      return [marketCoverageFrom(component, 'summary')]
+    }
+    case 'markets-map':
+      return [marketCoverageFrom(component, 'mapOnly')]
+    case 'regions': {
+      const category = asObject(component.category)
+      const items = regionFeatureItemsFrom(category.specific || category.single)
+      return items.length ? [{ blockType: 'featureList', presentation: 'grid', items }] : []
     }
     case 'charts-new': {
-      const range = asObject(component.quarter_range)
-      const normalizeYear = (value: NormalizedValue): number | null => {
-        const year = Number(value)
-        if (!Number.isFinite(year) || year <= 0) return null
-        return year < 100 ? 2000 + year : year
-      }
+      const assetClassLegacyID = Number(component.asset_class) || null
       const sourceType = asString(component.chart_type)
+      const range = dataChartRangeFromLegacy(component)
+      const seriesDimension = asString(component.for) === 'trade_type' ? 'executionType' : 'hub'
 
       return [
         {
@@ -488,12 +775,14 @@ const mapComponent = (
             : sourceType.includes('line')
               ? 'line'
               : 'column',
+          seriesDimension,
+          displayInterval: dataChartDisplayInterval(component.display_interval),
           unit: asString(component.unit),
-          assetClassLegacyId: Number(component.asset_class) || null,
-          fromYear: normalizeYear(range.qr_from_year),
-          fromQuarter: Number(range.qr_from_quarter) || null,
-          toYear: normalizeYear(range.qr_to_year),
-          toQuarter: Number(range.qr_to_quarter) || null,
+          assetClass: assetClassLegacyID ? legacyRef('asset-class', assetClassLegacyID) : null,
+          includedHubs: dataChartHubReferences(component.hubs),
+          excludedHubs: dataChartHubReferences(component.excluded_hubs),
+          assetClassLegacyId: assetClassLegacyID,
+          ...(range || {}),
           axisLabel: asString(component.y_axis_text),
           height: Math.min(Math.max(Number(component.height) || 350, 280), 560),
           scalePower: Math.min(Math.max(Number(component.power) || 0, 0), 12),
@@ -526,28 +815,57 @@ const mapComponent = (
         reason: 'Legacy HubSpot forms are explicitly deferred from the production pilot.',
       }
       return []
-    case 'icon':
-      coverage.ignoredComponentLayouts.icon = {
-        count: (coverage.ignoredComponentLayouts.icon?.count || 0) + 1,
-        reason: 'Decorative legacy icon; presentation is selected by the target component.',
+    case 'icon': {
+      const icon = normalizedStandaloneIcon(component.icon)
+      if (!icon) {
+        coverage.ignoredComponentLayouts.icon = {
+          count: (coverage.ignoredComponentLayouts.icon?.count || 0) + 1,
+          reason: 'Legacy icon is outside the bounded standalone icon vocabulary.',
+        }
+        return []
       }
-      return []
+      return [{ blockType: 'standaloneIcon', icon }]
+    }
     default:
       coverage.unsupportedComponentLayouts.push(layout)
       return []
   }
 }
 
-const sectionTheme = (section: Record<string, NormalizedValue>): string => {
-  const newSettings = asObject(section.new_settings)
-  const contentBackground = asObject(newSettings.content_background)
-  const color = asObject(contentBackground.background_color)
+const activeBackgroundTone = (background: Record<string, NormalizedValue>): string => {
+  const color = asObject(background.background_color)
   const style = asString(color.style)
-  const light = asString(color.light)
+  const light = asString(color.light).toLowerCase()
 
   if (style === 'dark') return 'dark'
   if (style === 'light' && light === '#eff7ff') return 'softBlue'
-  return 'light'
+  if (style === 'light' && ['#fff', '#ffffff'].includes(light)) return 'white'
+  return 'none'
+}
+
+const activeColumnSurface = (column: Record<string, NormalizedValue>): string => {
+  const background = asObject(column.background_color)
+  if (asString(background.style) !== 'light') return 'none'
+  const color = asString(background.light).toLowerCase()
+  if (color === '#eff7ff') return 'soft'
+  return ['#eeeeee', '#f4f4f4', '#f5f5f5', '#fafafa'].includes(color) ? 'muted' : 'none'
+}
+
+const hasActiveBorder = (column: Record<string, NormalizedValue>): boolean => {
+  const color = asObject(asObject(column.border).background_color)
+  const style = asString(color.style)
+  return style === 'light'
+    ? Boolean(asString(color.light))
+    : style === 'dark'
+      ? Boolean(asString(color.dark))
+      : false
+}
+
+const spacingValue = (value: unknown): 'tight' | 'regular' | 'large' => {
+  const spacing = asString(value)
+  if (spacing.includes('tight')) return 'tight'
+  if (spacing.includes('large')) return 'large'
+  return 'regular'
 }
 
 const mapHero = (
@@ -582,15 +900,32 @@ const mapHero = (
       return value && label ? { value, label } : null
     })
     .filter(Boolean)
+  const buttonStyle = asString(content.button_style)
+  const selectedActions =
+    buttonStyle === 'links'
+      ? actionsFrom(content.links, links)
+      : buttonStyle === 'buttons'
+        ? actionsFrom(content.buttons, links)
+        : []
+  const badge = asObject(content.badge)
+  const badgeLink = asObject(badge.new_link)
+  const badgeLabel = htmlToPlainText(badgeLink.title)
+  const badgeIcon = normalizedBadgeIcon(badge.icon)
+  const badgeTone = asString(badge.style) === 'info' ? 'info' : 'secondary'
+  const mediaAspect = asString(settings.aspect) === '[16/9]' ? 'sixteenToNine' : 'twoToOne'
 
   return {
     blockType: 'trayportHero',
     eyebrow: htmlToPlainText(asObject(content.badge).text),
+    ...(badgeLabel ? { badgeLabel } : {}),
+    ...(badgeIcon ? { badgeIcon } : {}),
+    badgeTone,
     heading: htmlToPlainText(header.text) || 'Trayport',
     body: htmlToLexical(subheader.text || content.subtitle),
     media,
     externalVideoURL: selectedExternalVideoURL,
-    actions: [...actionsFrom(content.buttons, links), ...actionsFrom(content.links, links)],
+    mediaAspect,
+    actions: selectedActions,
     statistics,
     appearance: media || selectedExternalVideoURL ? 'image' : 'dark',
   }
@@ -636,9 +971,59 @@ const mapColumnsSection = (
 
       const rawSpan = asString(column.acfe_layout_col)
       const span = ['4', '6', '8', '12'].includes(rawSpan) ? rawSpan : '12'
-      return { span, components }
+      const hasImage = asString(column.has_image) === '1'
+      const backgroundMedia = hasImage ? mediaToken(column.image) : null
+      const opacity = asString(column.opacity)
+      return {
+        span,
+        horizontalAlign: asString(column.align) === 'center' ? 'center' : 'left',
+        verticalAlign: asString(column.valign) === 'center' ? 'center' : 'start',
+        heightMode: asString(column.height) === 'content' ? 'content' : 'fill',
+        componentGap:
+          asString(column.component_spacing) === 'component-space-none' ? 'none' : 'regular',
+        padding: asString(column.padding) === 'column-p-md' ? 'medium' : 'none',
+        surface: activeColumnSurface(column),
+        border: hasActiveBorder(column) ? 'subtle' : 'none',
+        backgroundMedia,
+        backgroundOpacity:
+          backgroundMedia && ['10', '20', '50'].includes(opacity) ? opacity : 'none',
+        radius: asString(column.rounded).includes('xl') ? 'xl' : 'default',
+        components,
+      }
     })
-    .filter((column): column is { span: string; components: TargetComponent[] } => Boolean(column))
+    .filter(Boolean) as Array<Record<string, unknown> & { components: TargetComponent[] }>
+
+  for (let index = 0; index < columns.length - 1; index += 1) {
+    const leadColumn = columns[index]
+    const carouselColumn = columns[index + 1]
+    const leadFeature = leadColumn?.components[0]
+    const carouselFeature = carouselColumn?.components[0]
+    const leadItems = Array.isArray(leadFeature?.items) ? leadFeature.items : []
+    const carouselItems = Array.isArray(carouselFeature?.items) ? carouselFeature.items : []
+
+    if (
+      leadColumn?.span === '4' &&
+      carouselColumn?.span === '8' &&
+      leadColumn.components.length === 1 &&
+      carouselColumn.components.length === 1 &&
+      leadFeature?.blockType === 'featureList' &&
+      carouselFeature?.blockType === 'featureList' &&
+      leadItems.length === 1 &&
+      carouselItems.length >= 4
+    ) {
+      columns.splice(index, 2, {
+        ...leadColumn,
+        components: [
+          {
+            ...leadFeature,
+            items: [...leadItems, ...carouselItems],
+            presentation: 'leadCarousel',
+          },
+        ],
+        span: '12',
+      })
+    }
+  }
 
   if (!columns.length) return null
 
@@ -661,20 +1046,23 @@ const mapColumnsSection = (
   const legacySettings = asObject(section.settings)
   const rounded = asString(contentBackground.rounded)
   const opacity = asString(contentBackground.opacity)
+  const backgroundMedia =
+    asString(contentBackground.content_has_image) === '1'
+      ? mediaToken(contentBackground.content_bg_image)
+      : null
+  const surfaceTone = activeBackgroundTone(contentBackground)
   return {
     blockType: 'contentSection',
     anchor: asString(section.anchor),
-    theme: sectionTheme(section),
+    surfaceTone,
     wrapperTheme,
-    appearance:
+    backgroundMedia,
+    backgroundOpacity: backgroundMedia && ['10', '20', '50'].includes(opacity) ? opacity : 'none',
+    surfaceRadius:
       rounded.includes('large') || asString(legacySettings.style).includes('inset')
-        ? 'inset'
+        ? 'xl'
         : 'default',
-    backgroundMedia:
-      asString(contentBackground.content_has_image) === '1'
-        ? mediaToken(contentBackground.content_bg_image)
-        : null,
-    backgroundOpacity: ['10', '20', '50'].includes(opacity) ? opacity : 'none',
+    surfacePadding: surfaceTone !== 'none' || backgroundMedia ? 'medium' : 'none',
     width:
       contentWidth === 'full'
         ? 'wide'
@@ -683,11 +1071,9 @@ const mapColumnsSection = (
           : contentWidth === 'medium'
             ? 'standard'
             : 'wide',
-    spacing:
-      asString(settings.top_spacing).includes('large') ||
-      asString(settings.bottom_spacing).includes('large')
-        ? 'generous'
-        : 'regular',
+    spacingTop: spacingValue(settings.top_spacing),
+    spacingBottom: spacingValue(settings.bottom_spacing),
+    columnGap: asString(settings.column_gap) === 'tight' ? 'tight' : 'regular',
     columns,
   }
 }
@@ -699,6 +1085,8 @@ export const mapPageLayout = (
     appendArticleListing?: boolean
     articleFamily?: 'insights' | 'news'
     appendLearningVideoListing?: boolean
+    marketCoveragePresentation?: 'mapOnly' | 'summary'
+    suppressedHeadingTexts?: readonly string[]
   } = {},
   reusables: ReusableLookup = new Map(),
   links: ManagedLinkLookup = new Map(),
@@ -726,6 +1114,35 @@ export const mapPageLayout = (
     coverage.unsupportedTopLevelLayouts.push(layout || '(missing)')
   }
 
+  if (options.marketCoveragePresentation || options.suppressedHeadingTexts?.length) {
+    const suppressedHeadingTexts = new Set(options.suppressedHeadingTexts || [])
+
+    for (const block of blocks) {
+      if (block.blockType !== 'contentSection' || !Array.isArray(block.columns)) continue
+
+      block.columns = block.columns
+        .map((columnValue) => {
+          const column = asObject(columnValue)
+          const components = asArray(column.components).flatMap((componentValue) => {
+            const component = asObject(componentValue)
+            if (
+              component.blockType === 'heading' &&
+              suppressedHeadingTexts.has(asString(component.text))
+            ) {
+              return []
+            }
+            if (component.blockType === 'marketCoverage' && options.marketCoveragePresentation) {
+              return [{ ...component, presentation: options.marketCoveragePresentation }]
+            }
+            return [component]
+          })
+
+          return components.length ? [{ ...column, components }] : []
+        })
+        .flat()
+    }
+  }
+
   if (options.appendArticleListing) {
     blocks.push({
       blockType: 'articleListing',
@@ -749,10 +1166,49 @@ export const mapPageLayout = (
   return blocks
 }
 
+const companyDataHTML = (source: SourceReusable): string => {
+  const fields = [
+    ['name', 'Name'],
+    ['company_type', 'Company Type'],
+    ['nature_of_business', 'Nature of Business'],
+    ['professional_law', 'Professional Law'],
+    ['phone', 'Phone'],
+    ['email', 'Email'],
+    ['vat_id', 'VAT ID'],
+    ['company_number', 'Company Number'],
+    ['commercial_register', 'Commercial Register'],
+    ['registered_in', 'Registered In'],
+    ['registered_office', 'Registered Office'],
+    ['directors', 'Directors'],
+    ['company_secretary', 'Company Secretary'],
+  ] as const
+
+  return fields
+    .flatMap(([field, label]) => {
+      const rawValue = source.data[field]
+      const value = Array.isArray(rawValue)
+        ? rawValue
+            .map((item) => asString(item))
+            .filter(Boolean)
+            .join(', ')
+        : asString(rawValue)
+      if (!value) return []
+      if (/\[[^\]]+\]/.test(value)) {
+        throw new Error(
+          `Company-data reusable ${source.legacyId} retains unresolved shortcode content in ${field}.`,
+        )
+      }
+
+      return [`<p><strong>${label}</strong><br>${value}</p>`]
+    })
+    .join('')
+}
+
 export const mapArticleLayout = (
   sectionsValue: unknown,
   coverage: TransformCoverage,
   links: ManagedLinkLookup = new Map(),
+  reusables: ReusableLookup = new Map(),
 ): TargetSection[] => {
   const blocks: TargetSection[] = []
 
@@ -794,6 +1250,24 @@ export const mapArticleLayout = (
           tag: 'h2',
         },
       }
+    } else if (layout === 'header') {
+      component = {
+        acf_fc_layout: 'header',
+        header: section.header,
+      }
+    } else if (layout === 'post-content') {
+      const postLegacyId = referenceId(asArray(section.post)[0], 'post')
+      const source = postLegacyId ? reusables.get(postLegacyId) : undefined
+      if (!source || source.postType !== 'company-data') {
+        throw new Error(
+          `Article post-content requires an exported company-data reusable; received ${postLegacyId || 'no source ID'}.`,
+        )
+      }
+      component = {
+        acf_fc_layout: 'paragraph',
+        paragraph: companyDataHTML(source),
+        text_size: 'regular',
+      }
     } else if (layout === 'form') {
       coverage.ignoredComponentLayouts.form = {
         count: (coverage.ignoredComponentLayouts.form?.count || 0) + 1,
@@ -808,10 +1282,30 @@ export const mapArticleLayout = (
       const block: TargetSection | null = mapped.length
         ? {
             blockType: 'contentSection',
-            theme: 'white',
+            surfaceTone: 'white',
+            wrapperTheme: 'none',
+            backgroundOpacity: 'none',
+            surfaceRadius: 'default',
+            surfacePadding: 'none',
             width: 'reading',
-            spacing: 'compact',
-            columns: [{ span: '12', components: mapped }],
+            spacingTop: 'tight',
+            spacingBottom: 'tight',
+            columnGap: 'regular',
+            columns: [
+              {
+                span: '12',
+                horizontalAlign: 'left',
+                verticalAlign: 'start',
+                heightMode: 'fill',
+                componentGap: 'regular',
+                padding: 'none',
+                surface: 'none',
+                border: 'none',
+                backgroundOpacity: 'none',
+                radius: 'default',
+                components: mapped,
+              },
+            ],
           }
         : null
       if (block) {

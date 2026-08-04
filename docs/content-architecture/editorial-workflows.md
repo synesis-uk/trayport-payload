@@ -87,8 +87,19 @@ Editors configure index eyebrow, title, introduction, and SEO in the versioned
 come from published `page`-mode venues or hubs. A map, matrix, or index must
 never link a relationship-only record.
 
-Market chart presentation is editable in Payload. Raw monthly facts are not;
-they are maintained through the application-data import.
+Market chart presentation is editable in Payload; raw monthly facts are maintained
+through the application-data import. Editors select a managed imported Asset Class,
+Volume or Price, an Execution type or Hub series dimension, and Month, Quarter, or
+Year grouping. Execution type is limited to stacked Volume columns and cannot carry
+Hub filters. Hub series are limited to Volume columns or Price lines; their optional
+Included Hubs and Excluded Hubs relationships must not overlap.
+
+Optional date bounds are complete year/quarter pairs and cannot run backwards. The
+runtime caps output at 40 matching periods. Preview identifies successful-but-empty,
+temporarily unavailable, and retained unsupported configurations separately; publication
+blocks unsupported combinations rather than relying on a renderer fallback. WordPress
+`charts-new` values are mapped into these same fields during migration, including managed
+Hub relationships, so imported and newly authored charts share one contract.
 
 ## Manage Learning Hub content
 
@@ -149,6 +160,21 @@ revalidation in the same way as documents.
 For an internal destination, choose a managed content reference. Use a custom
 URL only for an external destination or a deliberate protocol such as `mailto:`
 or `tel:`. Choose a media/file reference for downloads.
+
+The 26-root incremental import applies a reversible bridge: only accepted roots
+and the two virtual indexes remain root-relative in Navigation/Footer. Other
+same-site destinations are rendered as canonical HTTPS links to the live site,
+preventing Next.js prefetch from requesting routes this build does not own. The
+current acceptance report requires exactly 35 unique live fallback paths, including the five
+clickable Company, Products, Markets, Regions, and Resources section roots.
+When a route is migrated, add it to the immutable root scope, pass route and
+runtime acceptance, then change that one destination back to its internal path.
+
+`/request-a-demo/` is the bounded exception for this milestone. Payload owns it
+as a temporary `302` redirect to `/contact/`; the source HubSpot form, dead form
+prompt, and unused hero media are not imported. Replace the redirect atomically
+with a publishable `page.conversion` only after the first-party submission path
+exists, then remove this exception and its redirect-specific assertions.
 
 The shared route registry currently validates path ownership and prevents a
 redirect source from shadowing content, virtual routes, or another redirect.
@@ -245,16 +271,20 @@ The production content import follows a repeatable pipeline:
    exclusion, known archetypes, and unique route ownership.
 4. **Extract:** read through the local WordPress runtime so ACF relationships,
    repeaters, clones, and option fields are resolved without mutating WordPress.
-5. **Transform:** read only the authoritative body/structured fields, map typed
+5. **Recover reviewed media (optional):** before transformation, fetch only explicitly approved
+   unavailable image attachment IDs from one audited HTTPS origin. Require exact uploads-relative
+   paths, recorded MIME/dimensions, a bounded response, and hash-pinned run evidence. Never use this
+   stage to substitute or generate an asset.
+6. **Transform:** read only the authoritative body/structured fields, map typed
    content, normalize links, and fail on unknown renderable layouts.
-6. **Load:** upsert by stable source identity, import media, resolve
+7. **Load:** upsert by stable source identity, import media, resolve
    relationships in a later pass, and load market facts transactionally into
    application PostgreSQL.
-7. **Validate:** check route/document counts, complete bodies, relationships,
+8. **Validate:** check route/document counts, complete bodies, relationships,
    media availability, links/redirects, schema validity, and target rendering.
-8. **Rerun:** prove equivalent source input does not create duplicates or
+9. **Rerun:** prove equivalent source input does not create duplicates or
    unintended changes.
-9. **Review:** clear or explicitly disposition missing media, accessibility
+10. **Review:** clear or explicitly disposition missing media, accessibility
    fallbacks, stale links, exclusions, SEO differences, forms, gated video, and
    interactive behavior.
 
@@ -274,9 +304,10 @@ only after both inventory and target-plan verification pass. Editors do not
 maintain those artifacts.
 
 The target plan is deterministic planning evidence: it accounts for 296 source
-routes plus two virtual indexes. It does not load the remaining 280 production
-documents. The actual imported and rendered acceptance slice is the 14-route
-production pilot documented in the repository README.
+routes including two virtual indexes. It does not load the remaining 268
+plan-only documents. The actual acceptance slice is the 26-root production
+pilot documented in the repository README: 25 rendered content routes plus the
+temporary Request A Demo redirect.
 
 ## Launch validation
 
@@ -296,7 +327,7 @@ Editorial launch approval requires:
   evidence.
 
 These are production gates, not conditions for calling the architecture design
-milestone complete. Cross-collection uniqueness and the 17 runtime archetype
+milestone complete. Cross-collection uniqueness and the 18 content-route runtime archetype
 invariants now pass; production readiness remains blocked by complete article
 bodies, complete listing-linked route ownership, planned blocks, managed links,
 editor-control effects, and full editor-role enforcement.

@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { normalizeTrayportSlug } from '../../src/fields/slug'
 import { sourceRecordSchema, type SourcePost, type SourceRecord } from '../contracts/v1'
 import { assertRunNotAccepted, atomicWriteText, sealAcceptedRun } from '../lib/acceptedRun'
 import { migrationConfig } from '../lib/config'
@@ -19,7 +20,7 @@ import {
   referenceId,
   sourceURL,
 } from './helpers'
-import { htmlToLexical, htmlToPlainText } from './lexical'
+import { htmlToLexical, htmlToMultilinePlainText, htmlToPlainText } from './lexical'
 import {
   mapArticleLayout,
   mapPageLayout,
@@ -27,6 +28,7 @@ import {
   type ReusableLookup,
 } from './blocks'
 import type { LegacyReference, TargetRecord, TransformCoverage } from './types'
+import { legacyExternalHTTPSDestination, migrationDestination, normalizeMigrationPath } from './url'
 
 const pilotRootByLegacyId = new Map<number, PilotRoot>(
   pilotScope.roots.map((root) => [root.legacyId, root]),
@@ -36,6 +38,15 @@ const tradingInJouleLegacyAlias = {
   from: '/learning-hub/watch/trading-in-joule/',
   legacyId: 8454,
 } as const
+
+const requestDemoTemporaryRedirect = {
+  from: '/request-a-demo/',
+  legacyId: 4031,
+  toLegacyId: 34,
+  type: '302',
+} as const
+
+type ManagedLinkTarget = ManagedLinkLookup extends Map<number, infer Target> ? Target : never
 
 const pageTypeByArchetype = {
   'page.homepage': 'homepage',
@@ -126,6 +137,50 @@ const seoFrom = (post: SourcePost): Record<string, unknown> => {
   }
 }
 
+/**
+ * Keep venue index copy and visible editorial content separate from SEO metadata.
+ * WordPress EEX has a meta description but no authored About body, so promoting
+ * that metadata into visible content would invent source content.
+ */
+export const venueEditorialDataFromWordPress = (post: SourcePost, isPublic: boolean) => {
+  const meta = isPublic ? seoFrom(post) : undefined
+  if (meta && typeof meta.description === 'string') {
+    meta.description = meta.description.trim()
+  }
+
+  return {
+    description: isPublic ? null : undefined,
+    meta,
+    summary: isPublic ? null : asString(post.acf.display_name) || post.title,
+  }
+}
+
+export const venueConnectionsFromWordPress = (
+  value: unknown,
+): Array<{ connectionType: string; hub: LegacyReference }> => {
+  const normalized = new Map<number, { connectionType: string; hub: LegacyReference }>()
+
+  for (const row of asArray(value)) {
+    const connection = asObject(row)
+    const hubID = referenceId(connection.hub, 'post')
+    const hub = hubID ? legacyRef('hub', hubID) : null
+    if (!hubID || !hub) continue
+    const connectionType = asString(connection.type || connection.connection_type) || 'd'
+    const existing = normalized.get(hubID)
+
+    // Preserve the first source-row position while retaining the broader dual-product
+    // relationship if a later duplicate supplies it.
+    if (!existing || connectionType === 'b') {
+      normalized.set(hubID, { connectionType, hub })
+    }
+  }
+
+  return [...normalized.values()]
+}
+
+export const venueWebsiteFromWordPress = (value: unknown): string | undefined =>
+  legacyExternalHTTPSDestination(value) ?? undefined
+
 const baseLegacy = (post: SourcePost) => ({
   source: 'wordpress' as const,
   legacyId: post.legacyId,
@@ -179,6 +234,74 @@ const ensurePageHero = (
   ]
 }
 
+const appendMarketMatrix = (
+  layout: Array<Record<string, unknown>>,
+): Array<Record<string, unknown>> => {
+  let appended = false
+  const next = layout.map((block) => {
+    if (appended || block.blockType !== 'contentSection') return block
+    const columns = asArray(block.columns).map((columnValue, index) => {
+      const column = asObject(columnValue)
+      if (index !== 0) return column
+      appended = true
+      return {
+        ...column,
+        components: [
+          ...asArray(column.components).map(asObject),
+          {
+            blockType: 'marketMatrix',
+            caption: 'Trayport venue connectivity by market hub',
+            assetClasses: [],
+            venueTypes: [],
+            regions: [],
+            defaultView: 'joule',
+            showFilters: true,
+            showDownload: true,
+          },
+        ],
+      }
+    })
+    return { ...block, columns }
+  })
+
+  if (!appended) {
+    throw new Error('Market Matrix page 2231 requires a mapped content section.')
+  }
+  return next
+}
+
+const removeDeferredContactFormPrompts = (
+  layout: Array<Record<string, unknown>>,
+): Array<Record<string, unknown>> =>
+  layout.flatMap((block) => {
+    if (block.blockType !== 'contentSection') return [block]
+    const columns = asArray(block.columns).flatMap((columnValue) => {
+      const column = asObject(columnValue)
+      const components = asArray(column.components)
+        .map(asObject)
+        .filter(
+          (component) =>
+            !/complete\s+the\s+form|form\s+below|hubspot/i.test(JSON.stringify(component)),
+        )
+      return components.length ? [{ ...column, components }] : []
+    })
+    return columns.length ? [{ ...block, columns }] : []
+  })
+
+export const articleDatesFromWordPress = (
+  post: Pick<SourcePost, 'acf' | 'publishedAt'>,
+): { displayDate: string | null; publishedAt: string | null } => {
+  const sourceDisplayDate = asString(post.acf.display_date)
+  const displayDate = /^\d{8}$/.test(sourceDisplayDate)
+    ? `${sourceDisplayDate.slice(0, 4)}-${sourceDisplayDate.slice(4, 6)}-${sourceDisplayDate.slice(6, 8)}T00:00:00.000Z`
+    : post.publishedAt
+
+  return {
+    displayDate,
+    publishedAt: post.publishedAt,
+  }
+}
+
 const mapPost = (
   post: SourcePost,
   coverage: TransformCoverage,
@@ -189,25 +312,41 @@ const mapPost = (
   links: ManagedLinkLookup,
 ): TargetRecord | null => {
   if (post.postType === 'page') {
+    const root = pilotRootByLegacyId.get(post.legacyId)
+    if (root?.targetOwner === 'redirects') return null
     const isInsights = post.legacyId === 9248
     const isNews = post.legacyId === 9244
     const isLearningHub = post.legacyId === 3311
-    const root = pilotRootByLegacyId.get(post.legacyId)
     const pageType =
       root && root.archetype in pageTypeByArchetype
         ? pageTypeByArchetype[root.archetype as keyof typeof pageTypeByArchetype]
         : 'standard'
-    const mappedLayout = mapPageLayout(
-      post.acf,
-      coverage,
-      {
-        appendArticleListing: isInsights || isNews,
-        articleFamily: isNews ? 'news' : 'insights',
-        appendLearningVideoListing: isLearningHub,
-      },
-      reusables,
-      links,
-    )
+    const usesArticleStyleSections =
+      root?.archetype === 'page.legal' &&
+      asArray(post.acf.sections_new).length === 0 &&
+      asArray(post.acf.sections).length > 0
+    const mappedLayout = usesArticleStyleSections
+      ? mapArticleLayout(post.acf.sections, coverage, links, reusables)
+      : mapPageLayout(
+          post.acf,
+          coverage,
+          {
+            appendArticleListing: isInsights || isNews,
+            articleFamily: isNews ? 'news' : 'insights',
+            appendLearningVideoListing: isLearningHub,
+            marketCoveragePresentation: post.legacyId === 1898 ? 'mapOnly' : undefined,
+            suppressedHeadingTexts:
+              post.legacyId === 1898 ? ['Why Trayport?', 'Who we serve'] : undefined,
+          },
+          reusables,
+          links,
+        )
+    const routeLayout =
+      post.legacyId === 2231
+        ? appendMarketMatrix(mappedLayout)
+        : post.legacyId === 34
+          ? removeDeferredContactFormPrompts(mappedLayout)
+          : mappedLayout
     const meta = seoFrom(post)
     if (post.legacyId === 7609) {
       meta.title = 'Frequently Asked Questions | Trayport'
@@ -217,7 +356,17 @@ const mapPost = (
     const data = {
       title: post.title,
       path: post.path || `/${post.slug}/`,
-      layout: ensurePageHero(post, mappedLayout),
+      layout: usesArticleStyleSections
+        ? [
+            {
+              blockType: 'trayportHero',
+              heading: htmlToPlainText(post.acf.article_header) || post.title,
+              actions: [],
+              appearance: 'light',
+            },
+            ...routeLayout,
+          ]
+        : ensurePageHero(post, routeLayout),
       publishedAt: post.publishedAt,
       pageType,
       meta,
@@ -237,10 +386,7 @@ const mapPost = (
     const categories = (post.taxonomies.category || []).map((id) =>
       legacyRef('article-category', id),
     )
-    const displayDate = asString(post.acf.display_date)
-    const normalizedDisplayDate = /^\d{8}$/.test(displayDate)
-      ? `${displayDate.slice(0, 4)}-${displayDate.slice(4, 6)}-${displayDate.slice(6, 8)}T00:00:00.000Z`
-      : post.publishedAt
+    const articleDates = articleDatesFromWordPress(post)
     const header = asObject(post.acf.article_header)
     const articleTitle = htmlToPlainText(
       asObject(header.header).text || header.text || post.acf.article_header || post.title,
@@ -255,19 +401,19 @@ const mapPost = (
           : 'insight'
     const data = {
       title: articleTitle || post.title,
-      slug: post.slug,
+      slug: normalizeTrayportSlug(post.slug),
       path: isFullArticle ? post.path || `/insights/${post.slug}/` : null,
       externalDestination: isFullArticle ? null : liveSourceURL(post.path),
       excerpt: post.excerpt,
       heroMedia: mediaToken(post.featuredMediaId),
-      publishedAt: normalizedDisplayDate,
+      ...articleDates,
       location: asString(post.acf.location),
       categories,
       articleType,
       contentMode: isFullArticle ? 'full' : 'listing',
       featured: isFeatured,
       featuredOrder: isFeatured ? post.featuredOrder : null,
-      layout: isFullArticle ? mapArticleLayout(post.acf.sections, coverage, links) : [],
+      layout: isFullArticle ? mapArticleLayout(post.acf.sections, coverage, links, reusables) : [],
       meta: seoFrom(post),
       _status: post.status === 'publish' ? 'published' : 'draft',
     }
@@ -307,7 +453,7 @@ const mapPost = (
       tags: [...new Set([...rawTags, ...stringTags])].map((label) => ({ label })),
       displayOrder: Number(asString(post.acf.order)) || 0,
       layout: [],
-      slug: post.slug,
+      slug: normalizeTrayportSlug(post.slug),
       path: isFull ? post.path || `/learning-hub-video/${post.slug}/` : null,
       publishedAt: post.publishedAt,
       meta: seoFrom(post),
@@ -337,7 +483,7 @@ const mapPost = (
     const firstMarker = markers[0]
     const data = {
       title: post.title,
-      slug: post.slug,
+      slug: normalizeTrayportSlug(post.slug),
       path: post.path || `/market-coverage/${post.slug}/`,
       contentMode: 'page',
       code: asString(post.acf.code),
@@ -372,36 +518,18 @@ const mapPost = (
     const isPublic = root?.archetype === 'venue.public-detail'
     const type = asObject(post.acf.type)
     const venueType = legacyRef('venue-type', type.venue_type)
-    const normalizedConnections = new Map<
-      number,
-      { connectionType: string; hub: LegacyReference }
-    >()
-    for (const value of asArray(post.acf.connections)) {
-      const connection = asObject(value)
-      const hubID = referenceId(connection.hub, 'post')
-      const hub = hubID ? legacyRef('hub', hubID) : null
-      if (!hubID || !hub) continue
-      const connectionType = asString(connection.type || connection.connection_type) || 'd'
-      const existing = normalizedConnections.get(hubID)
-      if (!existing || connectionType === 'b') {
-        normalizedConnections.set(hubID, { connectionType, hub })
-      }
-    }
-    const connectedHubs = [...normalizedConnections.keys()]
-      .map((legacyId) => allMapHubs.get(legacyId))
+    const normalizedConnections = venueConnectionsFromWordPress(post.acf.connections)
+    const connectedHubs = normalizedConnections
+      .map(({ hub }) => allMapHubs.get(hub.legacyId))
       .filter((value): value is Extract<SourceRecord, { entity: 'map-hub' }> => Boolean(value))
-    const summary = isPublic
-      ? asString(asObject(post.acf.page_settings).meta_description).trim()
-      : asString(post.acf.display_name) || post.title
     const data = {
       title: post.title,
-      slug: post.slug,
+      slug: normalizeTrayportSlug(post.slug),
       path: isPublic ? post.path || `/venue/${post.slug}/` : null,
       contentMode: isPublic ? 'page' : 'relationship-only',
-      summary,
-      description: isPublic ? htmlToLexical(summary) : undefined,
+      ...venueEditorialDataFromWordPress(post, isPublic),
       layout: [],
-      website: asString(post.acf.website),
+      website: venueWebsiteFromWordPress(post.acf.website),
       logo: mediaToken(post.acf.logo),
       venueTypes: venueType ? [venueType] : [],
       assetClasses: [
@@ -410,8 +538,7 @@ const mapPost = (
       regions: [...new Set(connectedHubs.map(({ regionLegacyId }) => regionLegacyId))].map((id) =>
         legacyRef('region', id),
       ),
-      marketConnections: [...normalizedConnections.values()],
-      meta: isPublic ? seoFrom(post) : undefined,
+      marketConnections: normalizedConnections,
       _status: post.status === 'publish' ? 'published' : 'draft',
     }
     return finalizeTarget({ target: 'venues', legacy: baseLegacy(post), data })
@@ -446,20 +573,24 @@ const buildMenuTree = (
     }))
 
 const normalizedCustomLinkURL = (value: string): string => {
-  const url = value.replace(/^https?:\/\/(?:www\.)?trayport\.local/, '') || '/'
-  if (!url.startsWith('/')) return url
-
-  const pathOnly = url.split(/[?#]/, 1)[0] || '/'
-  const collapsed = `/${pathOnly.replace(/^\/+/, '')}`.replace(/\/{2,}/g, '/')
-  return collapsed === '/' ? collapsed : `${collapsed.replace(/\/+$/, '')}/`
+  try {
+    return normalizeMigrationPath(value)
+  } catch {
+    return value
+  }
 }
 
-const customLink = (label: string, url: string, newTab = false): Record<string, unknown> => ({
-  label,
-  type: 'custom',
-  url: normalizedCustomLinkURL(url),
-  newTab,
-})
+const customLink = (label: string, url: string, newTab = false): Record<string, unknown> | null => {
+  const destination = migrationDestination(url)
+  return destination
+    ? {
+        label,
+        type: 'custom',
+        url: destination,
+        newTab,
+      }
+    : null
+}
 
 const optionItemLink = (value: unknown): Record<string, unknown> | null => {
   const item = asObject(value)
@@ -472,82 +603,314 @@ const optionItemLink = (value: unknown): Record<string, unknown> | null => {
   if (legacyId === 2233 || /commodities-report/i.test(url)) return null
   if (!label || !url) return null
 
+  if (legacyId === 2207) {
+    return customLink(label, '/company/careers/', asString(link.target) === '_blank')
+  }
+
   return customLink(label, url, asString(link.target) === '_blank')
 }
 
-const navigationFromOptions = (
+const footerIconByLegacyName = {
+  'address-card': 'companyProfile',
+  buildings: 'offices',
+  handshake: 'careers',
+  envelope: 'contact',
+  'grid-round-4': 'marketMatrix',
+  'earth-europe': 'regionEurope',
+  'earth-americas': 'regionNorthAmerica',
+  'earth-asia': 'regionAsiaPacific',
+  'file-pen': 'legalDocument',
+} as const
+
+const footerAccentFromColor = (value: unknown): 'cyan' | 'yellow' | 'orange' | 'white' => {
+  const color = asString(value).toLowerCase()
+  if (color.includes('#00c1d5')) return 'cyan'
+  if (color.includes('#f7ea48')) return 'yellow'
+  if (color.includes('#ff671f') || color.includes('#ff6021')) return 'orange'
+  return 'white'
+}
+
+const footerItemFromOption = (value: unknown): Record<string, unknown> | null => {
+  const item = asObject(value)
+  if (asString(item.acf_fc_layout) !== 'page_link') return null
+  const pageLink = asObject(item.page_link)
+  const link = optionItemLink(value)
+  if (!link) return null
+
+  const legacyIcon = asString(pageLink.icon)
+  const icon = footerIconByLegacyName[legacyIcon as keyof typeof footerIconByLegacyName]
+
+  return {
+    link,
+    ...(icon ? { icon } : {}),
+    accent: footerAccentFromColor(pageLink.color),
+  }
+}
+
+const navigationIconByLegacyName = {
+  'people-group': 'people',
+  buildings: 'offices',
+  'chart-user': 'tradingScreen',
+  'chart-network': 'network',
+  'diagram-project': 'connections',
+  'hexagon-nodes': 'connectivity',
+  code: 'code',
+  'code-compare': 'compare',
+  'chart-waterfall': 'waterfallChart',
+  'chart-candlestick': 'candlestickChart',
+  'calculator-simple': 'calculator',
+  users: 'users',
+  'money-bill-trend-up': 'marketAccess',
+  'message-quote': 'quote',
+  'chart-pie': 'pieChart',
+  ballot: 'ballot',
+  shield: 'shield',
+  lock: 'lock',
+  'file-csv': 'csvFile',
+  'building-lock': 'buildingSecurity',
+  file: 'file',
+  'lightbulb-on': 'power',
+  'fire-flame': 'gas',
+  coins: 'metals',
+  seedling: 'climate',
+  'fire-flame-simple': 'bulkMarkets',
+  'oil-well': 'oil',
+  earth: 'world',
+  'earth-americas': 'northAmerica',
+  'earth-europe': 'europe',
+  'earth-asia': 'asiaPacific',
+  video: 'video',
+  'grid-round-4': 'marketMatrix',
+  'map-location-dot': 'map',
+  'arrows-spin': 'lifecycle',
+  newspaper: 'news',
+  'calendar-days': 'calendar',
+  'magnifying-glass-chart': 'insight',
+  list: 'list',
+  envelope: 'email',
+  'monitor-waveform': 'demo',
+} as const
+
+const navigationAccentFromColor = (
+  value: unknown,
+): 'blue' | 'cyan' | 'green' | 'yellow' | 'orange' | undefined => {
+  const color = asString(value).toLowerCase()
+  if (color.includes('#00c1d5')) return 'cyan'
+  if (color.includes('#32b77b')) return 'green'
+  if (color.includes('#f7ea48')) return 'yellow'
+  if (color.includes('#ff671f') || color.includes('#ff6021')) return 'orange'
+  if (color.includes('#009cde') || color.includes('#52afde')) return 'blue'
+}
+
+const navigationItemFromOption = (value: unknown): Record<string, unknown> | null => {
+  const item = asObject(value)
+  const pageLink = asObject(item.page_link)
+  const linked = optionItemLink(value)
+  if (!linked) return null
+
+  const { label, ...link } = linked
+  const legacyIcon = asString(pageLink.icon || item.icon).trim()
+  const icon = navigationIconByLegacyName[legacyIcon as keyof typeof navigationIconByLegacyName]
+  const kind = asString(item.acf_fc_layout) === 'menu_feature' ? 'feature' : 'link'
+  const sourceDescription = htmlToPlainText(item.text)
+  const media = kind === 'feature' ? mediaToken(item.image) : null
+
+  return {
+    kind,
+    label,
+    link,
+    ...(sourceDescription && sourceDescription !== label ? { description: sourceDescription } : {}),
+    ...(icon ? { icon } : {}),
+    ...(navigationAccentFromColor(pageLink.color)
+      ? { accent: navigationAccentFromColor(pageLink.color) }
+      : kind === 'feature'
+        ? { accent: 'blue' }
+        : {}),
+    ...(media ? { media } : {}),
+  }
+}
+
+const navigationGroupFromOption = (value: unknown): Record<string, unknown> | null => {
+  const block = asObject(value)
+  const sourceItems = asArray(block.menu_items)
+  const section = sourceItems
+    .map(asObject)
+    .find((item) => asString(item.acf_fc_layout) === 'menu_section_title')
+  const sectionLink = asObject(section?.link)
+  const items = sourceItems
+    .filter((item) => asString(asObject(item).acf_fc_layout) !== 'menu_section_title')
+    .map(navigationItemFromOption)
+    .filter((item): item is Record<string, unknown> => Boolean(item))
+
+  if (!items.length) return null
+
+  const featureGroup = items.every(({ kind }) => kind === 'feature')
+  const title = featureGroup
+    ? ''
+    : htmlToPlainText(section?.title || sectionLink.title || sectionLink.name)
+  const linkedTitle = sectionLink.url ? optionItemLink({ page_link: { link: sectionLink } }) : null
+  const titleLink = linkedTitle
+    ? Object.fromEntries(Object.entries(linkedTitle).filter(([key]) => key !== 'label'))
+    : null
+  const sourceSpan = asString(block.acfe_layout_col)
+  const span = ['2', '3', '4', '6'].includes(sourceSpan) ? sourceSpan : 'auto'
+
+  return {
+    ...(title ? { title } : {}),
+    ...(titleLink ? { titleLink } : {}),
+    span,
+    items,
+  }
+}
+
+export const navigationFromOptions = (
   options: Extract<SourceRecord, { entity: 'options' }> | undefined,
 ): Record<string, unknown> => {
   const dropdowns = asArray(options?.values.dropdown)
   const primaryItems = dropdowns.map((value) => {
     const dropdown = asObject(value)
     const title = htmlToPlainText(dropdown.title)
-    const children = asArray(dropdown.menu_block).flatMap((blockValue) => {
-      const block = asObject(blockValue)
-      return asArray(block.menu_items)
-        .map(optionItemLink)
-        .filter((item): item is Record<string, unknown> => Boolean(item))
-        .map(({ label, ...link }) => ({
-          label,
-          link,
-        }))
-    })
+    const groups = asArray(dropdown.menu_block)
+      .map(navigationGroupFromOption)
+      .filter((group): group is Record<string, unknown> => Boolean(group))
+    const children = groups.flatMap((group) =>
+      asArray(group.items).map((value) => {
+        const item = asObject(value)
+        return {
+          label: item.label,
+          description: item.description,
+          link: item.link,
+        }
+      }),
+    )
     const rootURL =
       asString(dropdown.for_page) ||
       (title ? `/${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/` : '/')
-    const rootLink = {
-      type: 'custom',
-      url: rootURL.replace(/^https?:\/\/(?:www\.)?trayport\.local/, '') || '/',
-      newTab: false,
-    }
+    const rootDestination = migrationDestination(rootURL)
+    const rootLink = rootDestination
+      ? {
+          type: 'custom',
+          url: rootDestination,
+          newTab: false,
+        }
+      : null
 
     return {
       label: title,
-      link: rootLink,
+      ...(rootLink ? { link: rootLink } : {}),
+      groups,
       children,
     }
   })
 
   return {
     primaryItems,
-    utilityItems: [],
-    primaryAction: {
-      link: customLink('Contact', '/contact/'),
-    },
+    utilityItems: [
+      { label: 'See Joule', url: '/products/joule/', icon: 'playCircle' },
+      { label: 'Request A Demo', url: '/request-a-demo/', icon: 'calendar' },
+      { label: 'Contact Us', url: '/contact/', icon: 'messages' },
+    ].flatMap(({ icon, label, url }) => {
+      const link = customLink(label, url)
+      return link ? [{ link, icon }] : []
+    }),
   }
 }
 
-const footerFromOptions = (
+export const footerFromOptions = (
   options: Extract<SourceRecord, { entity: 'options' }> | undefined,
 ): Record<string, unknown> => {
   const footer = asObject(options?.values.footer_new)
-  const fallbackTitles = ['Company', 'Resources', 'Legal']
-  const columns = asArray(footer.menu_block).map((blockValue, index) => {
+  const columns = asArray(footer.menu_block).map((blockValue) => {
     const block = asObject(blockValue)
     const sourceItems = asArray(block.menu_items)
     const section = sourceItems
       .map(asObject)
       .find((item) => asString(item.acf_fc_layout) === 'menu_section_title')
     const sectionLink = asObject(section?.link)
-    const title =
-      htmlToPlainText(section?.title || sectionLink.title || sectionLink.name) ||
-      fallbackTitles[index] ||
-      `Links ${index + 1}`
+    const title = htmlToPlainText(section?.title || sectionLink.title || sectionLink.name)
+    const rawTitleLink = sectionLink.url
+      ? optionItemLink({ page_link: { link: sectionLink } })
+      : null
+    const titleLink = rawTitleLink
+      ? Object.fromEntries(Object.entries(rawTitleLink).filter(([key]) => key !== 'label'))
+      : null
     const links = sourceItems
-      .map(optionItemLink)
+      .map(footerItemFromOption)
       .filter((item): item is Record<string, unknown> => Boolean(item))
-      .map((link) => ({ link }))
 
-    return { title, links }
+    return {
+      ...(title ? { title } : {}),
+      ...(titleLink ? { titleLink } : {}),
+      links,
+    }
   })
   const legal = asObject(options?.values.legal)
+  const address = asString(legal.address)
+  const companyNumber = asString(legal.company_number)
+  const companyRegistrationText =
+    asString(options?.values.footer_company_registration_text) ||
+    (companyNumber && address
+      ? `Trayport Limited is a private limited company registered in England and Wales (Registered No. ${companyNumber} ) whose registered office is ${address}`
+      : '')
 
   return {
-    intro: htmlToPlainText(legal.disclaimer),
+    intro: htmlToMultilinePlainText(legal.disclaimer),
     columns,
     legalLinks: [],
-    copyright: `Company no. ${asString(legal.company_number)} · © {year} Trayport`,
+    copyright: 'Copyright © {year} Trayport Limited',
+    companyRegistrationText,
+    parentCompanyText:
+      asString(options?.values.footer_parent_company_text) ||
+      'Trayport Holdings Limited is a wholly-owned subsidiary of TMX Group Limited (TMX Group).',
     certificationMarks: [],
+  }
+}
+
+export const siteSettingsFromOptions = (
+  options: Extract<SourceRecord, { entity: 'options' }> | undefined,
+): Record<string, unknown> => {
+  const legal = asObject(options?.values.legal)
+  const cookieNotice = asObject(options?.values.cookie_notice)
+  const cookiePolicyPath = asString(cookieNotice.policy_path)
+  const normalizedCookiePolicyPath = normalizedCustomLinkURL(cookiePolicyPath)
+  const managedCookiePolicy = pilotScope.roots.find(
+    (root) => root.targetOwner === 'pages' && root.path === normalizedCookiePolicyPath,
+  )
+
+  return {
+    siteName: 'Trayport',
+    tagline: htmlToPlainText(legal.disclaimer),
+    defaultSEO: {
+      titleSuffix: ' | Trayport',
+      description: 'Trayport connects traders, brokers and exchanges across global energy markets.',
+    },
+    contact: {
+      address: asString(legal.address),
+    },
+    socialLinks: [
+      {
+        platform: 'linkedin',
+        label: 'LinkedIn',
+        url: 'https://uk.linkedin.com/company/trayport',
+      },
+      {
+        platform: 'x',
+        label: 'X',
+        url: 'https://x.com/Trayport',
+      },
+    ],
+    cookieNotice: {
+      enabled: asBoolean(cookieNotice.enabled),
+      title: htmlToPlainText(cookieNotice.title),
+      message: htmlToPlainText(cookieNotice.message),
+      ...(managedCookiePolicy
+        ? { policyPage: legacyRef('page', managedCookiePolicy.legacyId) }
+        : {}),
+      policyURL: normalizedCookiePolicyPath,
+      policyLinkLabel: htmlToPlainText(cookieNotice.policy_label),
+      acceptLabel: htmlToPlainText(cookieNotice.accept_label),
+      rejectLabel: htmlToPlainText(cookieNotice.reject_label),
+    },
   }
 }
 
@@ -564,7 +927,7 @@ const mapHubTarget = (hub: Extract<SourceRecord, { entity: 'map-hub' }>): Target
   const firstMarker = markers[0]
   const data = {
     title: hub.title,
-    slug: hub.slug,
+    slug: normalizeTrayportSlug(hub.slug),
     contentMode: 'map-only',
     externalDestination: hub.path ? liveSourceURL(hub.path) : null,
     marketDataKey: `wordpress-hub:${hub.legacyId}`,
@@ -622,6 +985,18 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
       )
       .map((record) => [record.legacyId, record]),
   )
+  const videoPosterByMediaId = new Map<number, number>(
+    records
+      .filter(
+        (record): record is Extract<SourceRecord, { entity: 'reusable' }> =>
+          record.entity === 'reusable' && record.postType === 'videos',
+      )
+      .flatMap((record) => {
+        const videoId = referenceId(record.data.video, 'media')
+        const posterId = referenceId(record.data.image, 'media')
+        return videoId && posterId ? [[videoId, posterId] as const] : []
+      }),
+  )
   const mapHubs = new Map(
     records
       .filter(
@@ -635,20 +1010,25 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
       .filter(
         (record): record is Extract<SourceRecord, { entity: 'post' }> => record.entity === 'post',
       )
-      .flatMap((record) => {
+      .flatMap((record): Array<[number, ManagedLinkTarget]> => {
+        const root = pilotRootByLegacyId.get(record.legacyId)
+        if (!root) return []
+        if (root.targetOwner === 'redirects') {
+          return [[record.legacyId, { url: root.path }]]
+        }
         const target =
-          record.postType === 'page'
+          root.targetOwner === 'pages'
             ? { kind: 'page' as const, relationTo: 'pages' as const }
-            : record.postType === 'post'
+            : root.targetOwner === 'articles'
               ? { kind: 'article' as const, relationTo: 'articles' as const }
-              : record.postType === 'hub'
+              : root.targetOwner === 'hubs'
                 ? { kind: 'hub' as const, relationTo: 'hubs' as const }
-                : record.postType === 'venue'
+                : root.targetOwner === 'venues'
                   ? { kind: 'venue' as const, relationTo: 'venues' as const }
-                  : record.postType === 'learning-hub-video'
+                  : root.targetOwner === 'learning-videos'
                     ? { kind: 'learning-video' as const, relationTo: 'learning-videos' as const }
                     : null
-        return target ? ([[record.legacyId, target]] as const) : []
+        return target ? [[record.legacyId, target]] : []
       }),
   )
 
@@ -710,6 +1090,7 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
     }
 
     if (record.entity === 'media') {
+      const posterLegacyId = videoPosterByMediaId.get(record.legacyId)
       const data = {
         title: record.title,
         alt: record.alt || record.title,
@@ -719,8 +1100,10 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
         externalURL: record.availability === 'unavailable' ? record.url : '',
         sourceFileHash: record.fileHash,
         source: {
+          fileSize: record.fileSize,
           fileHash: record.fileHash,
           relativePath: record.relativePath,
+          recoveryURL: record.recoveryURL,
           originalURL: record.url,
           mimeType: record.mimeType,
           width: record.width,
@@ -729,6 +1112,7 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
           availabilityReason: record.availabilityReason,
           needsAltReview: record.needsAltReview,
         },
+        ...(posterLegacyId ? { poster: legacyRef('media', posterLegacyId) } : {}),
       }
       targets.push(
         finalizeTarget({
@@ -754,7 +1138,7 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
       }
       const data = {
         title: record.name,
-        slug: record.slug,
+        slug: normalizeTrayportSlug(record.slug),
         description: record.description,
         ...(target === 'regions'
           ? {}
@@ -822,32 +1206,36 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
     )
   }
 
+  const requestDemo = records.find(
+    (record): record is SourcePost =>
+      record.entity === 'post' &&
+      record.postType === 'page' &&
+      record.legacyId === requestDemoTemporaryRedirect.legacyId,
+  )
+  if (requestDemo) {
+    targets.push(
+      finalizeTarget({
+        target: 'redirects',
+        legacy: baseLegacy(requestDemo),
+        data: {
+          from: requestDemoTemporaryRedirect.from,
+          to: {
+            type: 'reference',
+            reference: {
+              relationTo: 'pages',
+              value: legacyRef('page', requestDemoTemporaryRedirect.toLegacyId),
+            },
+          },
+          type: requestDemoTemporaryRedirect.type,
+        },
+      }),
+    )
+  }
+
   const options = records.find(
     (record): record is Extract<SourceRecord, { entity: 'options' }> => record.entity === 'options',
   )
-  const settingsData = {
-    siteName: 'Trayport',
-    tagline: htmlToPlainText(asObject(options?.values.legal).disclaimer),
-    defaultSEO: {
-      titleSuffix: ' | Trayport',
-      description: 'Trayport connects traders, brokers and exchanges across global energy markets.',
-    },
-    contact: {
-      address: asString(asObject(options?.values.legal).address),
-    },
-    socialLinks: [
-      {
-        platform: 'linkedin',
-        label: 'LinkedIn',
-        url: 'https://uk.linkedin.com/company/trayport',
-      },
-      {
-        platform: 'x',
-        label: 'X',
-        url: 'https://x.com/Trayport',
-      },
-    ],
-  }
+  const settingsData = siteSettingsFromOptions(options)
   targets.push(
     finalizeTarget({
       target: 'global',

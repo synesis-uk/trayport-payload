@@ -98,15 +98,17 @@ export const sourceMediaSchema = baseRecordSchema.extend({
   caption: z.string(),
   description: z.string(),
   mimeType: z.string(),
+  fileSize: z.number().int().positive().nullable().default(null),
   fileHash: z
     .string()
     .regex(/^[a-f0-9]{64}$/)
     .nullable(),
   url: z.string().url().nullable(),
   relativePath: z.string().nullable(),
+  recoveryURL: z.string().url().nullable().default(null),
   width: z.number().int().positive().nullable(),
   height: z.number().int().positive().nullable(),
-  availability: z.enum(['local', 'unavailable']),
+  availability: z.enum(['local', 'recovered', 'unavailable']),
   availabilityReason: z
     .enum(['unsupported-object-storage-path', 'missing-or-unreadable-local-file'])
     .nullable(),

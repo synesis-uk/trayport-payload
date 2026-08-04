@@ -102,9 +102,16 @@
     "routeOwners": [
       {
         "id": "page-documents",
-        "count": 51,
+        "count": 50,
         "sourceType": "page",
         "targetOwner": "pages",
+        "ownership": "payload-document"
+      },
+      {
+        "id": "temporary-contact-redirect",
+        "count": 1,
+        "sourceType": "page",
+        "targetOwner": "redirects",
         "ownership": "payload-document"
       },
       {
@@ -174,6 +181,7 @@
         "actions",
         "media",
         "featureList",
+        "standaloneIcon",
         "statistics",
         "faq",
         "entityList",
@@ -184,7 +192,8 @@
         "marketCoverage",
         "embed",
         "dataChart",
-        "office"
+        "office",
+        "marketMatrix"
       ]
     },
     "planned": [
@@ -247,48 +256,6 @@
         ],
         "implementationStatus": "planned",
         "description": "Structured lifecycle stages and their managed supporting content."
-      },
-      {
-        "id": "market-matrix",
-        "kind": "block",
-        "placement": "section-component",
-        "targetBlockType": "marketMatrix",
-        "sourceLayouts": [
-          {
-            "scope": "component",
-            "source": "market-matrix"
-          }
-        ],
-        "implementationStatus": "planned",
-        "description": "Interactive market matrix driven by managed hub and venue route owners."
-      },
-      {
-        "id": "markets-map",
-        "kind": "block",
-        "placement": "section-component",
-        "targetBlockType": "marketsMap",
-        "sourceLayouts": [
-          {
-            "scope": "component",
-            "source": "markets-map"
-          }
-        ],
-        "implementationStatus": "planned",
-        "description": "Interactive markets map backed by routable hubs and managed regional relationships."
-      },
-      {
-        "id": "regions",
-        "kind": "block",
-        "placement": "section-component",
-        "targetBlockType": "regions",
-        "sourceLayouts": [
-          {
-            "scope": "component",
-            "source": "regions"
-          }
-        ],
-        "implementationStatus": "planned",
-        "description": "Curated region listing that resolves managed region and hub relationships."
       },
       {
         "id": "cookie-preferences",
@@ -431,6 +398,17 @@
         "publish",
         "schedule-publish"
       ],
+      "implementationStatus": "passing",
+      "gap": null
+    },
+    {
+      "id": "redirect.temporary-contact",
+      "collection": "redirects",
+      "discriminator": null,
+      "routePolicy": "required",
+      "contentOwner": "temporary-managed-redirect",
+      "allowedTopLevelBlocks": [],
+      "editorCapabilities": ["manage-redirects"],
       "implementationStatus": "passing",
       "gap": null
     },
@@ -834,8 +812,8 @@
       "scope": "component",
       "source": "products",
       "disposition": "consolidate",
-      "targets": ["entityList"],
-      "reason": "Flatten reusable product records into the shared entity-list shape."
+      "targets": ["featureList"],
+      "reason": "Flatten reusable product records into image feature tiles with bounded actions."
     },
     {
       "scope": "component",
@@ -931,23 +909,23 @@
     {
       "scope": "component",
       "source": "markets-map",
-      "disposition": "map",
-      "targets": ["marketsMap"],
-      "reason": "Replace the legacy map with a managed interactive view of regions and routable hubs."
+      "disposition": "consolidate",
+      "targets": ["marketCoverage"],
+      "reason": "Consolidate the legacy markets map into the implemented managed market-coverage map presentation."
     },
     {
       "scope": "component",
       "source": "regions",
-      "disposition": "map",
-      "targets": ["regions"],
-      "reason": "Preserve the curated region listing through managed region and hub relationships."
+      "disposition": "consolidate",
+      "targets": ["featureList"],
+      "reason": "Consolidate the curated region listing into linked feature-list items backed by managed region pages."
     },
     {
       "scope": "component",
       "source": "icon",
-      "disposition": "omit",
-      "targets": [],
-      "reason": "The decorative legacy icon is presentation-only and is selected by the target component."
+      "disposition": "map",
+      "targets": ["standaloneIcon"],
+      "reason": "Map the three in-scope volume-card icons to bounded semantic Font Awesome roles."
     },
     {
       "scope": "shortcode",
@@ -1154,7 +1132,7 @@
       "systemOfRecord": "payload",
       "domainOwner": "editorial",
       "routeNamespace": null,
-      "contentResponsibility": "Primary navigation, dropdowns, utility links, and primary action."
+      "contentResponsibility": "Primary navigation, dropdowns, and shared utility links."
     },
     {
       "resource": "footer",
@@ -1387,7 +1365,7 @@
       "severity": "blocker",
       "status": "passing",
       "enforcement": "production-inventory-verification",
-      "assertion": "A reproducible production inventory proves the approved 296 public routes: 51 page documents, two virtual indexes, 90 posts, 66 venues, 72 hubs, and 15 learning videos, with FAQ included and Commodities Report excluded.",
+      "assertion": "A reproducible production inventory proves the approved 296 public routes: 51 WordPress page identities (50 target Pages plus one temporary Redirect), two virtual indexes, 90 posts, 66 venues, 72 hubs, and 15 learning videos, with FAQ included and Commodities Report excluded.",
       "evidence": [
         "migration/scopes/production.ts",
         "migration/inventory/contracts.ts",
@@ -1413,7 +1391,7 @@
         "src/fields/contentPath.ts",
         "src/collections/RouteRegistry.ts",
         "src/routing/registry.ts",
-        "src/app/(frontend)/contentRoute.tsx",
+        "src/app/(frontend)/contentRoute.loader.server.ts",
         "src/database/migrations/20260730_002734_routable_content_foundation.ts",
         "tests/int/route-registry.int.spec.ts",
         "docs/architecture.md"
@@ -1472,7 +1450,7 @@
         "src/collections/Venues.ts",
         "src/collections/LearningVideos.ts",
         "src/components/Trayport/ContentViews.tsx",
-        "src/app/(frontend)/contentRoute.tsx"
+        "src/app/(frontend)/contentRoute.renderer.tsx"
       ],
       "remediation": "Populate the implemented owners with complete bodies, parity fields, and route metadata for all 90 posts, 72 hubs, 66 venues, and 15 learning videos; validate every listing destination against the shared route registry and approved access policy."
     },
@@ -1482,7 +1460,7 @@
       "severity": "blocker",
       "status": "blocked",
       "enforcement": "contract-only",
-      "assertion": "Structural column handling and the form, checklist, lifecycle, market-matrix, office, markets-map, regions, and cookie-preferences targets have Payload schemas, importer mappings, renderers, and behavior tests.",
+      "assertion": "Structural column handling and the form, checklist, lifecycle, and cookie-preferences targets have Payload schemas, importer mappings, renderers, and behavior tests.",
       "evidence": [
         "migration/mappings/content-architecture.v1.json",
         "migration/transform/blocks.ts",
@@ -1574,7 +1552,7 @@
         "migration/sql/001_market_volume_monthly.sql",
         "migration/load/marketData.ts",
         "src/blocks/Trayport/components.ts",
-        "src/components/Trayport/marketData.ts"
+        "src/data/market-data/loadMarketData.server.ts"
       ],
       "remediation": null
     },

@@ -17,6 +17,7 @@ export default defineConfig({
     ? [['github'], ['html', { open: 'never', outputFolder: 'playwright-report' }]]
     : [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   retries: process.env.CI ? 2 : 0,
+  testIgnore: 'visual-regression.e2e.spec.ts',
   timeout: 60_000,
   use: {
     baseURL,

@@ -12,10 +12,10 @@ import { normalizeContentPath } from '@/fields/contentPath'
 import {
   encodePathRedirectApproval,
   type ContentRouteCollection,
+  getRouteMutation,
   type PathRedirectApproval,
   resolveArchetype,
   type RouteArchetypeID,
-  takeRouteMutation,
 } from './archetypes'
 
 type UnknownRecord = Record<string, unknown>
@@ -88,7 +88,6 @@ const findClaims = async (
   const result = await req.payload.find({
     collection: 'route-registry',
     depth: 0,
-    limit: 10,
     overrideAccess: true,
     pagination: false,
     req,
@@ -302,7 +301,9 @@ export const syncRoutableRoute = (
     const document = asRecord(doc)
     const previous = asRecord(previousDoc)
     const documentID = document.id as number | string
-    const mutation = takeRouteMutation({
+    // Leave the classified mutation available for the following cache hook.
+    // That hook consumes it after route synchronization succeeds.
+    const mutation = getRouteMutation({
       collection,
       context: req.context as Record<string, unknown>,
       document,

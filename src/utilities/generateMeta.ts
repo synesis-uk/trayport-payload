@@ -6,6 +6,7 @@ import { getServerSideURL } from './getURL'
 import { mergeOpenGraph } from './mergeOpenGraph'
 
 type ContentDocument = {
+  byline?: string | null
   excerpt?: string | null
   heroMedia?: Media | number | null
   intro?: string | null
@@ -19,6 +20,7 @@ type ContentDocument = {
     title?: string | null
   } | null
   path?: string | null
+  publishedAt?: string | null
   summary?: string | null
   title?: string | null
   video?: Media | number | null
@@ -47,9 +49,11 @@ const withSuffix = (title: string, suffix: string) => {
 const trimmed = (value?: string | null) => value?.trim() || undefined
 
 export const generateMeta = async ({
+  contentType = 'website',
   doc,
   settings,
 }: {
+  contentType?: 'article' | 'website'
   doc: ContentDocument | null
   settings?: SiteSetting | null
 }): Promise<Metadata> => {
@@ -74,19 +78,33 @@ export const generateMeta = async ({
     getImageURL(doc.video, true)
   const path = trimmed(typeof doc.path === 'string' ? doc.path : undefined) || '/'
   const canonical = absoluteURL(trimmed(doc.meta?.canonicalURL) || path)
+  const author = trimmed(doc.byline)
+  const publishedTime = trimmed(doc.publishedAt)
+  const openGraph =
+    contentType === 'article'
+      ? mergeOpenGraph({
+          ...(description ? { description } : {}),
+          authors: author ? [author] : undefined,
+          images: image ? [{ url: image }] : undefined,
+          publishedTime,
+          title,
+          type: 'article',
+          url: canonical,
+        })
+      : mergeOpenGraph({
+          ...(description ? { description } : {}),
+          images: image ? [{ url: image }] : undefined,
+          title,
+          type: 'website',
+          url: canonical,
+        })
 
   return {
     alternates: {
       canonical,
     },
     description,
-    openGraph: mergeOpenGraph({
-      description: description || '',
-      images: image ? [{ url: image }] : undefined,
-      title,
-      type: 'website',
-      url: canonical,
-    }),
+    openGraph,
     robots:
       doc.meta?.noIndex || doc.meta?.noFollow
         ? {

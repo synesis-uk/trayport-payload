@@ -242,6 +242,12 @@ export interface Page {
  */
 export interface TrayportHeroBlock {
   eyebrow?: string | null;
+  /**
+   * Optional compact label displayed above the hero heading.
+   */
+  badgeLabel?: string | null;
+  badgeIcon?: ('people' | 'tradingScreen') | null;
+  badgeTone?: ('secondary' | 'info') | null;
   heading: string;
   body?: {
     root: {
@@ -260,6 +266,7 @@ export interface TrayportHeroBlock {
   } | null;
   media?: (number | null) | Media;
   externalVideoURL?: string | null;
+  mediaAspect?: ('twoToOne' | 'sixteenToNine') | null;
   actions?:
     | {
         label: string;
@@ -289,7 +296,11 @@ export interface TrayportHeroBlock {
           url?: string | null;
           newTab?: boolean | null;
         };
-        style: 'primary' | 'secondary' | 'link';
+        /**
+         * Optional semantic leading icon. The trailing destination indicator is automatic.
+         */
+        icon?: ('arrowRight' | 'chart' | 'europe' | 'forward' | 'people' | 'play' | 'settings') | null;
+        style: 'primary' | 'secondary' | 'accent' | 'info' | 'link';
         id?: string | null;
       }[]
     | null;
@@ -303,6 +314,9 @@ export interface TrayportHeroBlock {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Image displays the selected media behind the hero. Dark and Light are text-led treatments and do not display hero media.
+   */
   appearance: 'dark' | 'image' | 'light';
   id?: string | null;
   blockName?: string | null;
@@ -347,7 +361,7 @@ export interface Media {
   } | null;
   attribution?: string | null;
   /**
-   * Optional externally hosted source, primarily for video.
+   * Optional reviewed CDN source. Legacy local-source URLs remain as migration provenance but are never rendered.
    */
   externalURL?: string | null;
   sourceFileHash?: string | null;
@@ -489,6 +503,10 @@ export interface Article {
    */
   featuredOrder?: number | null;
   /**
+   * Editorial date shown on cards and listings. Year filters use Published At; Published At is also the display fallback when this is empty.
+   */
+  displayDate?: string | null;
+  /**
    * Display name only. WordPress user accounts are deliberately not migrated.
    */
   byline?: string | null;
@@ -555,24 +573,38 @@ export interface Article {
  */
 export interface ContentSectionBlock {
   anchor?: string | null;
-  theme: 'light' | 'softBlue' | 'dark' | 'white';
+  surfaceTone?: ('none' | 'white' | 'softBlue' | 'dark') | null;
   wrapperTheme: 'none' | 'softBlue' | 'green' | 'dark';
-  appearance: 'default' | 'inset';
   /**
    * Optional managed background asset; presentation and opacity remain bounded.
    */
   backgroundMedia?: (number | null) | Media;
   backgroundOpacity: 'none' | '10' | '20' | '50';
+  surfaceRadius?: ('default' | 'xl') | null;
+  surfacePadding?: ('none' | 'medium') | null;
   width: 'reading' | 'standard' | 'wide' | 'full';
-  spacing: 'compact' | 'regular' | 'generous';
+  spacingTop?: ('tight' | 'regular' | 'large') | null;
+  spacingBottom?: ('tight' | 'regular' | 'large') | null;
+  columnGap?: ('tight' | 'regular') | null;
   columns: {
     span: '4' | '6' | '8' | '12';
+    horizontalAlign?: ('left' | 'center') | null;
+    verticalAlign?: ('start' | 'center') | null;
+    heightMode?: ('fill' | 'content') | null;
+    componentGap?: ('none' | 'regular') | null;
+    padding?: ('none' | 'medium') | null;
+    surface?: ('none' | 'muted' | 'soft') | null;
+    border?: ('none' | 'subtle') | null;
+    backgroundMedia?: (number | null) | Media;
+    backgroundOpacity?: ('none' | '10' | '20' | '50') | null;
+    radius?: ('default' | 'xl') | null;
     components: (
       | HeadingComponent
       | RichTextComponent
       | ActionsComponent
       | TrayportMediaComponent
       | FeatureListComponent
+      | StandaloneIconComponent
       | StatisticsComponent
       | FAQComponent
       | EntityListComponent
@@ -583,6 +615,7 @@ export interface ContentSectionBlock {
       | MarketCoverageComponent
       | EmbedComponent
       | DataChartComponent
+      | MarketMatrixComponent
       | OfficeComponent
     )[];
     id?: string | null;
@@ -599,6 +632,10 @@ export interface HeadingComponent {
   eyebrow?: string | null;
   text: string;
   level: 'h2' | 'h3' | 'h4';
+  /**
+   * Visual scale is independent from the semantic heading level.
+   */
+  appearance?: ('h1' | 'h2' | 'h3' | 'h4') | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'heading';
@@ -662,7 +699,11 @@ export interface ActionsComponent {
           url?: string | null;
           newTab?: boolean | null;
         };
-        style: 'primary' | 'secondary' | 'link';
+        /**
+         * Optional semantic leading icon. The trailing destination indicator is automatic.
+         */
+        icon?: ('arrowRight' | 'chart' | 'europe' | 'forward' | 'people' | 'play' | 'settings') | null;
+        style: 'primary' | 'secondary' | 'accent' | 'info' | 'link';
         id?: string | null;
       }[]
     | null;
@@ -717,7 +758,7 @@ export interface Hub {
       | null;
   };
   /**
-   * Editorial connectivity only. Pricing and time-series market data remain outside the CMS.
+   * Legacy derived projection retained for migration provenance. Edit connectivity on each Venue; the market matrix reads Venue connections only.
    */
   connections?:
     | {
@@ -1159,8 +1200,9 @@ export interface TrayportMediaComponent {
  * via the `definition` "FeatureListComponent".
  */
 export interface FeatureListComponent {
-  layout?: ('grid' | 'stacked' | 'logos') | null;
+  presentation: 'grid' | 'carousel' | 'leadCarousel';
   items: {
+    display: 'plain' | 'image' | 'icon';
     title?: string | null;
     body?: {
       root: {
@@ -1206,11 +1248,27 @@ export interface FeatureListComponent {
       url?: string | null;
       newTab?: boolean | null;
     };
+    /**
+     * Show the link as an action when a valid destination is configured.
+     */
+    showAction: boolean;
+    actionStyle: 'primary' | 'secondary' | 'accent' | 'info' | 'link';
+    actionIcon?: ('arrowRight' | 'chart' | 'europe' | 'forward' | 'people' | 'play' | 'settings') | null;
     id?: string | null;
   }[];
   id?: string | null;
   blockName?: string | null;
   blockType: 'featureList';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "StandaloneIconComponent".
+ */
+export interface StandaloneIconComponent {
+  icon: 'gas' | 'power' | 'emissions';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'standaloneIcon';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1397,6 +1455,10 @@ export interface DividerComponent {
  * via the `definition` "MarketCoverageComponent".
  */
 export interface MarketCoverageComponent {
+  /**
+   * Map only is intended for a map beside an existing managed introduction. Map with summary includes this block’s own title, body, regions and actions.
+   */
+  presentation: 'mapOnly' | 'summary';
   title?: string | null;
   body?: {
     root: {
@@ -1424,7 +1486,13 @@ export interface MarketCoverageComponent {
   lineColor: '#1f2a44' | '#002d72' | '#0057b8' | '#009cde' | '#00c1d5' | '#32b77b' | '#ff671f' | '#f7ea48';
   lineWidth: number;
   lineOpacity: number;
+  /**
+   * Retained for migration provenance; the active schematic uses regions only.
+   */
   assetClasses?: (number | AssetClass)[] | null;
+  /**
+   * Retained for migration provenance; the active schematic uses regions only.
+   */
   venueTypes?: (number | VenueType)[] | null;
   regions?: (number | Region)[] | null;
   actions?:
@@ -1456,7 +1524,11 @@ export interface MarketCoverageComponent {
           url?: string | null;
           newTab?: boolean | null;
         };
-        style: 'primary' | 'secondary' | 'link';
+        /**
+         * Optional semantic leading icon. The trailing destination indicator is automatic.
+         */
+        icon?: ('arrowRight' | 'chart' | 'europe' | 'forward' | 'people' | 'play' | 'settings') | null;
+        style: 'primary' | 'secondary' | 'accent' | 'info' | 'link';
         id?: string | null;
       }[]
     | null;
@@ -1471,6 +1543,9 @@ export interface MarketCoverageComponent {
 export interface EmbedComponent {
   title?: string | null;
   url: string;
+  /**
+   * Reserved for a future managed embed-preview implementation.
+   */
   poster?: (number | null) | Media;
   id?: string | null;
   blockName?: string | null;
@@ -1482,11 +1557,37 @@ export interface EmbedComponent {
  */
 export interface DataChartComponent {
   title: string;
-  dataType: 'volume' | 'price' | 'other';
+  /**
+   * Metric read from the application market-data store.
+   */
+  dataType: 'volume' | 'price';
+  /**
+   * Chart presentation supported by the selected series dimension.
+   */
   chartType: 'stackedColumn' | 'column' | 'line';
+  /**
+   * Group each series by execution type or by market hub.
+   */
+  seriesDimension: 'executionType' | 'hub';
+  /**
+   * Aggregate and label points by month, quarter, or year.
+   */
+  displayInterval: 'month' | 'quarter' | 'year';
   unit?: string | null;
   /**
-   * Application-data lookup key. Chart series remain outside the editorial CMS.
+   * Select the managed asset class whose facts are read from the application market-data store.
+   */
+  assetClass: number | AssetClass;
+  /**
+   * Optional allow-list for hub-series charts. Leave empty to include all hubs.
+   */
+  includedHubs?: (number | Hub)[] | null;
+  /**
+   * Optional deny-list for hub-series charts.
+   */
+  excludedHubs?: (number | Hub)[] | null;
+  /**
+   * Imported application-data lookup key retained for migration provenance and older drafts.
    */
   assetClassLegacyId?: number | null;
   accessibleSummary?: string | null;
@@ -1510,6 +1611,37 @@ export interface DataChartComponent {
   id?: string | null;
   blockName?: string | null;
   blockType: 'dataChart';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MarketMatrixComponent".
+ */
+export interface MarketMatrixComponent {
+  /**
+   * Accessible table name for the generated connectivity matrix.
+   */
+  caption: string;
+  /**
+   * Optional curated subset. Leave empty to include every managed asset class.
+   */
+  assetClasses?: (number | AssetClass)[] | null;
+  /**
+   * Optional curated subset. Leave empty to include every managed venue type.
+   */
+  venueTypes?: (number | VenueType)[] | null;
+  /**
+   * Optional hub-region subset. Leave empty to include every managed region.
+   */
+  regions?: (number | Region)[] | null;
+  defaultView: 'joule' | 'autoTrader' | 'combined';
+  showFilters: boolean;
+  /**
+   * Offer a CSV export of the visitor’s current filtered view.
+   */
+  showDownload: boolean;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'marketMatrix';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1956,10 +2088,14 @@ export interface PagesSelect<T extends boolean = true> {
  */
 export interface TrayportHeroBlockSelect<T extends boolean = true> {
   eyebrow?: T;
+  badgeLabel?: T;
+  badgeIcon?: T;
+  badgeTone?: T;
   heading?: T;
   body?: T;
   media?: T;
   externalVideoURL?: T;
+  mediaAspect?: T;
   actions?:
     | T
     | {
@@ -1972,6 +2108,7 @@ export interface TrayportHeroBlockSelect<T extends boolean = true> {
               url?: T;
               newTab?: T;
             };
+        icon?: T;
         style?: T;
         id?: T;
       };
@@ -1992,17 +2129,30 @@ export interface TrayportHeroBlockSelect<T extends boolean = true> {
  */
 export interface ContentSectionBlockSelect<T extends boolean = true> {
   anchor?: T;
-  theme?: T;
+  surfaceTone?: T;
   wrapperTheme?: T;
-  appearance?: T;
   backgroundMedia?: T;
   backgroundOpacity?: T;
+  surfaceRadius?: T;
+  surfacePadding?: T;
   width?: T;
-  spacing?: T;
+  spacingTop?: T;
+  spacingBottom?: T;
+  columnGap?: T;
   columns?:
     | T
     | {
         span?: T;
+        horizontalAlign?: T;
+        verticalAlign?: T;
+        heightMode?: T;
+        componentGap?: T;
+        padding?: T;
+        surface?: T;
+        border?: T;
+        backgroundMedia?: T;
+        backgroundOpacity?: T;
+        radius?: T;
         components?:
           | T
           | {
@@ -2011,6 +2161,7 @@ export interface ContentSectionBlockSelect<T extends boolean = true> {
               actions?: T | ActionsComponentSelect<T>;
               media?: T | TrayportMediaComponentSelect<T>;
               featureList?: T | FeatureListComponentSelect<T>;
+              standaloneIcon?: T | StandaloneIconComponentSelect<T>;
               statistics?: T | StatisticsComponentSelect<T>;
               faq?: T | FAQComponentSelect<T>;
               entityList?: T | EntityListComponentSelect<T>;
@@ -2021,6 +2172,7 @@ export interface ContentSectionBlockSelect<T extends boolean = true> {
               marketCoverage?: T | MarketCoverageComponentSelect<T>;
               embed?: T | EmbedComponentSelect<T>;
               dataChart?: T | DataChartComponentSelect<T>;
+              marketMatrix?: T | MarketMatrixComponentSelect<T>;
               office?: T | OfficeComponentSelect<T>;
             };
         id?: T;
@@ -2036,6 +2188,7 @@ export interface HeadingComponentSelect<T extends boolean = true> {
   eyebrow?: T;
   text?: T;
   level?: T;
+  appearance?: T;
   id?: T;
   blockName?: T;
 }
@@ -2066,6 +2219,7 @@ export interface ActionsComponentSelect<T extends boolean = true> {
               url?: T;
               newTab?: T;
             };
+        icon?: T;
         style?: T;
         id?: T;
       };
@@ -2089,10 +2243,11 @@ export interface TrayportMediaComponentSelect<T extends boolean = true> {
  * via the `definition` "FeatureListComponent_select".
  */
 export interface FeatureListComponentSelect<T extends boolean = true> {
-  layout?: T;
+  presentation?: T;
   items?:
     | T
     | {
+        display?: T;
         title?: T;
         body?: T;
         icon?: T;
@@ -2106,8 +2261,20 @@ export interface FeatureListComponentSelect<T extends boolean = true> {
               url?: T;
               newTab?: T;
             };
+        showAction?: T;
+        actionStyle?: T;
+        actionIcon?: T;
         id?: T;
       };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "StandaloneIconComponent_select".
+ */
+export interface StandaloneIconComponentSelect<T extends boolean = true> {
+  icon?: T;
   id?: T;
   blockName?: T;
 }
@@ -2239,6 +2406,7 @@ export interface DividerComponentSelect<T extends boolean = true> {
  * via the `definition` "MarketCoverageComponent_select".
  */
 export interface MarketCoverageComponentSelect<T extends boolean = true> {
+  presentation?: T;
   title?: T;
   body?: T;
   style?: T;
@@ -2264,6 +2432,7 @@ export interface MarketCoverageComponentSelect<T extends boolean = true> {
               url?: T;
               newTab?: T;
             };
+        icon?: T;
         style?: T;
         id?: T;
       };
@@ -2289,7 +2458,12 @@ export interface DataChartComponentSelect<T extends boolean = true> {
   title?: T;
   dataType?: T;
   chartType?: T;
+  seriesDimension?: T;
+  displayInterval?: T;
   unit?: T;
+  assetClass?: T;
+  includedHubs?: T;
+  excludedHubs?: T;
   assetClassLegacyId?: T;
   accessibleSummary?: T;
   fromYear?: T;
@@ -2303,6 +2477,21 @@ export interface DataChartComponentSelect<T extends boolean = true> {
   showLegend?: T;
   showValues?: T;
   showDataTable?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MarketMatrixComponent_select".
+ */
+export interface MarketMatrixComponentSelect<T extends boolean = true> {
+  caption?: T;
+  assetClasses?: T;
+  venueTypes?: T;
+  regions?: T;
+  defaultView?: T;
+  showFilters?: T;
+  showDownload?: T;
   id?: T;
   blockName?: T;
 }
@@ -2364,6 +2553,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   categories?: T;
   featured?: T;
   featuredOrder?: T;
+  displayDate?: T;
   byline?: T;
   location?: T;
   relatedArticles?: T;
@@ -3039,7 +3229,7 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 export interface Navigation {
   id: number;
   /**
-   * Main desktop and mobile navigation. One level of dropdown items is supported.
+   * Main desktop and mobile navigation. Dropdown content is organized into bounded groups.
    */
   primaryItems?:
     | {
@@ -3071,16 +3261,149 @@ export interface Navigation {
           url?: string | null;
           newTab?: boolean | null;
         };
+        /**
+         * Structured full-width menu groups. Titles, feature cards, widths, icons, and accents are bounded to the live navigation vocabulary.
+         */
+        groups?:
+          | {
+              title?: string | null;
+              titleLink?: {
+                type?: ('reference' | 'custom') | null;
+                reference?:
+                  | ({
+                      relationTo: 'pages';
+                      value: number | Page;
+                    } | null)
+                  | ({
+                      relationTo: 'articles';
+                      value: number | Article;
+                    } | null)
+                  | ({
+                      relationTo: 'hubs';
+                      value: number | Hub;
+                    } | null)
+                  | ({
+                      relationTo: 'venues';
+                      value: number | Venue;
+                    } | null)
+                  | ({
+                      relationTo: 'learning-videos';
+                      value: number | LearningVideo;
+                    } | null);
+                url?: string | null;
+                newTab?: boolean | null;
+              };
+              /**
+               * Bounded width in the 12-column desktop menu.
+               */
+              span: 'auto' | '2' | '3' | '4' | '6';
+              items: {
+                kind: 'link' | 'feature';
+                label: string;
+                description?: string | null;
+                link: {
+                  type: 'reference' | 'custom';
+                  reference?:
+                    | ({
+                        relationTo: 'pages';
+                        value: number | Page;
+                      } | null)
+                    | ({
+                        relationTo: 'articles';
+                        value: number | Article;
+                      } | null)
+                    | ({
+                        relationTo: 'hubs';
+                        value: number | Hub;
+                      } | null)
+                    | ({
+                        relationTo: 'venues';
+                        value: number | Venue;
+                      } | null)
+                    | ({
+                        relationTo: 'learning-videos';
+                        value: number | LearningVideo;
+                      } | null);
+                  url?: string | null;
+                  newTab?: boolean | null;
+                };
+                /**
+                 * Choose from the bounded interface-icon vocabulary.
+                 */
+                icon?:
+                  | (
+                      | 'people'
+                      | 'offices'
+                      | 'careers'
+                      | 'tradingScreen'
+                      | 'network'
+                      | 'connections'
+                      | 'connectivity'
+                      | 'code'
+                      | 'compare'
+                      | 'waterfallChart'
+                      | 'candlestickChart'
+                      | 'calculator'
+                      | 'users'
+                      | 'marketAccess'
+                      | 'quote'
+                      | 'pieChart'
+                      | 'ballot'
+                      | 'shield'
+                      | 'lock'
+                      | 'csvFile'
+                      | 'buildingSecurity'
+                      | 'file'
+                      | 'power'
+                      | 'gas'
+                      | 'metals'
+                      | 'climate'
+                      | 'bulkMarkets'
+                      | 'oil'
+                      | 'world'
+                      | 'northAmerica'
+                      | 'europe'
+                      | 'asiaPacific'
+                      | 'video'
+                      | 'playCircle'
+                      | 'marketMatrix'
+                      | 'map'
+                      | 'lifecycle'
+                      | 'news'
+                      | 'calendar'
+                      | 'insight'
+                      | 'list'
+                      | 'email'
+                      | 'messages'
+                      | 'demo'
+                    )
+                  | null;
+                /**
+                 * Semantic Trayport accent used for the icon and rule.
+                 */
+                accent?: ('blue' | 'cyan' | 'green' | 'yellow' | 'orange') | null;
+                /**
+                 * Feature-card image. Ordinary navigation links do not render media.
+                 */
+                media?: (number | null) | Media;
+                id?: string | null;
+              }[];
+              id?: string | null;
+            }[]
+          | null;
+        /**
+         * Retained as a hidden migration fallback while grouped menus are rolled out. The active menu prefers groups.
+         */
         children?:
           | {
               label: string;
               description?: string | null;
               /**
-               * Optional heading used to group related dropdown links.
+               * Retained from WordPress for migration provenance; not used by the active menu.
                */
               groupLabel?: string | null;
               /**
-               * Optional image for feature-style dropdown entries.
+               * Retained from WordPress for migration provenance; not used by the active menu.
                */
               media?: (number | null) | Media;
               link: {
@@ -3147,38 +3470,57 @@ export interface Navigation {
           url?: string | null;
           newTab?: boolean | null;
         };
+        icon?:
+          | (
+              | 'people'
+              | 'offices'
+              | 'careers'
+              | 'tradingScreen'
+              | 'network'
+              | 'connections'
+              | 'connectivity'
+              | 'code'
+              | 'compare'
+              | 'waterfallChart'
+              | 'candlestickChart'
+              | 'calculator'
+              | 'users'
+              | 'marketAccess'
+              | 'quote'
+              | 'pieChart'
+              | 'ballot'
+              | 'shield'
+              | 'lock'
+              | 'csvFile'
+              | 'buildingSecurity'
+              | 'file'
+              | 'power'
+              | 'gas'
+              | 'metals'
+              | 'climate'
+              | 'bulkMarkets'
+              | 'oil'
+              | 'world'
+              | 'northAmerica'
+              | 'europe'
+              | 'asiaPacific'
+              | 'video'
+              | 'playCircle'
+              | 'marketMatrix'
+              | 'map'
+              | 'lifecycle'
+              | 'news'
+              | 'calendar'
+              | 'insight'
+              | 'list'
+              | 'email'
+              | 'messages'
+              | 'demo'
+            )
+          | null;
         id?: string | null;
       }[]
     | null;
-  primaryAction: {
-    link: {
-      label: string;
-      type: 'reference' | 'custom';
-      reference?:
-        | ({
-            relationTo: 'pages';
-            value: number | Page;
-          } | null)
-        | ({
-            relationTo: 'articles';
-            value: number | Article;
-          } | null)
-        | ({
-            relationTo: 'hubs';
-            value: number | Hub;
-          } | null)
-        | ({
-            relationTo: 'venues';
-            value: number | Venue;
-          } | null)
-        | ({
-            relationTo: 'learning-videos';
-            value: number | LearningVideo;
-          } | null);
-      url?: string | null;
-      newTab?: boolean | null;
-    };
-  };
   legacySource?: {
     key?: string | null;
     source?: string | null;
@@ -3198,12 +3540,41 @@ export interface Navigation {
 export interface Footer {
   id: number;
   /**
-   * Short brand statement shown alongside the footer navigation.
+   * Legal disclaimer shown in the footer supporting row.
    */
   intro?: string | null;
   columns?:
     | {
-        title: string;
+        /**
+         * Optional visible column heading.
+         */
+        title?: string | null;
+        titleLink?: {
+          type?: ('reference' | 'custom') | null;
+          reference?:
+            | ({
+                relationTo: 'pages';
+                value: number | Page;
+              } | null)
+            | ({
+                relationTo: 'articles';
+                value: number | Article;
+              } | null)
+            | ({
+                relationTo: 'hubs';
+                value: number | Hub;
+              } | null)
+            | ({
+                relationTo: 'venues';
+                value: number | Venue;
+              } | null)
+            | ({
+                relationTo: 'learning-videos';
+                value: number | LearningVideo;
+              } | null);
+          url?: string | null;
+          newTab?: boolean | null;
+        };
         links?:
           | {
               link: {
@@ -3233,6 +3604,23 @@ export interface Footer {
                 url?: string | null;
                 newTab?: boolean | null;
               };
+              /**
+               * Bounded semantic Font Awesome icon used before the link label.
+               */
+              icon?:
+                | (
+                    | 'companyProfile'
+                    | 'offices'
+                    | 'careers'
+                    | 'contact'
+                    | 'marketMatrix'
+                    | 'regionEurope'
+                    | 'regionNorthAmerica'
+                    | 'regionAsiaPacific'
+                    | 'legalDocument'
+                  )
+                | null;
+              accent?: ('cyan' | 'yellow' | 'orange' | 'white') | null;
               id?: string | null;
             }[]
           | null;
@@ -3275,6 +3663,14 @@ export interface Footer {
    * Use {year} where the current year should be inserted, for example “© {year} Trayport”.
    */
   copyright?: string | null;
+  /**
+   * Company registration statement shown in the lower footer.
+   */
+  companyRegistrationText?: string | null;
+  /**
+   * Parent-company statement shown in the lower footer.
+   */
+  parentCompanyText?: string | null;
   certificationMarks?:
     | {
         name: string;
@@ -3303,8 +3699,17 @@ export interface SiteSetting {
   id: number;
   siteName: string;
   tagline?: string | null;
+  /**
+   * Reserved for a future managed-brand-assets slice.
+   */
   logo?: (number | null) | Media;
+  /**
+   * Reserved for a future managed-brand-assets slice.
+   */
   logoOnDark?: (number | null) | Media;
+  /**
+   * Reserved for a future managed-brand-assets slice.
+   */
   favicon?: (number | null) | Media;
   defaultSEO?: {
     titleSuffix?: string | null;
@@ -3359,8 +3764,19 @@ export interface SiteSetting {
   };
   cookieNotice?: {
     enabled?: boolean | null;
+    title?: string | null;
+    /**
+     * Notice copy before the managed cookie-policy link.
+     */
     message?: string | null;
     policyPage?: (number | null) | Page;
+    /**
+     * Fallback destination when the policy page is outside the managed content set.
+     */
+    policyURL?: string | null;
+    policyLinkLabel?: string | null;
+    acceptLabel?: string | null;
+    rejectLabel?: string | null;
   };
   _status?: ('draft' | 'published') | null;
   updatedAt?: string | null;
@@ -3462,6 +3878,40 @@ export interface NavigationSelect<T extends boolean = true> {
               url?: T;
               newTab?: T;
             };
+        groups?:
+          | T
+          | {
+              title?: T;
+              titleLink?:
+                | T
+                | {
+                    type?: T;
+                    reference?: T;
+                    url?: T;
+                    newTab?: T;
+                  };
+              span?: T;
+              items?:
+                | T
+                | {
+                    kind?: T;
+                    label?: T;
+                    description?: T;
+                    link?:
+                      | T
+                      | {
+                          type?: T;
+                          reference?: T;
+                          url?: T;
+                          newTab?: T;
+                        };
+                    icon?: T;
+                    accent?: T;
+                    media?: T;
+                    id?: T;
+                  };
+              id?: T;
+            };
         children?:
           | T
           | {
@@ -3493,20 +3943,8 @@ export interface NavigationSelect<T extends boolean = true> {
               url?: T;
               newTab?: T;
             };
+        icon?: T;
         id?: T;
-      };
-  primaryAction?:
-    | T
-    | {
-        link?:
-          | T
-          | {
-              label?: T;
-              type?: T;
-              reference?: T;
-              url?: T;
-              newTab?: T;
-            };
       };
   legacySource?:
     | T
@@ -3533,6 +3971,14 @@ export interface FooterSelect<T extends boolean = true> {
     | T
     | {
         title?: T;
+        titleLink?:
+          | T
+          | {
+              type?: T;
+              reference?: T;
+              url?: T;
+              newTab?: T;
+            };
         links?:
           | T
           | {
@@ -3545,6 +3991,8 @@ export interface FooterSelect<T extends boolean = true> {
                     url?: T;
                     newTab?: T;
                   };
+              icon?: T;
+              accent?: T;
               id?: T;
             };
         id?: T;
@@ -3564,6 +4012,8 @@ export interface FooterSelect<T extends boolean = true> {
         id?: T;
       };
   copyright?: T;
+  companyRegistrationText?: T;
+  parentCompanyText?: T;
   certificationMarks?:
     | T
     | {
@@ -3642,8 +4092,13 @@ export interface SiteSettingsSelect<T extends boolean = true> {
     | T
     | {
         enabled?: T;
+        title?: T;
         message?: T;
         policyPage?: T;
+        policyURL?: T;
+        policyLinkLabel?: T;
+        acceptLabel?: T;
+        rejectLabel?: T;
       };
   _status?: T;
   updatedAt?: T;

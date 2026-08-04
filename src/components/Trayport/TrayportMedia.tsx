@@ -1,93 +1,85 @@
-'use client'
-
-import type { Media as MediaType } from '@/payload-types'
 import { Media } from '@/components/Media'
+import type { ImageQuality } from '@/components/Media/types'
+import type { Media as MediaType } from '@/payload-types'
+import { safeExternalMediaURL } from '@/routing/urlPolicy'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
-import { useEffect, useRef } from 'react'
 
-type TrayportMediaProps = {
+import { DynamicTrayportVideo } from './DynamicTrayportVideo.client'
+
+export const trayportMediaSizes = {
+  background: '100vw',
+  card: '(max-width: 39.999rem) 100vw, (max-width: 63.999rem) 50vw, 33vw',
+  content: '(max-width: 47.999rem) 100vw, 50vw',
+  full: '100vw',
+  logo: '(max-width: 39.999rem) 40vw, (max-width: 63.999rem) 25vw, 12rem',
+} as const
+
+export type TrayportMediaComposition = keyof typeof trayportMediaSizes
+
+export type TrayportMediaProps = {
   background?: boolean
   className?: string
+  composition?: TrayportMediaComposition
   media?: MediaType | number | string | null
   externalURL?: string | null
-  priority?: boolean
+  preload?: boolean
+  quality?: ImageQuality
   showFallbackLink?: boolean
+  sizes?: string
+  unoptimized?: boolean
 }
 
 export const TrayportMedia = ({
   background = false,
   className,
+  composition,
   media,
   externalURL,
-  priority,
+  preload = false,
+  quality,
   showFallbackLink = true,
+  sizes,
+  unoptimized = false,
 }: TrayportMediaProps) => {
-  const videoRef = useRef<HTMLVideoElement>(null)
   const resource = media && typeof media === 'object' ? media : null
-  const reviewedExternalImage =
-    resource?.externalURL &&
-    /^https:\/\/cdn\.trayport\.com\/app\/uploads\//i.test(resource.externalURL) &&
-    /\.(?:avif|gif|jpe?g|png|webp)(?:[?#].*)?$/i.test(resource.externalURL)
-      ? resource.externalURL
-      : null
+  const isImage = Boolean(resource?.mimeType?.startsWith('image/'))
   const isVideo = Boolean(resource?.mimeType?.startsWith('video/'))
+  const reviewedExternalImage = isImage
+    ? safeExternalMediaURL(resource?.externalURL, 'image')
+    : null
+  const reviewedExternalVideo =
+    (isVideo ? safeExternalMediaURL(resource?.externalURL, 'video') : null) ||
+    safeExternalMediaURL(externalURL, 'video')
   const videoURL = isVideo
-    ? getMediaUrl(resource?.url, resource?.updatedAt) || resource?.externalURL || externalURL
-    : background
-      ? externalURL
-      : externalURL && /\.(?:m4v|mov|mp4|ogv|webm)(?:[?#].*)?$/i.test(externalURL)
-        ? externalURL
-        : null
+    ? getMediaUrl(resource?.url, resource?.updatedAt) || reviewedExternalVideo
+    : reviewedExternalVideo
   const relatedPoster =
-    resource?.poster && typeof resource.poster === 'object' ? resource.poster.url : null
-  const imagePoster =
-    resource?.mimeType?.startsWith('image/') && resource.url
-      ? getMediaUrl(resource.url, resource.updatedAt)
+    resource?.poster &&
+    typeof resource.poster === 'object' &&
+    resource.poster.mimeType?.startsWith('image/')
+      ? resource.poster.url
       : null
+  const imagePoster =
+    isImage && resource?.url ? getMediaUrl(resource.url, resource.updatedAt) : null
   const posterURL = relatedPoster || imagePoster || undefined
   const videoMimeType = isVideo
     ? resource?.mimeType || 'video/mp4'
     : videoURL?.toLowerCase().includes('.webm')
       ? 'video/webm'
       : 'video/mp4'
-
-  useEffect(() => {
-    if (!background || !videoRef.current) return
-    const preference = window.matchMedia('(prefers-reduced-motion: reduce)')
-
-    const applyPreference = () => {
-      if (!videoRef.current) return
-      if (preference.matches) {
-        videoRef.current.pause()
-      } else {
-        void videoRef.current.play().catch(() => undefined)
-      }
-    }
-
-    applyPreference()
-    preference.addEventListener('change', applyPreference)
-    return () => preference.removeEventListener('change', applyPreference)
-  }, [background])
+  const effectiveComposition = composition || (background ? 'background' : 'content')
+  const responsiveSizes = sizes || trayportMediaSizes[effectiveComposition]
 
   if (isVideo || videoURL) {
     return (
       <div className={className}>
-        <video
-          aria-label={background ? undefined : resource?.alt || resource?.title || 'Trayport video'}
-          aria-hidden={background || undefined}
-          autoPlay={background}
-          className="trayport-media__video"
-          controls={!background}
-          loop={background}
-          muted={background}
-          playsInline
+        <DynamicTrayportVideo
+          accessibleLabel={resource?.alt || resource?.title || 'Trayport video'}
+          background={background}
+          mimeType={videoMimeType}
           poster={posterURL}
-          preload={background ? 'auto' : 'metadata'}
-          ref={videoRef}
-        >
-          {videoURL ? <source src={videoURL} type={videoMimeType} /> : null}
-          {!background ? <p>This browser cannot play the video.</p> : null}
-        </video>
+          url={videoURL || undefined}
+        />
         {!background && showFallbackLink && videoURL ? (
           <a className="trayport-video-fallback" href={videoURL}>
             Open the video in a new window
@@ -97,7 +89,7 @@ export const TrayportMedia = ({
     )
   }
 
-  if (!media) return null
+  if (!resource || !isImage) return null
 
   if (reviewedExternalImage && resource) {
     return (
@@ -108,9 +100,11 @@ export const TrayportMedia = ({
         fill={background}
         imgClassName="trayport-media__image"
         pictureClassName={background ? 'trayport-background-media__picture' : undefined}
-        priority={priority}
+        preload={preload}
+        quality={quality}
         resource={{ ...resource, mimeType: 'image/*', url: reviewedExternalImage }}
-        size="(max-width: 767px) 100vw, 50vw"
+        sizes={responsiveSizes}
+        unoptimized={unoptimized}
       />
     )
   }
@@ -123,9 +117,11 @@ export const TrayportMedia = ({
       fill={background}
       imgClassName="trayport-media__image"
       pictureClassName={background ? 'trayport-background-media__picture' : undefined}
-      priority={priority}
-      resource={media}
-      size="(max-width: 767px) 100vw, 50vw"
+      preload={preload}
+      quality={quality}
+      resource={resource}
+      sizes={responsiveSizes}
+      unoptimized={unoptimized}
     />
   )
 }

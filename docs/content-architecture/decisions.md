@@ -5,7 +5,7 @@
 | ID | Decision | Status | Consequence |
 | --- | --- | --- | --- |
 | CA-001 | Use self-hosted Payload with Next.js and PostgreSQL | Accepted | CMS, frontend, and workflow remain under application control |
-| CA-002 | Fix production scope at 51 page documents + 2 virtual indexes + 243 listing children = 296 routes | Accepted; evidence verified | Future generated evidence must continue to prove the count; it cannot redefine it |
+| CA-002 | Fix production scope at 50 Payload page documents + 1 redirects-owned source-page route + 2 virtual indexes + 243 listing children = 296 routes | Accepted; evidence verified | Future generated evidence must continue to prove the count; it cannot redefine it |
 | CA-003 | Include FAQ (`7609`) and exclude Commodities Report (`2233`) | Accepted | The public/local navigation drift is resolved explicitly |
 | CA-004 | Use active ACF `dropdown` and `footer_new`, not classic WordPress menus | Accepted | Dropdown roots with `menu_block` remain non-link buttons |
 | CA-005 | Model semantic target archetypes instead of copying WordPress templates/admin types | Accepted | Target validation is based on page purpose and route behavior |
@@ -23,6 +23,8 @@
 | CA-017 | Keep read-only source identity and content hash for idempotent migration | Accepted and baseline passing | Payload-native content remains possible without provenance |
 | CA-018 | Generate, do not hand-author, the production route manifest | Accepted; evidence verified | The retained manifest and verification artifacts are generated from the local WordPress source |
 | CA-019 | Separate architecture milestone status from production readiness | Accepted | Architecture is complete; production remains blocked until all blocker gates pass |
+| CA-020 | Own WordPress page 4031 temporarily as a `302` from `/request-a-demo/` to managed `/contact/` | Accepted; implemented for the pilot | No HubSpot form, dead prompt, or unused hero media is imported; rollback removes the redirect only when a first-party conversion page can atomically claim the path |
+| CA-021 | Bridge not-yet-imported Navigation/Footer destinations to canonical `https://www.trayport.com/` URLs | Accepted; implemented for the pilot | The 26 roots and two virtual indexes stay internal; exactly 35 unique live fallback paths are validated (30 leaf destinations plus five clickable section roots), and each is individually reversible when its route passes migration/runtime acceptance |
 
 ## Architecture milestone completion
 
@@ -32,12 +34,12 @@ The architecture milestone is complete because:
 - FAQ and Commodities decisions are explicit;
 - all observed source layout/taxonomy/shortcode semantics have a declared
   disposition;
-- 17 target archetypes and their route policies are defined;
+- 18 content-route archetypes plus the temporary Contact redirect archetype and their route policies are defined;
 - collection/global/application-data ownership is assigned;
 - implemented and planned block catalogues are separated;
-- all 17 runtime archetypes now have enforced route/discriminator publication
-  behavior, including deliberate publication denial for conversion and
-  interactive pages until their planned blocks exist;
+- all 18 content-route runtime archetypes now have enforced route/discriminator
+  publication behavior, including deliberate publication denial for conversion
+  pages and the exactly-one component rule for Market Matrix pages;
 - editor tasks and role expectations are defined; and
 - production gates and known gaps are explicit and machine-validated.
 
@@ -56,10 +58,10 @@ of this documentation:
 | `legacy-layout-disposition-totality` | Passing as architecture classification | Every observed layout, reachable taxonomy, and supported shortcode semantic has a declared target disposition |
 | `production-source-scope-complete` | Passing | Generated inventory proves the exact 296 routes, inclusions/exclusions, and zero unknown or duplicate included route owners |
 | `cross-collection-route-uniqueness` | Passing | Transaction-backed registry hooks plus a PostgreSQL unique path index enforce one owner across content, virtual indexes, and redirects |
-| `archetype-discriminator-invariants` | Passing | Schema/publication hooks and target-plan validation enforce all 17 route policies, discriminators, allowed blocks, and derived-index rules |
+| `archetype-discriminator-invariants` | Passing | Schema/publication hooks and target-plan validation enforce all 18 content-route policies, discriminators, allowed blocks, and derived-index rules; redirects use their own guarded collection workflow |
 | `article-detail-content-ownership` | **Blocked** | Every internal listed article owns a complete body or has an approved non-route destination |
 | `listing-detail-route-ownership` | **Blocked** | All 90 posts, 72 hubs, 66 venues, and 15 learning videos resolve to complete managed details |
-| `production-block-catalogue-implemented` | **Blocked** | Structural column plus form, checklist, lifecycle, matrix, office, maps, regions, and consent targets work end to end |
+| `production-block-catalogue-implemented` | **Blocked** | Structural column plus form, checklist, lifecycle, and consent targets work end to end; Matrix, regional map/list consolidation, and office rendering are implemented for the accepted slice |
 | `managed-internal-link-integrity` | **Blocked** | Internal links are managed/validated and route changes integrate redirects |
 | `editor-controls-have-runtime-effect` | **Blocked** | Every visible control has tested frontend behavior or is removed |
 | `editor-role-capability-enforcement` | Partial | Access tests cover all resources, versions, publish actions, deletion, roles, and provenance |
@@ -88,7 +90,7 @@ a blocker. The two newly passing gates do not change
 ### Scope and route evidence
 
 - reproducible route inventory and generated manifest;
-- exact `51 + 2 + 243 = 296` acceptance;
+- exact `50 + 1 + 2 + 243 = 296` acceptance;
 - FAQ included, Commodities and stale private Careers excluded;
 - zero unknown archetypes;
 - zero duplicate canonical paths among included content and virtual owners;
@@ -98,7 +100,7 @@ a blocker. The two newly passing gates do not change
 ### Model and renderer evidence
 
 - the implemented foundation already has generated Payload types/migrations,
-  schemas and hooks for all 17 archetypes, learning-video/category collections,
+  schemas and hooks for all 18 content-route archetypes, learning-video/category collections,
   venue route modes/details, and both virtual index routes/configuration;
 - the complete production population of those models and representative
   rendering for every archetype;
@@ -197,12 +199,13 @@ make content-inventory
 The run writes `production-target-plan.json`,
 `production-target-plan.ndjson`, `target-plan-verification.json`, and
 `target-plan-summary.json` beneath `migration/work/inventory/<run-id>/`. The
-plan deterministically describes 296 routes: 294 Payload documents (14 marked
-pilot-ready and 280 plan-only) plus two system-ready virtual indexes. It is
+plan deterministically describes 296 routes: 294 Payload documents (26 marked
+pilot-ready and 268 plan-only) plus two system-ready virtual indexes. It is
 planning evidence, not a content load or remediation report.
 
 The retained scope evidence and the two route-foundation gates pass while
 `productionReadiness` remains blocked. The actual imported/rendered acceptance
-slice now covers 14 routes; full article/listing ownership, importer
+slice now covers 26 source roots (25 rendered content routes and one redirect);
+full article/listing ownership, importer
 transformations, planned renderers, managed links, role coverage, media review,
 and the other gates above are still incomplete.

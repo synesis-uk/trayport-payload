@@ -1,6 +1,8 @@
 import { APIError, type CollectionBeforeChangeHook } from 'payload'
 import { isDeepStrictEqual } from 'node:util'
 
+import { validateExternalHTTPSURL } from './urlPolicy'
+
 export const contentRouteCollections = [
   'pages',
   'articles',
@@ -45,14 +47,7 @@ export type ArchetypeResolution = {
 const text = (value: unknown): string => (typeof value === 'string' ? value : '')
 
 export const validateHTTPSVideoURL = (value: string | null | undefined): true | string => {
-  if (!value) return true
-
-  try {
-    const url = new URL(value)
-    return url.protocol === 'https:' && Boolean(url.hostname) ? true : 'Use a complete HTTPS URL.'
-  } catch {
-    return 'Use a complete HTTPS URL.'
-  }
+  return validateExternalHTTPSURL(value)
 }
 
 const managedVideoMimeType = async (
@@ -166,6 +161,19 @@ const validateLayout = (
     )
   }
 
+  if (published && allowed.has('trayportHero')) {
+    const heroPositions = layout.flatMap((block, index) =>
+      block.blockType === 'trayportHero' ? [index] : [],
+    )
+
+    if (heroPositions.length > 1) {
+      throw new APIError('Published routes allow at most one trayportHero block.', 400)
+    }
+    if (heroPositions[0] !== undefined && heroPositions[0] !== 0) {
+      throw new APIError('A published route trayportHero must be the first content block.', 400)
+    }
+  }
+
   if (
     published &&
     [
@@ -195,6 +203,102 @@ const validateLayout = (
       'Content-index pages require exactly one article or learning-video listing before publication.',
       400,
     )
+  }
+}
+
+const sectionComponents = (layout: UnknownRecord[]): UnknownRecord[] =>
+  layout.flatMap((block) =>
+    block.blockType === 'contentSection'
+      ? blocks(block.columns).flatMap((column) => blocks(column.components))
+      : [],
+  )
+
+const sectionComponentCount = (layout: UnknownRecord[], blockType: string): number =>
+  sectionComponents(layout).filter((component) => component.blockType === blockType).length
+
+const optionalNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === '') return null
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
+const validateDataChartRange = (component: UnknownRecord): void => {
+  const fromYear = optionalNumber(component.fromYear)
+  const fromQuarter = optionalNumber(component.fromQuarter)
+  const toYear = optionalNumber(component.toYear)
+  const toQuarter = optionalNumber(component.toQuarter)
+
+  if ((fromYear === null) !== (fromQuarter === null)) {
+    throw new APIError('Data charts require both a from year and from quarter, or neither.', 400)
+  }
+  if ((toYear === null) !== (toQuarter === null)) {
+    throw new APIError('Data charts require both a to year and to quarter, or neither.', 400)
+  }
+  if (
+    fromYear !== null &&
+    fromQuarter !== null &&
+    toYear !== null &&
+    toQuarter !== null &&
+    fromYear * 4 + fromQuarter > toYear * 4 + toQuarter
+  ) {
+    throw new APIError('Data chart start quarter must not be after its end quarter.', 400)
+  }
+}
+
+const relationID = (value: unknown): number | string | null => {
+  if (typeof value === 'number' || typeof value === 'string') return value
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const id = (value as UnknownRecord).id
+  return typeof id === 'number' || typeof id === 'string' ? id : null
+}
+
+const legacyIDFromAssetClass = (value: unknown): number | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const legacySource = (value as UnknownRecord).legacySource
+  if (!legacySource || typeof legacySource !== 'object' || Array.isArray(legacySource)) return null
+  const legacyID = Number((legacySource as UnknownRecord).legacyId)
+  return Number.isInteger(legacyID) && legacyID > 0 ? legacyID : null
+}
+
+const dataChartRelationshipIDs = (value: unknown): string[] =>
+  (Array.isArray(value) ? value : [])
+    .map(relationID)
+    .filter((id): id is number | string => id !== null)
+    .map(String)
+
+const validateDataChartSemantics = (component: UnknownRecord): void => {
+  const seriesDimension = text(component.seriesDimension)
+  const dataType = text(component.dataType)
+  const chartType = text(component.chartType)
+  const displayInterval = text(component.displayInterval)
+  const includedHubIDs = dataChartRelationshipIDs(component.includedHubs)
+  const excludedHubIDs = dataChartRelationshipIDs(component.excludedHubs)
+
+  if (!['month', 'quarter', 'year'].includes(displayInterval)) {
+    throw new APIError('Data charts require a supported display interval.', 400)
+  }
+  if (includedHubIDs.some((id) => excludedHubIDs.includes(id))) {
+    throw new APIError('Data charts cannot include and exclude the same hub.', 400)
+  }
+
+  if (seriesDimension === 'executionType') {
+    if (dataType !== 'volume' || chartType !== 'stackedColumn') {
+      throw new APIError('Execution-type data charts require volume stacked columns.', 400)
+    }
+    if (includedHubIDs.length || excludedHubIDs.length) {
+      throw new APIError('Execution-type data charts cannot filter hubs.', 400)
+    }
+    return
+  }
+
+  if (seriesDimension !== 'hub') {
+    throw new APIError('Data charts require a supported series dimension.', 400)
+  }
+  if (!(
+    (dataType === 'volume' && chartType === 'column') ||
+    (dataType === 'price' && chartType === 'line')
+  )) {
+    throw new APIError('Hub data charts require volume columns or a price line.', 400)
   }
 }
 
@@ -295,6 +399,23 @@ export const takeRouteMutation = ({
   const mutation = store[identity]
   delete store[identity]
   return mutation
+}
+
+export const getRouteMutation = ({
+  collection,
+  context,
+  document,
+  operation,
+}: {
+  collection: ContentRouteCollection
+  context: Record<string, unknown>
+  document: UnknownRecord
+  operation: RouteMutationOperation
+}): RouteMutation | null => {
+  const identity = routeMutationIdentity(collection, document, operation)
+  const store = mutationStore(context, false)
+
+  return identity && store?.[identity] ? store[identity] : null
 }
 
 export const encodePathRedirectApproval = ({ from, to }: PathRedirectApproval): string =>
@@ -418,12 +539,57 @@ export const validateRoutableDocument = (
 
     validateLayout(resolution.archetype, layout, published)
 
+    if (published) {
+      for (const component of sectionComponents(layout).filter(
+        ({ blockType }) => blockType === 'dataChart',
+      )) {
+        validateDataChartRange(component)
+        validateDataChartSemantics(component)
+        const assetClassID = relationID(component.assetClass)
+        if (assetClassID === null) {
+          throw new APIError('Data charts require a managed asset class before publication.', 400)
+        }
+
+        let legacyID = legacyIDFromAssetClass(component.assetClass)
+        if (legacyID === null) {
+          const assetClass = await req.payload.findByID({
+            collection: 'asset-classes',
+            depth: 0,
+            id: assetClassID,
+            overrideAccess: true,
+            req,
+          })
+          legacyID = legacyIDFromAssetClass(assetClass)
+        }
+        if (legacyID === null) {
+          throw new APIError(
+            'Data charts require an imported asset class with an application-data key.',
+            400,
+          )
+        }
+      }
+    }
+
+    const marketMatrixCount = sectionComponentCount(layout, 'marketMatrix')
+    if (resolution.archetype !== 'page.interactive-market-matrix' && marketMatrixCount > 0) {
+      throw new APIError(
+        `${resolution.archetype} does not allow the marketMatrix section component.`,
+        400,
+      )
+    }
     if (
       published &&
-      ['page.conversion', 'page.interactive-market-matrix'].includes(resolution.archetype)
+      resolution.archetype === 'page.interactive-market-matrix' &&
+      marketMatrixCount !== 1
     ) {
       throw new APIError(
-        `${resolution.archetype} cannot publish until its required production block is implemented.`,
+        'Interactive market-matrix pages require exactly one marketMatrix section component before publication.',
+        400,
+      )
+    }
+    if (published && resolution.archetype === 'page.conversion') {
+      throw new APIError(
+        'page.conversion cannot publish until its required first-party form is implemented.',
         400,
       )
     }
@@ -432,10 +598,11 @@ export const validateRoutableDocument = (
       published &&
       resolution.archetype === 'venue.public-detail' &&
       layout.length === 0 &&
-      !next.description
+      !next.description &&
+      (!Array.isArray(next.marketConnections) || next.marketConnections.length === 0)
     ) {
       throw new APIError(
-        'A public venue detail requires a managed description or layout before publication.',
+        'A public venue detail requires a managed description, layout, or market connections before publication.',
         400,
       )
     }

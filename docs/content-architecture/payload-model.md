@@ -91,9 +91,9 @@ archetype and enforce required paths, root ownership, allowed top-level blocks,
 minimum publishable layout, and content-index listing placement.
 
 The homepage is a singleton and must own `/`. Content indexes require their
-approved listing behavior. Conversion and interactive pages can be drafted but
-cannot publish until the first-party form and market-matrix blocks are
-implemented. Legal cookie content can use the current route/layout foundation,
+approved listing behavior. Conversion pages remain draft-only until the
+first-party form exists. Interactive pages can publish only with exactly one
+managed `marketMatrix` component. Legal cookie content can use the current route/layout foundation,
 but explicit consent-category behavior remains part of the planned production
 block gate.
 
@@ -135,6 +135,11 @@ coordinates, marker locations, media, asset classes, venue types, regions,
 related hubs, and venue connections. Stable `marketDataKey` values connect
 editorial configuration to application data without copying market facts into
 Payload.
+
+Venue `marketConnections` is the authoritative editable connectivity source for
+the Market Matrix. The German Power hub `connections` array remains a hidden,
+read-only compatibility projection for source parity; it is not a second
+editorial source of truth.
 
 The mode discriminator and path/layout policy are implemented: `page` requires
 a route to publish, while `map-only` forbids both path and layout. The 72
@@ -230,11 +235,27 @@ Model:
 - one supported dropdown depth;
 - managed internal reference or validated custom URL per link;
 - optional description, group label, and media;
-- shared utility items; and
-- shared primary/dropdown actions for Joule, Request a Demo, and Contact.
+- three shared utility items for Joule, Request a Demo, and Contact, reused by
+  desktop dropdowns and the mobile menu.
 
 Dropdown roots may intentionally have no link. The import must not turn legacy
 `for_page` values into anchors when `menu_block` exists.
+
+During incremental migration, a navigation or footer destination remains
+root-relative only when one of the 26 accepted roots or two virtual routes owns
+it. Every other same-site destination is rewritten to its canonical
+`https://www.trayport.com/` URL. Acceptance currently validates exactly 35 unique
+live fallback paths: 30 leaf destinations plus the five clickable section roots.
+This bridge is removed per route when that destination
+joins the accepted imported set.
+
+### Temporary Request A Demo redirect
+
+WordPress page 4031 is identity-only migration input. Payload does not import
+its HubSpot form, dead form prompt, or unused hero media. The redirects
+collection owns `/request-a-demo/` as a `302` reference to managed `/contact/`.
+Rollback is per-route: remove the redirect only when a first-party conversion
+page is publishable at the same path, then transfer the route claim atomically.
 
 ### Footer
 
@@ -304,14 +325,37 @@ Production URLs must not depend on the local WordPress uploads host.
 
 ## Application market data
 
-Payload owns chart title, unit, accessible summary, series selection, and
-relationships to editorial entities. Monthly market facts live only in
-`app.market_volume_monthly` and are loaded transactionally from the source
-tables.
+Payload owns chart title, unit, accessible summary, optional range, a required
+managed Asset Class relationship, the `volume` or `price` metric, the
+`executionType` or `hub` series dimension, and `month`, `quarter`, or `year`
+grouping. Hub-series charts may also own disjoint managed `includedHubs` and
+`excludedHubs` relationships. Monthly market facts live only in
+`app.market_volume_monthly` and are loaded transactionally from the WordPress
+source tables.
 
-The frontend queries those facts through an application data layer using stable
-keys. CMS editors cannot alter raw values. The `dataType` and other visible
-chart controls must either affect the query/rendering or be removed.
+For publication, the related Asset Class must carry a positive imported
+`legacySource.legacyId`. The frontend derives its application-data lookup key from
+that relationship; the hidden `assetClassLegacyId` retained on imported/older chart
+blocks is migration provenance and compatibility data, not an editor-controlled
+authority. Optional range endpoints are coherent quarter pairs: year and quarter
+must appear together, and a complete start must not be after a complete end.
+
+The only publishable combinations are execution-type volume stacked columns, Hub
+volume columns, and Hub price lines. Execution-type charts cannot carry Hub filters.
+The query selects no more than the latest 40 matching periods, then returns them in
+chronological order. CMS editors cannot alter raw market values or this runtime cap;
+every visible chart control changes the implemented query or presentation.
+
+The importer maps WordPress `charts-new` `for`, `display_interval`, `hubs`, and
+`excluded_hubs` values directly into these bounded fields and relationships. Active
+interval semantics alone produce date bounds; malformed defaults in inactive ACF
+groups are ignored. Transform and publication validation enforce the supported
+shape, coherent range, disjoint Hub filters, and relationship closure.
+
+The frontend reports `available`, `empty`, `unavailable`, and `unsupported` states
+explicitly. An unavailable database or unresolved managed Hub never masquerades as
+an empty result, and an unsupported retained draft never reaches the market-data
+query.
 
 ## Roles and workflow enforcement
 

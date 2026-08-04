@@ -1,7 +1,30 @@
-import type { Block } from 'payload'
+import type { Block, TextFieldSingleValidation } from 'payload'
 
+import { actionIconOptions, actionStyleOptions } from '@/fields/actions'
+import { imageOrVideoUploadField, imageUploadField } from '@/fields/mediaUpload'
 import { navigationLinkField } from '@/fields/navigationLink'
+import {
+  externalHTTPSDestinationPolicy,
+  normalizeDestinationValue,
+  safeExternalMediaURL,
+  validateExternalMediaURL,
+  validateExternalHTTPSURL,
+} from '@/routing/urlPolicy'
 import { blockActions } from './actions'
+
+const validateMediaComponentExternalURL: TextFieldSingleValidation = (value, { data }) => {
+  const document = data as { legacySource?: unknown } | undefined
+  const legacySource =
+    document?.legacySource && typeof document.legacySource === 'object'
+      ? (document.legacySource as { source?: unknown })
+      : null
+
+  return legacySource?.source === 'wordpress' &&
+    typeof value === 'string' &&
+    /^http:\/\/trayport\.local\/app\/uploads\//iu.test(value)
+    ? true
+    : validateExternalMediaURL(value)
+}
 
 export const HeadingComponent: Block = {
   slug: 'heading',
@@ -26,6 +49,15 @@ export const HeadingComponent: Block = {
       defaultValue: 'h2',
       options: ['h2', 'h3', 'h4'],
       required: true,
+    },
+    {
+      name: 'appearance',
+      type: 'select',
+      admin: {
+        description: 'Visual scale is independent from the semantic heading level.',
+      },
+      defaultValue: 'h2',
+      options: ['h1', 'h2', 'h3', 'h4'],
     },
   ],
 }
@@ -66,17 +98,22 @@ export const MediaComponent: Block = {
   slug: 'media',
   interfaceName: 'TrayportMediaComponent',
   fields: [
-    {
+    imageOrVideoUploadField({
       name: 'media',
-      type: 'upload',
-      relationTo: 'media',
-    },
+    }),
     {
       name: 'externalURL',
       type: 'text',
       admin: {
         description: 'Used for externally hosted video or a source asset not copied to this site.',
       },
+      hooks: {
+        beforeValidate: [
+          ({ value }) =>
+            safeExternalMediaURL(value) || (typeof value === 'string' ? value.trim() : value),
+        ],
+      },
+      validate: validateMediaComponentExternalURL,
     },
     {
       name: 'caption',
@@ -102,20 +139,32 @@ export const FeatureListComponent: Block = {
   interfaceName: 'FeatureListComponent',
   fields: [
     {
-      name: 'layout',
+      name: 'presentation',
       type: 'select',
       defaultValue: 'grid',
       options: [
         { label: 'Grid', value: 'grid' },
-        { label: 'Stacked', value: 'stacked' },
-        { label: 'Logos', value: 'logos' },
+        { label: 'Carousel', value: 'carousel' },
+        { label: 'Lead item and carousel', value: 'leadCarousel' },
       ],
+      required: true,
     },
     {
       name: 'items',
       type: 'array',
       required: true,
       fields: [
+        {
+          name: 'display',
+          type: 'select',
+          defaultValue: 'plain',
+          options: [
+            { label: 'Plain', value: 'plain' },
+            { label: 'Image', value: 'image' },
+            { label: 'Icon', value: 'icon' },
+          ],
+          required: true,
+        },
         {
           name: 'title',
           type: 'text',
@@ -135,17 +184,57 @@ export const FeatureListComponent: Block = {
             { label: 'Scan', value: 'scan' },
           ],
         },
-        {
+        imageUploadField({
           name: 'media',
-          type: 'upload',
-          relationTo: 'media',
-        },
+        }),
         navigationLinkField({
           includeLabel: true,
           required: false,
           typeDBName: 'content_link_type',
         }),
+        {
+          name: 'showAction',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: {
+            description: 'Show the link as an action when a valid destination is configured.',
+          },
+          required: true,
+        },
+        {
+          name: 'actionStyle',
+          type: 'select',
+          defaultValue: 'link',
+          options: [...actionStyleOptions],
+          required: true,
+        },
+        {
+          name: 'actionIcon',
+          type: 'select',
+          options: [...actionIconOptions],
+        },
       ],
+    },
+  ],
+}
+
+export const StandaloneIconComponent: Block = {
+  slug: 'standaloneIcon',
+  interfaceName: 'StandaloneIconComponent',
+  labels: {
+    singular: 'Standalone icon',
+    plural: 'Standalone icons',
+  },
+  fields: [
+    {
+      name: 'icon',
+      type: 'select',
+      options: [
+        { label: 'Gas', value: 'gas' },
+        { label: 'Power', value: 'power' },
+        { label: 'Emissions', value: 'emissions' },
+      ],
+      required: true,
     },
   ],
 }
@@ -199,16 +288,9 @@ export const FAQComponent: Block = {
           type: 'richText',
           required: true,
         },
-        {
+        imageUploadField({
           name: 'media',
-          type: 'upload',
-          filterOptions: {
-            mimeType: {
-              contains: 'image/',
-            },
-          },
-          relationTo: 'media',
-        },
+        }),
       ],
     },
   ],
@@ -246,11 +328,9 @@ export const EntityListComponent: Block = {
           type: 'richText',
         },
         navigationLinkField({ required: false, typeDBName: 'content_link_type' }),
-        {
+        imageUploadField({
           name: 'media',
-          type: 'upload',
-          relationTo: 'media',
-        },
+        }),
       ],
     },
   ],
@@ -331,12 +411,10 @@ export const GalleryComponent: Block = {
       type: 'array',
       required: true,
       fields: [
-        {
+        imageUploadField({
           name: 'media',
-          type: 'upload',
-          relationTo: 'media',
           required: true,
-        },
+        }),
         {
           name: 'caption',
           type: 'text',
@@ -364,6 +442,20 @@ export const MarketCoverageComponent: Block = {
   interfaceName: 'MarketCoverageComponent',
   fields: [
     {
+      name: 'presentation',
+      type: 'select',
+      defaultValue: 'summary',
+      options: [
+        { label: 'Map only', value: 'mapOnly' },
+        { label: 'Map with summary', value: 'summary' },
+      ],
+      required: true,
+      admin: {
+        description:
+          'Map only is intended for a map beside an existing managed introduction. Map with summary includes this block’s own title, body, regions and actions.',
+      },
+    },
+    {
       name: 'title',
       type: 'text',
       defaultValue: 'Explore our connectivity',
@@ -383,14 +475,12 @@ export const MarketCoverageComponent: Block = {
       ],
       required: true,
     },
-    {
+    imageUploadField({
       name: 'backgroundMedia',
-      type: 'upload',
-      relationTo: 'media',
       admin: {
         description: 'Managed static background used by the map presentation when configured.',
       },
-    },
+    }),
     {
       type: 'row',
       fields: [
@@ -471,12 +561,20 @@ export const MarketCoverageComponent: Block = {
     {
       name: 'assetClasses',
       type: 'relationship',
+      admin: {
+        description: 'Retained for migration provenance; the active schematic uses regions only.',
+        hidden: true,
+      },
       relationTo: 'asset-classes',
       hasMany: true,
     },
     {
       name: 'venueTypes',
       type: 'relationship',
+      admin: {
+        description: 'Retained for migration provenance; the active schematic uses regions only.',
+        hidden: true,
+      },
       relationTo: 'venue-types',
       hasMany: true,
     },
@@ -501,13 +599,21 @@ export const EmbedComponent: Block = {
     {
       name: 'url',
       type: 'text',
+      hooks: {
+        beforeValidate: [
+          ({ value }) => normalizeDestinationValue(value, externalHTTPSDestinationPolicy),
+        ],
+      },
       required: true,
+      validate: (value: unknown) => validateExternalHTTPSURL(value, true),
     },
-    {
+    imageUploadField({
       name: 'poster',
-      type: 'upload',
-      relationTo: 'media',
-    },
+      admin: {
+        description: 'Reserved for a future managed embed-preview implementation.',
+        hidden: true,
+      },
+    }),
   ],
 }
 
@@ -523,10 +629,12 @@ export const DataChartComponent: Block = {
     {
       name: 'dataType',
       type: 'select',
+      admin: {
+        description: 'Metric read from the application market-data store.',
+      },
       options: [
         { label: 'Volume', value: 'volume' },
         { label: 'Price', value: 'price' },
-        { label: 'Other', value: 'other' },
       ],
       defaultValue: 'volume',
       required: true,
@@ -534,6 +642,9 @@ export const DataChartComponent: Block = {
     {
       name: 'chartType',
       type: 'select',
+      admin: {
+        description: 'Chart presentation supported by the selected series dimension.',
+      },
       dbName: 'chart_type',
       defaultValue: 'stackedColumn',
       options: [
@@ -544,14 +655,86 @@ export const DataChartComponent: Block = {
       required: true,
     },
     {
+      name: 'seriesDimension',
+      type: 'select',
+      admin: {
+        description: 'Group each series by execution type or by market hub.',
+      },
+      defaultValue: 'executionType',
+      options: [
+        { label: 'Execution type', value: 'executionType' },
+        { label: 'Hub', value: 'hub' },
+      ],
+      required: true,
+    },
+    {
+      name: 'displayInterval',
+      type: 'select',
+      admin: {
+        description: 'Aggregate and label points by month, quarter, or year.',
+      },
+      defaultValue: 'quarter',
+      options: [
+        { label: 'Month', value: 'month' },
+        { label: 'Quarter', value: 'quarter' },
+        { label: 'Year', value: 'year' },
+      ],
+      required: true,
+    },
+    {
       name: 'unit',
       type: 'text',
+    },
+    {
+      name: 'assetClass',
+      type: 'relationship',
+      admin: {
+        description:
+          'Select the managed asset class whose facts are read from the application market-data store.',
+      },
+      filterOptions: {
+        'legacySource.legacyId': {
+          exists: true,
+        },
+      },
+      relationTo: 'asset-classes',
+      required: true,
+    },
+    {
+      name: 'includedHubs',
+      type: 'relationship',
+      admin: {
+        description: 'Optional allow-list for hub-series charts. Leave empty to include all hubs.',
+      },
+      filterOptions: {
+        'legacySource.legacyId': {
+          exists: true,
+        },
+      },
+      hasMany: true,
+      relationTo: 'hubs',
+    },
+    {
+      name: 'excludedHubs',
+      type: 'relationship',
+      admin: {
+        description: 'Optional deny-list for hub-series charts.',
+      },
+      filterOptions: {
+        'legacySource.legacyId': {
+          exists: true,
+        },
+      },
+      hasMany: true,
+      relationTo: 'hubs',
     },
     {
       name: 'assetClassLegacyId',
       type: 'number',
       admin: {
-        description: 'Application-data lookup key. Chart series remain outside the editorial CMS.',
+        description:
+          'Imported application-data lookup key retained for migration provenance and older drafts.',
+        hidden: true,
         readOnly: true,
       },
     },
@@ -645,6 +828,79 @@ export const DataChartComponent: Block = {
   ],
 }
 
+export const MarketMatrixComponent: Block = {
+  slug: 'marketMatrix',
+  interfaceName: 'MarketMatrixComponent',
+  labels: {
+    singular: 'Market matrix',
+    plural: 'Market matrices',
+  },
+  fields: [
+    {
+      name: 'caption',
+      type: 'text',
+      defaultValue: 'Trayport venue connectivity by market hub',
+      required: true,
+      admin: {
+        description: 'Accessible table name for the generated connectivity matrix.',
+      },
+    },
+    {
+      name: 'assetClasses',
+      type: 'relationship',
+      hasMany: true,
+      relationTo: 'asset-classes',
+      admin: {
+        description: 'Optional curated subset. Leave empty to include every managed asset class.',
+      },
+    },
+    {
+      name: 'venueTypes',
+      type: 'relationship',
+      hasMany: true,
+      relationTo: 'venue-types',
+      admin: {
+        description: 'Optional curated subset. Leave empty to include every managed venue type.',
+      },
+    },
+    {
+      name: 'regions',
+      type: 'relationship',
+      hasMany: true,
+      relationTo: 'regions',
+      admin: {
+        description: 'Optional hub-region subset. Leave empty to include every managed region.',
+      },
+    },
+    {
+      name: 'defaultView',
+      type: 'select',
+      defaultValue: 'joule',
+      options: [
+        { label: 'Joule', value: 'joule' },
+        { label: 'autoTRADER', value: 'autoTrader' },
+        { label: 'Joule and autoTRADER', value: 'combined' },
+      ],
+      required: true,
+    },
+    {
+      name: 'showFilters',
+      type: 'checkbox',
+      defaultValue: true,
+      required: true,
+    },
+    {
+      name: 'showDownload',
+      type: 'checkbox',
+      defaultValue: true,
+      required: true,
+      admin: {
+        description: 'Offer a CSV export of the visitor’s current filtered view.',
+      },
+    },
+  ],
+}
+
 export const OfficeComponent: Block = {
   slug: 'office',
   interfaceName: 'OfficeComponent',
@@ -678,6 +934,7 @@ export const sectionComponents = [
   ActionsComponent,
   MediaComponent,
   FeatureListComponent,
+  StandaloneIconComponent,
   StatisticsComponent,
   FAQComponent,
   EntityListComponent,
@@ -688,5 +945,6 @@ export const sectionComponents = [
   MarketCoverageComponent,
   EmbedComponent,
   DataChartComponent,
+  MarketMatrixComponent,
   OfficeComponent,
 ]

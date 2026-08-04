@@ -7,6 +7,11 @@ import path from 'node:path'
 import { sectionComponents } from '@/blocks/Trayport/components'
 import { trayportLayoutBlocks } from '@/blocks/Trayport/config'
 import {
+  trayportBlockRenderKey,
+  trayportLayoutBlockAdapterRegistry,
+  trayportSectionComponentAdapterRegistry,
+} from '@/components/blocks'
+import {
   contentArchitectureContract,
   contentArchitectureContractSchema,
 } from '../../migration/mappings/contentArchitecture'
@@ -83,16 +88,24 @@ describe('production content-architecture contract', () => {
   })
 
   it('keeps every configured Payload block covered by the frontend renderer', () => {
-    const renderer = source('src/components/Trayport/BlockRenderer.tsx')
-    const componentRenderer = between(renderer, 'const Component =', 'const ContentSection =')
-    const topLevelRenderer = between(renderer, 'export const TrayportBlocks =')
+    const sectionAdapterTypes = sorted(Object.keys(trayportSectionComponentAdapterRegistry))
+    const layoutAdapterTypes = sorted(Object.keys(trayportLayoutBlockAdapterRegistry))
 
-    expect(sorted(capture(componentRenderer, /case '([^']+)'/g))).toEqual(
+    expect(sectionAdapterTypes).toEqual(sorted(sectionComponents.map(({ slug }) => slug)))
+    expect(layoutAdapterTypes).toEqual(sorted(trayportLayoutBlocks.map(({ slug }) => slug)))
+    expect(sectionAdapterTypes).toEqual(
       sorted(contentArchitectureContract.blocks.implemented.sectionComponents),
     )
-    expect(sorted(capture(topLevelRenderer, /type === '([^']+)'/g))).toEqual(
+    expect(layoutAdapterTypes).toEqual(
       sorted(contentArchitectureContract.blocks.implemented.topLevel),
     )
+  })
+
+  it('uses Payload block identities as stable render keys with a deterministic import fallback', () => {
+    expect(trayportBlockRenderKey({ blockType: 'heading', id: 'payload-block-id' }, 7)).toBe(
+      'payload-block-id',
+    )
+    expect(trayportBlockRenderKey({ blockType: 'heading' }, 7)).toBe('heading-7')
   })
 
   it('keeps importer-emitted block types inside the configured block library', () => {
@@ -107,9 +120,34 @@ describe('production content-architecture contract', () => {
     expect(emitted.filter((blockType) => !configured.has(blockType))).toEqual([])
   })
 
+  it('exports site-wide Market Matrix venues independently of the German hub projection', () => {
+    const exporter = source('migration/wp-exporter/export.php')
+    const venueExporter = between(
+      exporter,
+      'function tp_export_market_matrix_venues',
+      'function tp_nullable_decimal',
+    )
+    const orchestration = between(exporter, 'if ($hubId > 0) {', '$safeOptions =')
+
+    expect(venueExporter).toMatch(/'post_type'\s*=>\s*'venue'/)
+    expect(venueExporter).toMatch(/'post_status'\s*=>\s*'publish'/)
+    expect(venueExporter).toMatch(/'connections'/)
+    expect(orchestration).toMatch(
+      /tp_export_market_matrix_venues\(\$rootIds, \$mediaIds, \$termIds\);/,
+    )
+    expect(
+      orchestration.indexOf('tp_export_market_matrix_venues') >
+        orchestration.indexOf("'entity' => 'hub-connections'"),
+    ).toBe(true)
+  })
+
   it('classifies every implemented legacy component and top-level layout', () => {
     const importer = source('migration/transform/blocks.ts')
-    const componentMapper = between(importer, 'const mapComponent =', 'const sectionTheme =')
+    const componentMapper = between(
+      importer,
+      'const mapComponent =',
+      'const activeBackgroundTone =',
+    )
     const pageMapper = between(
       importer,
       'export const mapPageLayout =',
@@ -118,20 +156,33 @@ describe('production content-architecture contract', () => {
     const articleMapper = between(importer, 'export const mapArticleLayout =')
 
     const implementedComponents = sorted(capture(componentMapper, /case '([^']+)'/g))
+    const implementedComponentDispositions = contentArchitectureContract.legacyLayoutDispositions
+      .filter(
+        ({ scope, targets }) =>
+          scope === 'component' &&
+          targets.some((target) =>
+            contentArchitectureContract.blocks.implemented.sectionComponents.includes(target),
+          ),
+      )
+      .map(({ source }) => source)
     const implementedPageLayouts = sorted(
       capture(pageMapper, /layout === '([^']+)'/g).filter((layout) =>
         ['hero', 'columns', 'single'].includes(layout),
       ),
     )
     const implementedArticleLayouts = sorted(capture(articleMapper, /layout === '([^']+)'/g))
-    const plannedArticleLayouts = ['form', 'header', 'post-content', 'table']
+    const plannedArticleLayouts = ['form', 'table']
     const plannedComponentLayouts = contentArchitectureContract.blocks.planned.flatMap(
       ({ sourceLayouts }) =>
         sourceLayouts.filter(({ scope }) => scope === 'component').map(({ source }) => source),
     )
 
     expect(dispositionSources('component')).toEqual(
-      sorted([...implementedComponents, ...plannedComponentLayouts]),
+      sorted([
+        ...implementedComponents,
+        ...implementedComponentDispositions,
+        ...plannedComponentLayouts,
+      ]),
     )
     expect(dispositionSources('page-top-level')).toEqual(implementedPageLayouts)
     expect(dispositionSources('article-top-level')).toEqual(
@@ -148,8 +199,6 @@ describe('production content-architecture contract', () => {
     )
     expect(plannedArticleCounts).toEqual({
       form: 16,
-      header: 42,
-      'post-content': 4,
       table: 1,
     })
   })
@@ -257,9 +306,6 @@ describe('production content-architecture contract', () => {
       'component:column',
       'component:form',
       'component:lifecycle',
-      'component:market-matrix',
-      'component:markets-map',
-      'component:regions',
       'shortcode:wcc_category_list',
     ])
     expect(plannedBlockTypes.filter((blockType) => implemented.has(blockType))).toEqual([])
@@ -284,7 +330,8 @@ describe('production content-architecture contract', () => {
       'hub-details': { count: 72, targetOwner: 'hubs' },
       'learning-video-details': { count: 15, targetOwner: 'learning-videos' },
       'market-coverage-index': { count: 1, targetOwner: 'hubs' },
-      'page-documents': { count: 51, targetOwner: 'pages' },
+      'page-documents': { count: 50, targetOwner: 'pages' },
+      'temporary-contact-redirect': { count: 1, targetOwner: 'redirects' },
       'venue-details': { count: 66, targetOwner: 'venues' },
       'venue-index': { count: 1, targetOwner: 'venues' },
     })
@@ -382,7 +429,8 @@ describe('production content-architecture contract', () => {
       'route-owner:hub-details': { actual: 72, expected: 72 },
       'route-owner:learning-video-details': { actual: 15, expected: 15 },
       'route-owner:market-coverage-index': { actual: 1, expected: 1 },
-      'route-owner:page-documents': { actual: 51, expected: 51 },
+      'route-owner:page-documents': { actual: 50, expected: 50 },
+      'route-owner:temporary-contact-redirect': { actual: 1, expected: 1 },
       'route-owner:venue-details': { actual: 66, expected: 66 },
       'route-owner:venue-index': { actual: 1, expected: 1 },
     })
@@ -460,6 +508,7 @@ describe('production content-architecture contract', () => {
       'page.legal',
       'page.conversion',
       'page.interactive-market-matrix',
+      'redirect.temporary-contact',
       'learning-video.public-detail',
       'venue.public-detail',
       'index.venue',

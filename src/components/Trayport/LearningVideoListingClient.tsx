@@ -1,27 +1,14 @@
 'use client'
 
-import { ArrowRight, ExternalLink, LockKeyhole } from 'lucide-react'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 
-import type { LearningVideo, LearningVideoCategory } from '@/payload-types'
+import type { LearningVideoListingItem } from '@/data/listingContent'
+import { useHydrated } from '@/hooks/useHydrated'
+import type { LearningVideoCategory } from '@/payload-types'
+import { safeExternalHTTPSURL } from '@/routing/urlPolicy'
 
 import { TrayportMedia } from './TrayportMedia'
-
-type LearningVideoListingItem = Pick<
-  LearningVideo,
-  | 'accessMode'
-  | 'categories'
-  | 'contentMode'
-  | 'duration'
-  | 'externalDestination'
-  | 'id'
-  | 'path'
-  | 'poster'
-  | 'product'
-  | 'summary'
-  | 'title'
->
 
 const categoriesFor = (video: LearningVideoListingItem): LearningVideoCategory[] =>
   (video.categories || []).filter(
@@ -31,24 +18,47 @@ const categoriesFor = (video: LearningVideoListingItem): LearningVideoCategory[]
 
 const destinationFor = (video: LearningVideoListingItem) => {
   if (video.contentMode === 'full' && video.path) return { external: false, href: video.path }
-  if (video.externalDestination) return { external: true, href: video.externalDestination }
+  if (video.externalDestination) {
+    const href = safeExternalHTTPSURL(video.externalDestination)
+    return href ? { external: true, href } : null
+  }
   return null
 }
 
-const VideoCard = ({ video }: { video: LearningVideoListingItem }) => {
+export interface LearningVideoListingIcons {
+  arrowRight: ReactNode
+  externalLink: ReactNode
+  lock: ReactNode
+}
+
+export interface LearningVideoListingClientProps {
+  icons: LearningVideoListingIcons
+  initialPageSize: number
+  showCategoryFilter: boolean
+  showProductFilter: boolean
+  videos: LearningVideoListingItem[]
+}
+
+const VideoCard = ({
+  icons,
+  video,
+}: {
+  icons: LearningVideoListingIcons
+  video: LearningVideoListingItem
+}) => {
   const destination = destinationFor(video)
   const protectedVideo = video.accessMode !== 'public'
   const content = (
     <>
       <span className="trayport-video-card__media">
         {video.poster && typeof video.poster === 'object' ? (
-          <TrayportMedia media={video.poster} showFallbackLink={false} />
+          <TrayportMedia composition="card" media={video.poster} showFallbackLink={false} />
         ) : (
           <span aria-hidden className="trayport-article-card__placeholder" />
         )}
         {protectedVideo ? (
           <span className="trayport-video-card__lock">
-            <LockKeyhole aria-hidden size={20} />
+            {icons.lock}
             <span>Trayport login required</span>
           </span>
         ) : null}
@@ -62,18 +72,14 @@ const VideoCard = ({ video }: { video: LearningVideoListingItem }) => {
         {video.summary ? <span>{video.summary}</span> : null}
         <span className="trayport-inline-link">
           View video
-          {destination?.external ? (
-            <ExternalLink aria-hidden size={16} />
-          ) : (
-            <ArrowRight aria-hidden size={16} />
-          )}
+          {destination?.external ? icons.externalLink : icons.arrowRight}
         </span>
       </span>
     </>
   )
 
   if (!destination)
-    return <article className="trayport-video-card is-unavailable">{content}</article>
+    return <article className="is-unavailable trayport-video-card">{content}</article>
   if (destination.external) {
     return (
       <a
@@ -94,16 +100,13 @@ const VideoCard = ({ video }: { video: LearningVideoListingItem }) => {
 }
 
 export const LearningVideoListingClient = ({
+  icons,
   initialPageSize,
   showCategoryFilter,
   showProductFilter,
   videos,
-}: {
-  initialPageSize: number
-  showCategoryFilter: boolean
-  showProductFilter: boolean
-  videos: LearningVideoListingItem[]
-}) => {
+}: LearningVideoListingClientProps) => {
+  const hydrated = useHydrated()
   const [category, setCategory] = useState('all')
   const [product, setProduct] = useState('all')
   const [visible, setVisible] = useState(initialPageSize)
@@ -133,11 +136,16 @@ export const LearningVideoListingClient = ({
   return (
     <>
       {showCategoryFilter || showProductFilter ? (
-        <form className="trayport-learning-filters" onSubmit={(event) => event.preventDefault()}>
+        <form
+          aria-busy={!hydrated}
+          className="trayport-learning-filters"
+          onSubmit={(event) => event.preventDefault()}
+        >
           {showProductFilter ? (
             <label>
               <span>Product</span>
               <select
+                disabled={!hydrated}
                 onChange={(event) => {
                   setProduct(event.target.value)
                   reset()
@@ -155,6 +163,7 @@ export const LearningVideoListingClient = ({
             <label>
               <span>Topic</span>
               <select
+                disabled={!hydrated}
                 onChange={(event) => {
                   setCategory(event.target.value)
                   reset()
@@ -172,7 +181,9 @@ export const LearningVideoListingClient = ({
       ) : null}
       <div aria-live="polite" className="trayport-video-grid">
         {filtered.length ? (
-          filtered.slice(0, visible).map((video) => <VideoCard key={video.id} video={video} />)
+          filtered
+            .slice(0, visible)
+            .map((video) => <VideoCard icons={icons} key={video.id} video={video} />)
         ) : (
           <p className="trayport-listing__empty">No videos match those filters.</p>
         )}
@@ -180,6 +191,7 @@ export const LearningVideoListingClient = ({
       {visible < filtered.length ? (
         <button
           className="trayport-action trayport-action--secondary trayport-listing__more"
+          disabled={!hydrated}
           onClick={() => setVisible((count) => count + initialPageSize)}
           type="button"
         >

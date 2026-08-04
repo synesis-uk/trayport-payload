@@ -30,26 +30,30 @@ types and their dispositions, with zero unknown taxonomies.
 | `trayportHero` | Page proposition, copy, media/video, actions, appearance | `hero` |
 | `contentSection` | Theme, width, spacing, anchor, and controlled responsive columns | `columns`, `single`, and article reading sections |
 | `articleListing` | Generated article listing with heading, intro, page size, and filter behavior | Article-list index behavior |
+| `learningVideoListing` | Generated Learning Hub listing with heading, intro, page size, and bounded filters | Learning Hub index behavior |
 
 ### Section components
 
 | Component | Purpose | Principal source layouts |
 | --- | --- | --- |
-| `heading` | Eyebrow and controlled H2–H4 heading | `header`, `subheader`, `preheader`, article `index-point` |
-| `richText` | Lexical body with controlled text size | `paragraph` |
+| `heading` | Eyebrow and controlled H2–H4 heading | `header`, `subheader`, `preheader`, article `index-point` and top-level `header` |
+| `richText` | Semantic Lexical body with controlled text size; imported H2-H4 headings, ordered/unordered lists, and nested lists remain structured nodes | `paragraph`, curated article `post-content` |
 | `actions` | Managed calls to action | `buttons` |
 | `media` | Managed image/video/file or validated external video | `image`, `videos`, article `media` |
-| `featureList` | Grid, stacked, or logo feature items | `features`, product-feature semantics |
+| `featureList` | Grid, carousel, or lead-plus-carousel feature items with bounded plain, image, or icon displays and opt-in actions | `features`, `products`, `regions`, product-feature semantics |
+| `standaloneIcon` | Bounded gas, power, or emissions icon | `icon` |
 | `statistics` | Structured value/label/description items | `stats` |
 | `faq` | Structured questions and answers | `faqs` |
-| `entityList` | Products, people, clients, venues, or general entities | `products`, `people`, `clients` |
+| `entityList` | People, clients, venues, or general entities | `people`, `clients` |
 | `timeline` | Ordered labelled milestones | `timeline` |
 | `dataTable` | Accessible caption, headers, rows, and cells | `table` |
 | `gallery` | Ordered managed media and captions | `gallery` |
 | `divider` | Semantic line or spacing break | `divider` |
-| `marketCoverage` | Editorial market view backed by managed regions/hubs/venues | `connections` |
+| `marketCoverage` | Editorial market view backed by managed regions/hubs/venues | `connections`, `markets-map` map-only presentation |
 | `embed` | Validated external embed with poster | compatible legacy video/embed semantics |
-| `dataChart` | Editorial chart configuration backed by application PostgreSQL | `charts-new` |
+| `dataChart` | Bounded volume/price chart query related to managed imported Asset Class and Hub records, backed by application PostgreSQL | `charts-new` |
+| `office` | Structured managed office relationship with address, contact, and map behavior | `office` |
+| `marketMatrix` | Filtered, accessible connectivity matrix with CSV export | Market Matrix page behavior backed by managed hub, venue, taxonomy, and region records |
 
 The current contract tests prove that every implemented block has a frontend
 renderer and that the current importer emits only configured implemented block
@@ -61,8 +65,42 @@ rules:
   videos are limited to `trayportHero` and `contentSection`;
 - article listing metadata, map-only hubs, and relationship-only venues cannot
   own layout blocks; and
-- conversion and interactive market-matrix pages remain draft-only until their
-  planned blocks exist.
+- conversion pages remain draft-only until the planned first-party form exists;
+  interactive Market Matrix pages require exactly one managed matrix component; and
+- publishing a Data Chart requires an Asset Class whose imported legacy ID is a valid
+  application-data key. The supported shapes are execution-type volume stacked columns,
+  Hub volume columns, and Hub price lines. Execution-type charts cannot filter Hubs;
+  included/excluded Hub relationship sets on Hub charts must be disjoint. Optional
+  from/to bounds require complete year-and-quarter pairs, and a supplied start cannot
+  follow the supplied end.
+
+### Data Chart source and presentation contract
+
+The accepted navigation slice imports six active `charts-new` blocks from WordPress. The
+importer maps source `for=trade_type` to `seriesDimension=executionType` and the Hub form
+to `seriesDimension=hub`; `display_interval=months`, `quarters`, and `ytd` become `month`,
+`quarter`, and `year`. Source `hubs` and `excluded_hubs` IDs become managed `includedHubs`
+and `excludedHubs` relationships. Hidden ACF defaults from inactive interval groups are
+ignored: only the active `year`, `year_range`, `quarter`, or `quarter_range` source fields
+can create static bounds.
+
+The two Home charts are execution-type quarterly stacked volume. Asia-Pacific is a
+monthly Hub-volume column chart including Japanese Power. Europe contains a yearly
+Hub-volume column chart excluding Swiss, Greek, and Japanese Power; a monthly Hub-price
+line chart including five named power Hubs; and a quarterly Hub-volume column chart
+including PEG, THE, PSV, and NBP. Transform validation asserts those six signatures and
+relationship closure against the imported Asset Class and Hub records.
+
+Runtime queries return at most 40 matching periods and expose `available`, `empty`, and
+`unavailable` data outcomes. The presentation adds `unsupported` for retained drafts that
+fall outside the three supported shapes. Available charts retain an optional accessible
+data-table disclosure; unsupported configurations do not query PostgreSQL and cannot be
+newly published.
+
+Full-article source components are wrapped in current `contentSection` fields, including
+explicit surface/wrapper treatment, reading width, top/bottom spacing, column gap, and
+column layout defaults. The importer does not emit the obsolete generic `theme` or
+`spacing` fields.
 
 These passing route/block invariants do not prove that the planned production
 catalogue is implemented.
@@ -75,17 +113,13 @@ catalogue is implemented.
 | `form` | Section component | `form` | First-party fields, validation, consent, spam controls, submission storage/delivery, and accessible status behavior |
 | `checklist` | Section component | `checklist` | Structured accessible list with controlled style |
 | `lifecycle` | Section component | `lifecycle` | Ordered lifecycle stages and managed supporting content |
-| `marketMatrix` | Section/application component | `market-matrix` | Interactive matrix backed by managed public hub and venue route owners |
-| `office` | Section component | `office` | Structured address, contact, and map behavior |
-| `marketsMap` | Section/application component | `markets-map` | Interactive regions and routable hubs |
-| `regions` | Section component | `regions` | Curated region listing using managed relationships |
 | `cookiePreferences` | Consent integration | `[wcc_category_list]` | First-party consent-category view; no generic shortcode execution |
 
 Each planned block is incomplete until its Payload schema, importer mapping,
 frontend renderer, accessibility behavior, and tests all exist. The `form`
 target must support both page and article sources without reinstating HubSpot.
-In particular, the publication guard deliberately prevents conversion and
-interactive pages from going live while `form` and `marketMatrix` are absent.
+The publication guard deliberately prevents conversion pages from going live
+while `form` is absent.
 
 ## Approved composed-page observations
 
@@ -107,24 +141,25 @@ FAQ is included and Commodities Report is excluded.
 | `image` | 61 | `media` |
 | `videos` | 2 | `media` |
 | `features` | 60 | `featureList` |
+| `icon` | 3 | `standaloneIcon` |
 | `stats` | 2 | `statistics` |
 | `faqs` | 12 | `faq` |
 | `people` | 2 | `entityList(kind=people)` |
-| `products` | 10 | `entityList(kind=products)` |
+| `products` | 10 | `featureList(presentation=grid, display=image)` |
 | `clients` | 8 | `entityList(kind=clients)` |
 | `timeline` | 1 | `timeline` |
 | `table` | 2 | `dataTable` |
 | `gallery` | 5 | `gallery` |
 | `divider` | 27 | `divider` |
 | `connections` | 12 | `marketCoverage` |
-| `charts-new` | 7 | `dataChart` plus application PostgreSQL facts |
+| `charts-new` | 7 | `dataChart` plus application PostgreSQL facts; six active instances are imported by the accepted navigation slice |
 | `form` | 8 | planned `form` |
 | `checklist` | 2 | planned `checklist` |
 | `lifecycle` | 1 | planned `lifecycle` |
-| `market-matrix` | 1 | planned `marketMatrix` |
-| `office` | 12 | planned `office` |
-| `markets-map` | 5 | planned `marketsMap` |
-| `regions` | 3 | planned `regions` |
+| `market-matrix` | 1 | implemented `marketMatrix` behavior on the accepted route |
+| `office` | 12 | implemented `office`; full production transformer/remediation coverage remains open |
+| `markets-map` | 5 | consolidated to implemented `marketCoverage(presentation=mapOnly)` |
+| `regions` | 3 | consolidated to linked `featureList` items |
 | `icon` | 3 | Omit source wrapper; target component selects decorative icon |
 
 Ten of these 42 pages have no source hero. A hero must therefore be allowed
@@ -275,8 +310,8 @@ Production block implementation passes only when:
   transform.
 
 The contract and retained inventory pass disposition totality for the observed
-source, and the 17 runtime archetypes pass their current allowlist/publication
-invariants. The planned production targets still block
+source, and the 18 content-route runtime archetypes pass their current allowlist/publication
+invariants. The remaining planned production targets still block
 `production-block-catalogue-implemented`; runtime rejection of unsupported
 publication is a safe invariant, not an implementation of the missing block.
 
@@ -288,6 +323,6 @@ make content-inventory
 ```
 
 That plan records where these block transforms will be needed, but it is
-planning evidence only. The current imported/rendered acceptance slice covers
-14 routes, and the other 280 production bodies have not been transformed or
-content-remediated.
+planning evidence only. The current acceptance slice covers 26 source roots—25
+rendered content routes and one temporary managed redirect—and the other 268
+plan-only production bodies have not been transformed or content-remediated.

@@ -537,7 +537,8 @@
         "sections_new"
       ],
       "targetOwners": [
-        "pages"
+        "pages",
+        "redirects"
       ],
       "legacyIds": [
         34,
@@ -1641,7 +1642,8 @@
         "page"
       ],
       "targetOwners": [
-        "pages"
+        "pages",
+        "redirects"
       ],
       "authoritativeFields": [
         "sections_new"
@@ -1815,7 +1817,8 @@
         "page"
       ],
       "targetOwners": [
-        "pages"
+        "pages",
+        "redirects"
       ],
       "authoritativeFields": [
         "sections_new"
@@ -1872,7 +1875,8 @@
         "page"
       ],
       "targetOwners": [
-        "pages"
+        "pages",
+        "redirects"
       ],
       "authoritativeFields": [
         "sections_new"
@@ -1896,8 +1900,10 @@
       "layout": "icon",
       "scope": "component",
       "classification": "contract-disposition",
-      "disposition": "omit",
-      "targets": [],
+      "disposition": "map",
+      "targets": [
+        "standaloneIcon"
+      ],
       "dynamicDependencyPostTypes": [],
       "occurrences": 3,
       "routeCount": 1,
@@ -2003,9 +2009,9 @@
       "layout": "markets-map",
       "scope": "component",
       "classification": "contract-disposition",
-      "disposition": "map",
+      "disposition": "consolidate",
       "targets": [
-        "marketsMap"
+        "marketCoverage"
       ],
       "dynamicDependencyPostTypes": [],
       "occurrences": 5,
@@ -2042,7 +2048,8 @@
         "page"
       ],
       "targetOwners": [
-        "pages"
+        "pages",
+        "redirects"
       ],
       "authoritativeFields": [
         "sections_new"
@@ -2068,7 +2075,8 @@
         "page"
       ],
       "targetOwners": [
-        "pages"
+        "pages",
+        "redirects"
       ],
       "authoritativeFields": [
         "sections_new"
@@ -2156,7 +2164,7 @@
       "classification": "contract-disposition",
       "disposition": "consolidate",
       "targets": [
-        "entityList"
+        "featureList"
       ],
       "dynamicDependencyPostTypes": [
         "product"
@@ -2189,9 +2197,9 @@
       "layout": "regions",
       "scope": "component",
       "classification": "contract-disposition",
-      "disposition": "map",
+      "disposition": "consolidate",
       "targets": [
-        "regions"
+        "featureList"
       ],
       "dynamicDependencyPostTypes": [],
       "occurrences": 3,
@@ -2362,7 +2370,8 @@
         "page"
       ],
       "targetOwners": [
-        "pages"
+        "pages",
+        "redirects"
       ],
       "authoritativeFields": [
         "sections_new"
@@ -2397,7 +2406,8 @@
         "page"
       ],
       "targetOwners": [
-        "pages"
+        "pages",
+        "redirects"
       ],
       "authoritativeFields": [
         "sections_new"

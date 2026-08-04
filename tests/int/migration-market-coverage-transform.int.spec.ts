@@ -20,7 +20,10 @@ const term = (id: number, taxonomy: 'asset-class' | 'region' | 'venue-type'): No
   taxonomy,
 })
 
-const transformedCoverage = (overrides: Record<string, NormalizedValue> = {}) => {
+const transformedCoverage = (
+  overrides: Record<string, NormalizedValue> = {},
+  sourceLayout: 'connections' | 'markets-map' = 'connections',
+) => {
   const layout = mapPageLayout(
     {
       sections_new: [
@@ -28,7 +31,7 @@ const transformedCoverage = (overrides: Record<string, NormalizedValue> = {}) =>
           acf_fc_layout: 'single',
           components: [
             {
-              acf_fc_layout: 'connections',
+              acf_fc_layout: sourceLayout,
               asset_classes: [term(22, 'asset-class'), term(21, 'asset-class')],
               color: { color: '#009cde', shade: '#52afde', type: 'brand' },
               height: '350',
@@ -96,6 +99,13 @@ describe('WordPress connection-map transform', () => {
       backgroundMedia: null,
       showLines: false,
       lineWidth: 0.3,
+    })
+  })
+
+  it('preserves default enabled lines for map-only source layouts', () => {
+    expect(transformedCoverage({ show_lines: '' }, 'markets-map')).toMatchObject({
+      presentation: 'mapOnly',
+      showLines: true,
     })
   })
 })

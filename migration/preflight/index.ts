@@ -13,6 +13,8 @@ type SourceProbe = {
     path: string
     postType: string
     status: string
+    template: string
+    title: string
   }>
   tablePrefix: string
 }
@@ -60,6 +62,8 @@ const probeSource = (): SourceProbe => {
     "    'postType' => (string) get_post_type($id),",
     "    'status' => (string) get_post_status($id),",
     "    'path' => (string) wp_parse_url(get_permalink($id), PHP_URL_PATH),",
+    "    'template' => (string) get_page_template_slug($id),",
+    "    'title' => html_entity_decode(get_the_title($id), ENT_QUOTES | ENT_HTML5, 'UTF-8'),",
     '  ];',
     '}',
     'global $wpdb;',
@@ -127,6 +131,19 @@ export const preflight = async (): Promise<void> => {
     if (actual.path !== expectedRoot.path) {
       throw new Error(
         `Source root ${actual.id} resolves to ${actual.path}; expected ${expectedRoot.path}`,
+      )
+    }
+    if (actual.status !== 'publish') {
+      throw new Error(`Source root ${actual.id} has status ${actual.status}; expected publish`)
+    }
+    if ('sourceTitle' in expectedRoot && actual.title !== expectedRoot.sourceTitle) {
+      throw new Error(
+        `Source root ${actual.id} is titled ${actual.title}; expected ${expectedRoot.sourceTitle}`,
+      )
+    }
+    if ('sourceTemplate' in expectedRoot && actual.template !== expectedRoot.sourceTemplate) {
+      throw new Error(
+        `Source root ${actual.id} uses ${actual.template}; expected ${expectedRoot.sourceTemplate}`,
       )
     }
   }

@@ -2,6 +2,7 @@ import { extract } from './extract'
 import { inventoryProduction } from './inventory'
 import { load } from './load'
 import { preflight } from './preflight'
+import { recoverMedia } from './recover-media'
 import { transform } from './transform'
 import { validateRun } from './validate'
 
@@ -11,6 +12,18 @@ const command = args[0]
 const valueAfter = (name: string): string | undefined => {
   const index = args.indexOf(name)
   return index >= 0 ? args[index + 1] : undefined
+}
+
+const positiveIDsAfter = (name: string): number[] => {
+  const value = valueAfter(name)
+  if (!value) return []
+  return value.split(',').map((candidate) => {
+    const parsed = Number(candidate)
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      throw new Error(`${name} must contain comma-separated positive integer IDs.`)
+    }
+    return parsed
+  })
 }
 
 const main = async (): Promise<void> => {
@@ -29,6 +42,16 @@ const main = async (): Promise<void> => {
       inventoryProduction(valueAfter('--run-id'))
       return
     }
+    case 'recover-media': {
+      const origin = valueAfter('--origin')
+      if (!origin) throw new Error('recover-media requires --origin <https-origin>.')
+      await recoverMedia({
+        legacyIds: positiveIDsAfter('--legacy-ids'),
+        origin,
+        runId: valueAfter('--run-id'),
+      })
+      return
+    }
     case 'transform':
       transform(valueAfter('--run-id'))
       return
@@ -44,7 +67,7 @@ const main = async (): Promise<void> => {
       return
     default:
       throw new Error(
-        'Usage: tsx migration/cli.ts <preflight|inventory|extract|transform|load|validate> [--scope production|poc] [--run-id name] [--dry-run] [--publish]',
+        'Usage: tsx migration/cli.ts <preflight|inventory|extract|recover-media|transform|load|validate> [--scope production] [--run-id name] [--origin https-origin --legacy-ids id,id] [--dry-run] [--publish]',
       )
   }
 }

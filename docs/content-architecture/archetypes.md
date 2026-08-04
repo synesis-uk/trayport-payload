@@ -6,12 +6,13 @@ An archetype defines who owns a public route, which content is required, which
 blocks or structured fields are allowed, and what editors can do. It is not
 just a label for a WordPress template.
 
-The machine-readable contract defines 17 target archetypes, and the runtime
-registry contains the same 17 IDs. Payload integration tests now prove their
+The machine-readable contract defines 18 content-route archetypes plus the
+temporary Contact redirect archetype. The content runtime registry contains the
+same 18 content-route IDs. Payload integration tests now prove their
 discriminators, required/forbidden route policies, top-level block policies,
 publication guards, virtual claims, and cross-collection collision behavior.
 This passing runtime gate is narrower than production parity: planned blocks
-and the remaining 280 plan-only documents are still incomplete.
+and the remaining 268 plan-only documents are still incomplete.
 
 ## Target archetypes
 
@@ -21,9 +22,9 @@ and the remaining 280 plan-only documents are still incomplete.
 | `page.standard` | `pages` | Required | Layout | Passing runtime route/block invariant |
 | `page.product` | `pages` | Required | Layout | Passing runtime route/block invariant |
 | `page.landing` | `pages` | Required | Layout | Passing runtime route/block invariant |
-| `page.legal` | `pages` | Required | Layout and policy semantics | Passing route/block baseline; production consent component remains planned |
+| `page.legal` | `pages` | Required | Layout and policy semantics | Passing route/block baseline; the accepted cookie-policy page and consent relationship are imported and rendered |
 | `page.conversion` | `pages` | Required | Layout and first-party form | Passing guard: draftable but publication is denied until the planned form exists |
-| `page.interactive-market-matrix` | `pages` | Required | Layout and managed market relationships | Passing guard: draftable but publication is denied until the planned matrix exists |
+| `page.interactive-market-matrix` | `pages` | Required | Layout and managed market relationships | Passing: publication requires exactly one managed `marketMatrix` component |
 | `page.content-index` | `pages` | Required | Layout plus generated listing | Passing: publication requires `articleListing`, which is forbidden on other page types |
 | `article.full` | `articles` | Required | Complete article layout | Passing: publication requires a path and non-empty allowed layout |
 | `article.listing-metadata` | `articles` | Forbidden | Listing metadata only | Passing: path and layout are forbidden |
@@ -34,6 +35,7 @@ and the remaining 280 plan-only documents are still incomplete.
 | `venue.public-detail` | `venues` | Required | Detail layout and structured market data | Passing: `page` mode has route, preview, renderer, SEO, and minimum-detail validation |
 | `index.venue` | System claim; `route-indexes` config; `venues` query | Required virtual `/venue/` | Derived collection index | Passing: system claim and CMS configuration are implemented |
 | `index.market-coverage` | System claim; `route-indexes` config; `hubs` query | Required virtual `/market-coverage/` | Derived collection index | Passing: system claim and CMS configuration are implemented |
+| `redirect.temporary-contact` | `redirects` | Required `/request-a-demo/` source | Temporary journey bridge | Passing: imported `302` resolves to managed `/contact/`; reversible when a first-party demo form exists |
 
 “Forbidden” means the record may be publicly readable as data for a managed
 component, but it cannot claim a standalone public path or appear as an
@@ -46,7 +48,8 @@ internal detail destination.
 | Front page using `default-new` | `page.homepage` |
 | General `default-new` pages | `page.standard`, `page.product`, `page.landing`, or `page.conversion`, selected by route purpose and content |
 | `article.blade.php` and cookie policy | `page.legal` |
-| Pages whose primary purpose is first-party enquiry/demo submission | `page.conversion` |
+| Pages whose primary purpose is first-party enquiry/demo submission | `page.conversion`; remains draft-only until the first-party form exists |
+| Current `/request-a-demo/` source root | `redirect.temporary-contact` to managed `/contact/`; no HubSpot form or unused hero media is imported |
 | `market-matrix.blade.php` | `page.interactive-market-matrix` |
 | `articles-list.blade.php` and Learning Hub home | `page.content-index` with a constrained listing behavior |
 | Published `post` details linked by News, Event, or Insights listings | `article.full` |
@@ -64,7 +67,8 @@ conversion page; the presence and purpose of a form does.
 
 ## Count ownership
 
-The direct-page archetypes collectively target the 51 Payload page documents.
+The direct-page archetypes collectively target 50 Payload page documents; the
+source Request A Demo page is temporarily owned by `redirects` instead.
 The source template footprint for those documents is fixed in
 [scope.md](scope.md#page-document-footprint). The retained inventory verifies
 that all 51 source routes receive a known archetype candidate. Runtime
@@ -80,6 +84,7 @@ The remaining route ownership is explicit:
 | `hubs` using `hub.public-page` | 72 |
 | `learning-videos` | 15 |
 | Venue and market-coverage virtual indexes | 2 |
+| Temporary Contact redirect sourced from a WordPress page | 1 |
 
 Relationship-only venue records, map-only hub records, and article
 listing-metadata records are not counted as public routes. The retained
@@ -134,15 +139,15 @@ The implemented publication hook enforces:
 - the homepage is the sole owner of `/`;
 - a full article has a non-empty allowed layout;
 - every content index uses only the listing behavior allowed for that index;
-- conversion and interactive-market-matrix pages cannot publish while their
-  required production blocks are absent;
+- conversion pages cannot publish while their first-party form is absent;
+- interactive Market Matrix pages require exactly one managed matrix component;
 - a public venue has managed description or layout content;
 - a publishable Learning Hub detail has public access mode, playable
   managed/external media, and required metadata; and
 - imported and native writes use the same route/discriminator rules.
 
-Production still requires the planned form, cookie-consent, and market-matrix
-components, complete managed-link validation, and verification that every
+Production still requires the planned form and cookie-consent components,
+complete 296-route managed-link validation, and verification that every
 editor-visible setting affects the frontend. Those requirements remain under
 their separate non-passing gates; the passing archetype gate does not claim
 they are complete.

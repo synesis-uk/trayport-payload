@@ -4,12 +4,18 @@ import { admins, adminsOrEditors, isAdminOrEditor, publicOrCMSUsers } from '@/ac
 import { trayportLayoutBlocks } from '@/blocks/Trayport/config'
 import { contentPathField } from '@/fields/contentPath'
 import { createLegacySourceField } from '@/fields/legacySource'
+import { imageUploadField, videoUploadField } from '@/fields/mediaUpload'
 import { publishedAtField } from '@/fields/publishedAt'
 import { confirmPathRedirectField } from '@/fields/routeControls'
 import { seoField } from '@/fields/seo'
 import { trayportSlugField } from '@/fields/slug'
 import { validateHTTPSVideoURL, validateRoutableDocument } from '@/routing/archetypes'
 import { releaseRoutableRoute, syncRoutableRoute } from '@/routing/registry'
+import {
+  externalHTTPSDestinationPolicy,
+  normalizeDestinationValue,
+  validateExternalHTTPSURL,
+} from '@/routing/urlPolicy'
 import { generateContentPreviewPath } from '@/utilities/generateContentPreviewPath'
 
 import {
@@ -89,8 +95,12 @@ export const LearningVideos: CollectionConfig = {
         condition: (_data, siblingData) => siblingData?.contentMode === 'listing',
         description: 'HTTPS destination for a listing-only record.',
       },
-      validate: (value: string | null | undefined) =>
-        !value || /^https:\/\/[^/?#]+(?:[/?#].*)?$/i.test(value) || 'Use a complete HTTPS URL.',
+      hooks: {
+        beforeValidate: [
+          ({ value }) => normalizeDestinationValue(value, externalHTTPSDestinationPolicy),
+        ],
+      },
+      validate: (value: string | null | undefined) => validateExternalHTTPSURL(value),
     },
     {
       name: 'accessMode',
@@ -108,9 +118,8 @@ export const LearningVideos: CollectionConfig = {
       ],
       required: true,
     },
-    {
+    videoUploadField({
       name: 'video',
-      type: 'upload',
       access: {
         read: ({ doc, req, siblingData }) =>
           isAdminOrEditor(req.user) ||
@@ -123,13 +132,7 @@ export const LearningVideos: CollectionConfig = {
         description:
           'Public videos only. Protected delivery is not implemented and protected records cannot reference this public media library.',
       },
-      filterOptions: {
-        mimeType: {
-          contains: 'video/',
-        },
-      },
-      relationTo: 'media',
-    },
+    }),
     {
       name: 'externalVideoURL',
       type: 'text',
@@ -144,18 +147,16 @@ export const LearningVideos: CollectionConfig = {
           siblingData?.contentMode === 'full' && siblingData?.accessMode === 'public',
         description: 'Optional HTTPS video destination when media is hosted outside Payload.',
       },
+      hooks: {
+        beforeValidate: [
+          ({ value }) => normalizeDestinationValue(value, externalHTTPSDestinationPolicy),
+        ],
+      },
       validate: (value: string | null | undefined) => validateHTTPSVideoURL(value),
     },
-    {
+    imageUploadField({
       name: 'poster',
-      type: 'upload',
-      filterOptions: {
-        mimeType: {
-          contains: 'image/',
-        },
-      },
-      relationTo: 'media',
-    },
+    }),
     {
       name: 'duration',
       type: 'text',
@@ -227,14 +228,8 @@ export const LearningVideos: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [validateRoutableDocument('learning-videos')],
-    afterChange: [
-      syncRoutableRoute('learning-videos'),
-      revalidateRoutableContent('content-sitemap'),
-    ],
-    afterDelete: [
-      releaseRoutableRoute('learning-videos'),
-      revalidateDeletedRoutableContent('content-sitemap'),
-    ],
+    afterChange: [syncRoutableRoute('learning-videos'), revalidateRoutableContent()],
+    afterDelete: [releaseRoutableRoute('learning-videos'), revalidateDeletedRoutableContent()],
   },
   versions: {
     drafts: {

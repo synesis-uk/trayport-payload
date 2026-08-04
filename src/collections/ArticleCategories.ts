@@ -5,6 +5,11 @@ import { anyone } from '@/access/anyone'
 import { createLegacySourceField } from '@/fields/legacySource'
 import { trayportSlugField } from '@/fields/slug'
 
+import {
+  revalidateCacheDependency,
+  revalidateDeletedCacheDependency,
+} from './hooks/revalidateDependencies'
+
 export const ArticleCategories: CollectionConfig = {
   slug: 'article-categories',
   access: {
@@ -50,4 +55,8 @@ export const ArticleCategories: CollectionConfig = {
     trayportSlugField(),
     createLegacySourceField(),
   ],
+  hooks: {
+    afterChange: [revalidateCacheDependency()],
+    afterDelete: [revalidateDeletedCacheDependency],
+  },
 }

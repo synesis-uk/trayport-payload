@@ -1,6 +1,10 @@
-import type { Field, GroupField } from 'payload'
+import type { Field, GroupField, Where } from 'payload'
 
-import { normalizeContentPath } from './contentPath'
+import {
+  managedLinkDestinationPolicy,
+  normalizeDestinationValue,
+  validateDestination,
+} from '@/routing/urlPolicy'
 
 type NavigationLinkOptions = {
   includeLabel?: boolean
@@ -9,27 +13,13 @@ type NavigationLinkOptions = {
   typeDBName?: string
 }
 
-const validateCustomURL = (value: unknown): true | string => {
-  if (typeof value !== 'string' || !value.trim()) return 'Add a destination URL.'
-  const url = value.trim()
-  if (/^(?:#[A-Za-z][\w:-]*|mailto:[^\s@]+@[^\s@]+|tel:\+?[\d\s().-]+)$/i.test(url)) {
-    return true
-  }
-  if (url.startsWith('/')) {
-    const normalized = normalizeContentPath(url)
-    return normalized === url
-      ? true
-      : 'Use a normalized internal path with leading and trailing slashes.'
-  }
-  try {
-    const parsed = new URL(url)
-    return parsed.protocol === 'https:' && Boolean(parsed.hostname)
-      ? true
-      : 'External destinations must use HTTPS.'
-  } catch {
-    return 'Use a normalized internal path, anchor, email, phone number, or complete HTTPS URL.'
-  }
-}
+const validateCustomURL = (value: unknown): true | string =>
+  validateDestination(value, {
+    message:
+      'Use a normalized internal path, anchor, email, phone number, or complete HTTPS URL without credentials.',
+    policy: managedLinkDestinationPolicy,
+    required: true,
+  })
 
 export const navigationLinkField = ({
   includeLabel = false,
@@ -65,6 +55,11 @@ export const navigationLinkField = ({
         condition: (_data, siblingData) => siblingData?.type === 'reference',
       },
       label: 'Content',
+      filterOptions: () =>
+        ({
+          _status: { equals: 'published' },
+          path: { exists: true },
+        }) satisfies Where,
       maxDepth: 1,
       relationTo: ['pages', 'articles', 'hubs', 'venues', 'learning-videos'],
       validate: (value: unknown, { siblingData }: { siblingData?: { type?: string } }) => {
@@ -79,6 +74,9 @@ export const navigationLinkField = ({
         condition: (_data, siblingData) => siblingData?.type === 'custom',
       },
       label: 'URL',
+      hooks: {
+        beforeValidate: [({ value }) => normalizeDestinationValue(value)],
+      },
       validate: (value: unknown, { siblingData }: { siblingData?: { type?: string } }) => {
         if (!siblingData?.type) return required ? 'Choose a link type.' : true
         return siblingData.type === 'custom' ? validateCustomURL(value) : true

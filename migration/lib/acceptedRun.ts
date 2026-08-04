@@ -2,7 +2,9 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { sourceRecordSchema } from '../contracts/v1'
 import { migrationConfig } from './config'
+import { assertMediaRecoveryEvidenceMatchesSource } from './mediaRecoveryEvidence'
 
 export const acceptedRunArtifactPaths = [
   'source.ndjson',
@@ -90,10 +92,24 @@ const assertAcceptedEvidence = (runId: string, runDir: string): void => {
 
   const sourcePath = path.join(runDir, 'source.ndjson')
   const manifest = readJSON(path.join(runDir, 'source-manifest.json'))
-  const sourceHash = sha256(fs.readFileSync(sourcePath))
+  const sourceBuffer = fs.readFileSync(sourcePath)
+  const sourceHash = sha256(sourceBuffer)
   if (manifest.runId !== runId || manifest.sourceHash !== sourceHash) {
     throw new Error(`Migration run ${runId} source manifest does not match source.ndjson.`)
   }
+
+  const sourceRecords = sourceBuffer
+    .toString('utf8')
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as unknown)
+    .filter(
+      (record): record is Record<string, unknown> =>
+        Boolean(record) && typeof record === 'object' && !Array.isArray(record),
+    )
+    .filter((record) => record.entity === 'media')
+    .map((record) => sourceRecordSchema.parse(record))
+  assertMediaRecoveryEvidenceMatchesSource(sourceRecords, manifest)
 }
 
 const artifactHashes = (runDir: string): AcceptedRunMarker['artifacts'] =>

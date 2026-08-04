@@ -5,15 +5,42 @@ import {
 } from '@payloadcms/richtext-lexical'
 import {
   type JSXConvertersFunction,
-  LinkJSXConverter,
   RichText as ConvertRichText,
 } from '@payloadcms/richtext-lexical/react'
+import Link from 'next/link'
+import type { ReactNode } from 'react'
 
+import { safeDestination } from '@/routing/urlPolicy'
 import { cn } from '@/utilities/ui'
 
 type LinkedDocument = {
   path?: string | null
   slug?: string | null
+}
+
+const RichTextLink = ({
+  children,
+  href,
+  newTab,
+}: {
+  children: ReactNode
+  href: string
+  newTab?: boolean | null
+}) => {
+  const attributes = {
+    rel: newTab ? 'noopener noreferrer' : undefined,
+    target: newTab ? '_blank' : undefined,
+  }
+
+  return href.startsWith('/') ? (
+    <Link href={href} {...attributes}>
+      {children}
+    </Link>
+  ) : (
+    <a href={href} {...attributes}>
+      {children}
+    </a>
+  )
 }
 
 const internalDocToHref = ({ linkNode }: { linkNode: SerializedLinkNode }) => {
@@ -30,7 +57,30 @@ const internalDocToHref = ({ linkNode }: { linkNode: SerializedLinkNode }) => {
 
 const jsxConverters: JSXConvertersFunction<DefaultNodeTypes> = ({ defaultConverters }) => ({
   ...defaultConverters,
-  ...LinkJSXConverter({ internalDocToHref }),
+  autolink: ({ node, nodesToJSX }) => {
+    const children = nodesToJSX({ nodes: node.children })
+    const href = safeDestination(node.fields.url)
+    if (!href) return <>{children}</>
+
+    return (
+      <RichTextLink href={href} newTab={node.fields.newTab}>
+        {children}
+      </RichTextLink>
+    )
+  },
+  link: ({ node, nodesToJSX }) => {
+    const children = nodesToJSX({ nodes: node.children })
+    const candidate =
+      node.fields.linkType === 'internal' ? internalDocToHref({ linkNode: node }) : node.fields.url
+    const href = safeDestination(candidate)
+    if (!href) return <>{children}</>
+
+    return (
+      <RichTextLink href={href} newTab={node.fields.newTab}>
+        {children}
+      </RichTextLink>
+    )
+  },
 })
 
 type Props = {
@@ -48,9 +98,9 @@ export default function RichText(props: Props) {
       className={cn(
         'payload-richtext',
         {
-          container: enableGutter,
+          'trayport-container': enableGutter,
           'max-w-none': !enableGutter,
-          'mx-auto prose md:prose-md dark:prose-invert': enableProse,
+          'trayport-prose mx-auto prose': enableProse,
         },
         className,
       )}

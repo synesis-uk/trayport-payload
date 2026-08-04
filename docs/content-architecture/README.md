@@ -6,16 +6,18 @@ contract is the baseline for automated checks; these documents explain the
 approved production target, source evidence, editor tasks, and launch gates.
 
 The content-architecture milestone is complete. The routable-content foundation
-is also implemented: a transaction-backed shared route registry and all 17
-runtime discriminator/publication invariants now pass their gates. Production
+is also implemented: a transaction-backed shared route registry and all 18
+content-route runtime discriminator/publication invariants now pass their gates. Production
 readiness remains `blocked` because six blocker gates are still non-passing:
 complete article bodies, complete listing-linked route owners, the planned
 production block catalogue, managed internal links, editor-control runtime
 parity, and full editor-role capability enforcement.
 
 This status does not widen the delivered content slice. The current importer and
-frontend acceptance still cover six representative source routes. The verified
-296-route inventory and deterministic target plan describe the remaining work;
+frontend acceptance cover 26 immutable source roots: 25 rendered content routes
+and the temporary `/request-a-demo/` redirect to Contact. The verified 296-route
+inventory and deterministic target plan describe the remaining 268 plan-only
+documents;
 they do not mean those documents have been imported, rendered, or reviewed.
 
 - [Scope and acceptance boundary](scope.md)

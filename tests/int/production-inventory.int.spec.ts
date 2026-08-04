@@ -41,7 +41,8 @@ describe('production WordPress inventory', () => {
           canonicalPath: '/products/eod-file/',
         }),
         expect.objectContaining({
-          canonicalPath: '/privacy/',
+          canonicalPath: '/legal/cookie-policy/',
+          legacyId: 7589,
           archetype: 'page.legal',
         }),
       ]),

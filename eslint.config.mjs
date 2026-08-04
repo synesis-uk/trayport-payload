@@ -24,8 +24,58 @@ const eslintConfig = [
     },
   },
   {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/components/icons/**', 'src/components/ui/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@awesome.me/**',
+                '@fortawesome/**',
+                '@headlessui/**',
+                '@heroicons/**',
+                '@mui/**',
+                '@radix-ui/**',
+                'lucide-react',
+              ],
+              message:
+                'Use the central AppIcon registry and the approved shadcn/Radix primitive layer.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@awesome.me/**',
+                '@fortawesome/**',
+                '@headlessui/**',
+                '@heroicons/**',
+                '@mui/**',
+                'lucide-react',
+              ],
+              message: 'Use the central AppIcon registry and approved Radix primitives.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     ignores: [
       '.next/**',
+      'output/**',
       'playwright-report/**',
       'src/payload-types.ts',
       'src/payload-generated-schema.ts',

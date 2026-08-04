@@ -5,12 +5,18 @@ import { trayportLayoutBlocks } from '@/blocks/Trayport/config'
 import { contentPathField } from '@/fields/contentPath'
 import { coordinatesField } from '@/fields/coordinates'
 import { createLegacySourceField } from '@/fields/legacySource'
+import { imageUploadField } from '@/fields/mediaUpload'
 import { publishedAtField } from '@/fields/publishedAt'
 import { confirmPathRedirectField } from '@/fields/routeControls'
 import { seoField } from '@/fields/seo'
 import { trayportSlugField } from '@/fields/slug'
 import { validateRoutableDocument } from '@/routing/archetypes'
 import { releaseRoutableRoute, syncRoutableRoute } from '@/routing/registry'
+import {
+  externalHTTPSDestinationPolicy,
+  normalizeDestinationValue,
+  validateExternalHTTPSURL,
+} from '@/routing/urlPolicy'
 import { generateContentPreviewPath } from '@/utilities/generateContentPreviewPath'
 
 import {
@@ -45,6 +51,7 @@ export const Venues: CollectionConfig = {
     summary: true,
     title: true,
     venueTypes: true,
+    website: true,
   },
   defaultSort: 'title',
   fields: [
@@ -110,14 +117,18 @@ export const Venues: CollectionConfig = {
           admin: {
             width: '50%',
           },
+          hooks: {
+            beforeValidate: [
+              ({ value }) => normalizeDestinationValue(value, externalHTTPSDestinationPolicy),
+            ],
+          },
+          validate: (value: string | null | undefined) => validateExternalHTTPSURL(value),
         },
       ],
     },
-    {
+    imageUploadField({
       name: 'logo',
-      type: 'upload',
-      relationTo: 'media',
-    },
+    }),
     {
       name: 'venueTypes',
       type: 'relationship',
@@ -199,14 +210,8 @@ export const Venues: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [validateRoutableDocument('venues')],
-    afterChange: [
-      syncRoutableRoute('venues'),
-      revalidateRoutableContent('content-sitemap', ['/venue/']),
-    ],
-    afterDelete: [
-      releaseRoutableRoute('venues'),
-      revalidateDeletedRoutableContent('content-sitemap', ['/venue/']),
-    ],
+    afterChange: [syncRoutableRoute('venues'), revalidateRoutableContent(['/venue/'])],
+    afterDelete: [releaseRoutableRoute('venues'), revalidateDeletedRoutableContent(['/venue/'])],
   },
   versions: {
     drafts: {

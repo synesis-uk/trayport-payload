@@ -293,7 +293,10 @@ const hashFile = (filePath: string): Promise<string> =>
     stream.on('end', () => resolve(hash.digest('hex')))
   })
 
-const safeSourceFile = async (record: TargetRecord): Promise<string | undefined> => {
+export const safeSourceFile = async (
+  record: TargetRecord,
+  runDir: string,
+): Promise<string | undefined> => {
   if (record.target !== 'media') return undefined
   const source = record.data.source as MediaSourceTransport | undefined
   if (source?.availability === 'unavailable') {
@@ -310,7 +313,16 @@ const safeSourceFile = async (record: TargetRecord): Promise<string | undefined>
     return undefined
   }
 
-  const root = fs.realpathSync(migrationConfig.source.uploads)
+  const sourceRoot =
+    source?.availability === 'recovered'
+      ? path.resolve(runDir, 'recovered-media')
+      : migrationConfig.source.uploads
+  if (!fs.existsSync(sourceRoot)) {
+    throw new Error(
+      `Missing ${source?.availability === 'recovered' ? 'recovered' : 'local'} media root for WordPress attachment ${record.legacy.legacyId}: ${sourceRoot}`,
+    )
+  }
+  const root = fs.realpathSync(sourceRoot)
   const candidate = path.resolve(root, source.relativePath)
   if (!candidate.startsWith(`${root}${path.sep}`)) {
     throw new Error(`Unsafe media source path for WordPress attachment ${record.legacy.legacyId}`)
@@ -364,9 +376,10 @@ const storedMediaMatchesSource = (record: TargetRecord, existing?: PayloadDocume
 
 const sourceFileForOperation = async (
   record: TargetRecord,
+  runDir: string,
   existing?: PayloadDocument,
 ): Promise<string | undefined> => {
-  const sourceFile = await safeSourceFile(record)
+  const sourceFile = await safeSourceFile(record, runDir)
   if (!existing || record.target !== 'media' || !sourceFile) return sourceFile
 
   // Metadata-only changes must not upload another object. Unavailable sources retain
@@ -441,7 +454,9 @@ export const load = async (options: LoadOptions = {}): Promise<void> => {
   // of leaving a partially applied migration for the retry path to repair.
   const mediaFiles = (
     await Promise.all(
-      targets.filter((record) => record.target === 'media').map((record) => safeSourceFile(record)),
+      targets
+        .filter((record) => record.target === 'media')
+        .map((record) => safeSourceFile(record, runDir)),
     )
   ).filter(Boolean)
   if (options.dryRun) {
@@ -550,7 +565,7 @@ export const load = async (options: LoadOptions = {}): Promise<void> => {
         data._status = 'draft'
       }
 
-      const filePath = await sourceFileForOperation(record, existing)
+      const filePath = await sourceFileForOperation(record, runDir, existing)
       const operation = existing
         ? payload.update({
             collection: record.target,

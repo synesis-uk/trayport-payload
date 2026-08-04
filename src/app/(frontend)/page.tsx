@@ -1,8 +1,13 @@
-import { ContentRoute, contentRouteMetadata } from './contentRoute'
+import { contentRouteMetadata } from './contentRoute.metadata.server'
+import { ContentRoute } from './contentRoute.renderer'
 
-export default function HomePage() {
-  return <ContentRoute />
+type HomePageProps = {
+  searchParams: Promise<{ q?: string | string[] }>
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const { q } = await searchParams
+  return <ContentRoute searchQuery={q} />
 }
 
 export const generateMetadata = () => contentRouteMetadata({})
-export const dynamic = 'force-dynamic'

@@ -1,92 +1,134 @@
-import type { ButtonProps } from '@/components/ui/button'
-
-import { buttonVariants } from '@/components/ui/button'
-import { cn } from '@/utilities/ui'
-import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react'
+import Link from 'next/link'
 import * as React from 'react'
 
-const Pagination = ({ className, ...props }: React.ComponentProps<'nav'>) => (
-  <nav
-    aria-label="pagination"
-    className={cn('mx-auto flex w-full justify-center', className)}
-    role="navigation"
-    {...props}
-  />
-)
+import { AppIcon } from '@/components/icons'
+import { cn } from '@/utilities/ui'
 
-const PaginationContent: React.FC<
-  { ref?: React.Ref<HTMLUListElement> } & React.HTMLAttributes<HTMLUListElement>
-> = ({ className, ref, ...props }) => (
-  <ul className={cn('flex flex-row items-center gap-1', className)} ref={ref} {...props} />
-)
+export type PaginationItem = number | 'ellipsis'
 
-const PaginationItem: React.FC<
-  { ref?: React.Ref<HTMLLIElement> } & React.HTMLAttributes<HTMLLIElement>
-> = ({ className, ref, ...props }) => <li className={cn('', className)} ref={ref} {...props} />
+export function getPaginationItems(
+  currentPage: number,
+  totalPages: number,
+  siblingCount = 1,
+): PaginationItem[] {
+  if (
+    !Number.isInteger(currentPage) ||
+    !Number.isInteger(totalPages) ||
+    !Number.isInteger(siblingCount)
+  ) {
+    throw new TypeError('Pagination values must be integers.')
+  }
+  if (totalPages < 1 || currentPage < 1 || currentPage > totalPages || siblingCount < 0) {
+    throw new RangeError('Pagination values are outside their supported range.')
+  }
 
-type PaginationLinkProps = {
-  isActive?: boolean
-} & Pick<ButtonProps, 'size'> &
-  React.ComponentProps<'button'>
+  const visiblePages = new Set<number>([1, totalPages])
+  for (
+    let page = Math.max(1, currentPage - siblingCount);
+    page <= Math.min(totalPages, currentPage + siblingCount);
+    page += 1
+  ) {
+    visiblePages.add(page)
+  }
 
-const PaginationLink = ({ className, isActive, size = 'icon', ...props }: PaginationLinkProps) => (
-  <button
-    aria-current={isActive ? 'page' : undefined}
-    className={cn(
-      buttonVariants({
-        size,
-        variant: isActive ? 'outline' : 'ghost',
-      }),
-      className,
-    )}
-    {...props}
-  />
-)
+  const sortedPages = [...visiblePages].sort((left, right) => left - right)
+  const items: PaginationItem[] = []
 
-const PaginationPrevious = ({
+  sortedPages.forEach((page, index) => {
+    const previousPage = sortedPages[index - 1]
+    if (previousPage !== undefined && page - previousPage > 1) items.push('ellipsis')
+    items.push(page)
+  })
+
+  return items
+}
+
+export interface PaginationProps extends Omit<React.ComponentProps<'nav'>, 'children'> {
+  currentPage: number
+  getHref: (page: number) => string
+  siblingCount?: number
+  totalPages: number
+}
+
+const directionClassName =
+  'inline-flex min-h-11 items-center gap-2 border-t-2 border-transparent px-1 pt-4 text-sm font-medium text-muted-foreground no-underline transition-colors hover:border-border hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trayport-orange'
+
+export function Pagination({
+  'aria-label': ariaLabel = 'Pagination',
   className,
+  currentPage,
+  getHref,
+  siblingCount = 1,
+  totalPages,
   ...props
-}: React.ComponentProps<typeof PaginationLink>) => (
-  <PaginationLink
-    aria-label="Go to previous page"
-    className={cn('gap-1 pl-2.5', className)}
-    size="default"
-    {...props}
-  >
-    <ChevronLeft className="h-4 w-4" />
-    <span>Previous</span>
-  </PaginationLink>
-)
+}: PaginationProps) {
+  if (totalPages <= 1) return null
 
-const PaginationNext = ({ className, ...props }: React.ComponentProps<typeof PaginationLink>) => (
-  <PaginationLink
-    aria-label="Go to next page"
-    className={cn('gap-1 pr-2.5', className)}
-    size="default"
-    {...props}
-  >
-    <span>Next</span>
-    <ChevronRight className="h-4 w-4" />
-  </PaginationLink>
-)
+  const items = getPaginationItems(currentPage, totalPages, siblingCount)
 
-const PaginationEllipsis = ({ className, ...props }: React.ComponentProps<'span'>) => (
-  <span
-    aria-hidden
-    className={cn('flex h-9 w-9 items-center justify-center', className)}
-    {...props}
-  >
-    <MoreHorizontal className="h-4 w-4" />
-    <span className="sr-only">More pages</span>
-  </span>
-)
+  return (
+    <nav
+      aria-label={ariaLabel}
+      className={cn('flex items-center justify-between border-t border-border', className)}
+      data-slot="pagination"
+      {...props}
+    >
+      <div className="-mt-px flex w-0 flex-1">
+        {currentPage > 1 ? (
+          <Link className={directionClassName} href={getHref(currentPage - 1)} rel="prev">
+            <AppIcon aria-hidden className="size-4" name="chevronLeft" />
+            <span className="hidden sm:inline">Previous</span>
+          </Link>
+        ) : (
+          <span aria-disabled="true" className={cn(directionClassName, 'opacity-40')}>
+            <AppIcon aria-hidden className="size-4" name="chevronLeft" />
+            <span className="hidden sm:inline">Previous</span>
+          </span>
+        )}
+      </div>
 
-export {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
+      <ol className="-mt-px hidden items-stretch md:flex">
+        {items.map((item, index) => (
+          <li key={item === 'ellipsis' ? `ellipsis-${index}` : item}>
+            {item === 'ellipsis' ? (
+              <span
+                aria-hidden="true"
+                className="inline-flex min-h-11 items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-muted-foreground"
+              >
+                &hellip;
+              </span>
+            ) : (
+              <Link
+                aria-current={item === currentPage ? 'page' : undefined}
+                aria-label={`Page ${item}`}
+                className={cn(
+                  'inline-flex min-h-11 items-center border-t-2 px-4 pt-4 text-sm font-medium no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trayport-orange',
+                  item === currentPage
+                    ? 'border-trayport-blue text-trayport-blue'
+                    : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground',
+                )}
+                href={getHref(item)}
+              >
+                {item}
+              </Link>
+            )}
+          </li>
+        ))}
+      </ol>
+
+      <div className="-mt-px flex w-0 flex-1 justify-end">
+        {currentPage < totalPages ? (
+          <Link className={directionClassName} href={getHref(currentPage + 1)} rel="next">
+            <span className="hidden sm:inline">Next</span>
+            <AppIcon aria-hidden className="size-4" name="chevronRight" />
+          </Link>
+        ) : (
+          <span aria-disabled="true" className={cn(directionClassName, 'opacity-40')}>
+            <span className="hidden sm:inline">Next</span>
+            <AppIcon aria-hidden className="size-4" name="chevronRight" />
+          </span>
+        )}
+      </div>
+    </nav>
+  )
 }

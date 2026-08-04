@@ -441,6 +441,11 @@ export const verifyProductionInventory = (
       postType === 'page' &&
       targetOwner === 'pages' &&
       archetype.startsWith('page.'),
+    'temporary-contact-redirect': ({ archetype, legacyId, postType, targetOwner }) =>
+      legacyId === 4031 &&
+      postType === 'page' &&
+      targetOwner === 'redirects' &&
+      archetype === 'redirect.temporary-contact',
     'venue-index': ({ archetype, legacyId, postType, targetOwner }) =>
       legacyId === null &&
       postType === 'virtual' &&

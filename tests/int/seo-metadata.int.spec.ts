@@ -2,9 +2,39 @@
 
 import { seoField } from '@/fields/seo'
 import { generateMeta } from '@/utilities/generateMeta'
+import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { describe, expect, it } from 'vitest'
 
 describe('SEO metadata', () => {
+  it('uses Trayport Open Graph defaults without an unapproved fallback image', () => {
+    const openGraph = mergeOpenGraph()
+
+    expect(openGraph).toEqual({
+      description:
+        'Trayport connects people and markets through energy trading solutions and a global commodities network.',
+      siteName: 'Trayport',
+      title: 'Trayport',
+      type: 'website',
+    })
+    expect(JSON.stringify(openGraph)).not.toMatch(/Payload Website Template|website-template-OG/)
+  })
+
+  it('preserves an explicitly approved Open Graph image without adding a template fallback', () => {
+    expect(
+      mergeOpenGraph({
+        images: [{ url: 'https://media.example.test/approved.jpg' }],
+        title: 'Approved page',
+      }),
+    ).toEqual({
+      description:
+        'Trayport connects people and markets through energy trading solutions and a global commodities network.',
+      images: [{ url: 'https://media.example.test/approved.jpg' }],
+      siteName: 'Trayport',
+      title: 'Approved page',
+      type: 'website',
+    })
+  })
+
   it('uses the resolved canonical URL for canonical and Open Graph metadata', async () => {
     const metadata = await generateMeta({
       doc: {
@@ -18,6 +48,38 @@ describe('SEO metadata', () => {
 
     expect(metadata.alternates?.canonical).toBe('https://canonical.example.test/original/')
     expect(metadata.openGraph?.url).toBe('https://canonical.example.test/original/')
+  })
+
+  it('retains the site Open Graph description when a document has no description', async () => {
+    const metadata = await generateMeta({
+      doc: {
+        path: '/managed-route/',
+        title: 'Managed route',
+      },
+    })
+
+    expect(metadata.description).toBeUndefined()
+    expect(metadata.openGraph?.description).toBe(
+      'Trayport connects people and markets through energy trading solutions and a global commodities network.',
+    )
+  })
+
+  it('emits article-specific Open Graph metadata for routed articles', async () => {
+    const metadata = await generateMeta({
+      contentType: 'article',
+      doc: {
+        byline: 'Trayport Editorial',
+        path: '/insights/managed-article/',
+        publishedAt: '2026-08-04T09:30:00.000Z',
+        title: 'Managed article',
+      },
+    })
+
+    expect(metadata.openGraph).toMatchObject({
+      authors: ['Trayport Editorial'],
+      publishedTime: '2026-08-04T09:30:00.000Z',
+      type: 'article',
+    })
   })
 
   it('uses a video poster for social metadata and never exposes the video asset as an image', async () => {

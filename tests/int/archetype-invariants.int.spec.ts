@@ -18,7 +18,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { contentArchitectureContract } from '../../migration/mappings/contentArchitecture'
 
-type CleanupCollection = 'articles' | 'hubs' | 'learning-videos' | 'pages' | 'venues'
+type CleanupCollection =
+  'articles' | 'asset-classes' | 'hubs' | 'learning-videos' | 'pages' | 'venues'
 
 type FieldLike = {
   fields?: unknown[]
@@ -63,6 +64,68 @@ const articleListing = (heading: string) => ({
   showCategoryFilter: true,
 })
 
+const marketMatrixSection = () => ({
+  backgroundOpacity: 'none' as const,
+  blockType: 'contentSection' as const,
+  columns: [
+    {
+      components: [
+        {
+          blockType: 'marketMatrix' as const,
+          caption: 'Managed market connectivity',
+          defaultView: 'joule' as const,
+          showDownload: true,
+          showFilters: true,
+        },
+      ],
+      span: '12' as const,
+    },
+  ],
+  width: 'wide' as const,
+  wrapperTheme: 'none' as const,
+})
+
+const dataChartSection = (
+  assetClass: number,
+  range: {
+    chartType?: 'column' | 'line' | 'stackedColumn'
+    dataType?: 'price' | 'volume'
+    displayInterval?: 'month' | 'quarter' | 'year'
+    excludedHubs?: number[]
+    fromQuarter?: number
+    fromYear?: number
+    includedHubs?: number[]
+    seriesDimension?: 'executionType' | 'hub'
+    toQuarter?: number
+    toYear?: number
+  } = {},
+) => ({
+  backgroundOpacity: 'none' as const,
+  blockType: 'contentSection' as const,
+  columns: [
+    {
+      components: [
+        {
+          assetClass,
+          blockType: 'dataChart' as const,
+          chartType: 'stackedColumn' as const,
+          dataType: 'volume' as const,
+          displayInterval: 'quarter' as const,
+          excludedHubs: [],
+          includedHubs: [],
+          seriesDimension: 'executionType' as const,
+          showDataTable: true,
+          title: 'Managed market volume',
+          ...range,
+        },
+      ],
+      span: '12' as const,
+    },
+  ],
+  width: 'wide' as const,
+  wrapperTheme: 'none' as const,
+})
+
 const nestedFields = (field: FieldLike): unknown[] => [
   ...(field.fields || []),
   ...(field.tabs || []).flatMap((tab) => tab.fields || []),
@@ -102,6 +165,7 @@ const cleanSuiteFixtures = async (): Promise<void> => {
     'learning-videos',
     'pages',
     'venues',
+    'asset-classes',
   ]
 
   for (const collection of collections) {
@@ -184,8 +248,13 @@ describe.sequential('route archetype invariants', () => {
 
   afterAll(cleanSuiteFixtures, 60_000)
 
-  it('keeps the runtime registry exactly aligned with all 18 contract archetypes', () => {
-    const contractIDs = contentArchitectureContract.archetypes.map(({ id }) => id).sort()
+  it('keeps the content-route runtime registry aligned with its 18 contract archetypes', () => {
+    const contractIDs = contentArchitectureContract.archetypes
+      .filter(({ collection }) =>
+        contentRouteCollections.includes(collection as ContentRouteCollection),
+      )
+      .map(({ id }) => id)
+      .sort()
     const runtimeIDs = [...routeArchetypeIDs].sort()
 
     expect(routeArchetypeIDs).toHaveLength(18)
@@ -195,7 +264,9 @@ describe.sequential('route archetype invariants', () => {
 
   it('resolves every document archetype and route policy from its contract discriminator', () => {
     const documentArchetypes = contentArchitectureContract.archetypes.filter(
-      ({ id }) => !id.startsWith('index.'),
+      ({ collection, id }) =>
+        !id.startsWith('index.') &&
+        contentRouteCollections.includes(collection as ContentRouteCollection),
     )
 
     for (const expected of documentArchetypes) {
@@ -527,50 +598,356 @@ describe.sequential('route archetype invariants', () => {
     })
   })
 
-  it('keeps incomplete conversion and interactive archetypes draft-only', async () => {
-    for (const pageType of ['conversion', 'interactive'] as const) {
-      const slug = fixtureKey(`${pageType}-draft-only`)
-      const path = fixturePath(`${pageType}-draft-only`)
-      const page = await payload.create({
+  it('keeps conversion pages draft-only until a first-party form exists', async () => {
+    const slug = fixtureKey('conversion-draft-only')
+    const path = fixturePath('conversion-draft-only')
+    const page = await payload.create({
+      collection: 'pages',
+      context: draftMutationContext,
+      data: {
+        layout: [hero('Conversion draft')],
+        pageType: 'conversion',
+        path,
+        slug,
+        title: 'Conversion draft',
+      },
+      draft: true,
+      overrideAccess: true,
+    })
+
+    expect(page._status).toBe('draft')
+    await expect(
+      payload.update({
+        collection: 'pages',
+        context: publishMutationContext,
+        data: { _status: 'published' },
+        draft: false,
+        id: page.id,
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/required first-party form/i)
+  })
+
+  it('requires exactly one managed matrix on interactive pages and forbids it elsewhere', async () => {
+    const missingSlug = fixtureKey('interactive-missing-matrix')
+    await expect(
+      payload.create({
+        collection: 'pages',
+        context: publishMutationContext,
+        data: {
+          _status: 'published',
+          layout: [hero('Missing matrix')],
+          pageType: 'interactive',
+          path: fixturePath('interactive-missing-matrix'),
+          slug: missingSlug,
+          title: 'Missing matrix',
+        },
+        draft: false,
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/require exactly one marketMatrix/i)
+    await expectNoDocument('pages', missingSlug)
+
+    const standardSlug = fixtureKey('standard-with-matrix')
+    await expect(
+      payload.create({
         collection: 'pages',
         context: draftMutationContext,
         data: {
-          layout: [hero(`${pageType} draft`)],
-          pageType,
-          path,
-          slug,
-          title: `${pageType} draft`,
+          layout: [marketMatrixSection()],
+          pageType: 'standard',
+          path: fixturePath('standard-with-matrix'),
+          slug: standardSlug,
+          title: 'Standard with matrix',
         },
         draft: true,
         overrideAccess: true,
-      })
+      }),
+    ).rejects.toThrow(/does not allow the marketMatrix/i)
+    await expectNoDocument('pages', standardSlug)
 
-      expect(page._status).toBe('draft')
+    const duplicateSlug = fixtureKey('interactive-duplicate-matrix')
+    await expect(
+      payload.create({
+        collection: 'pages',
+        context: publishMutationContext,
+        data: {
+          _status: 'published',
+          layout: [marketMatrixSection(), marketMatrixSection()],
+          pageType: 'interactive',
+          path: fixturePath('interactive-duplicate-matrix'),
+          slug: duplicateSlug,
+          title: 'Duplicate matrix',
+        },
+        draft: false,
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/require exactly one marketMatrix/i)
+    await expectNoDocument('pages', duplicateSlug)
+
+    const path = fixturePath('valid-interactive-matrix')
+    const valid = await payload.create({
+      collection: 'pages',
+      context: publishMutationContext,
+      data: {
+        _status: 'published',
+        layout: [marketMatrixSection()],
+        pageType: 'interactive',
+        path,
+        slug: fixtureKey('valid-interactive-matrix'),
+        title: 'Valid market matrix',
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+
+    expect(valid._status).toBe('published')
+    await expect(findRouteClaim({ draft: false, path, payload })).resolves.toMatchObject({
+      archetype: 'page.interactive-market-matrix',
+      ownerDocumentId: String(valid.id),
+      state: 'published',
+    })
+  })
+
+  it('allows at most one first-position hero on published routes', async () => {
+    const misplacedSlug = fixtureKey('misplaced-route-hero')
+    await expect(
+      payload.create({
+        collection: 'pages',
+        context: publishMutationContext,
+        data: {
+          _status: 'published',
+          layout: [articleListing('Latest insights'), hero('Misplaced hero')],
+          pageType: 'index',
+          path: fixturePath('misplaced-route-hero'),
+          slug: misplacedSlug,
+          title: 'Misplaced route hero',
+        },
+        draft: false,
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/hero must be the first content block/i)
+    await expectNoDocument('pages', misplacedSlug)
+
+    const repeatedSlug = fixtureKey('repeated-route-hero')
+    await expect(
+      payload.create({
+        collection: 'pages',
+        context: publishMutationContext,
+        data: {
+          _status: 'published',
+          layout: [hero('First hero'), hero('Repeated hero'), articleListing('Latest insights')],
+          pageType: 'index',
+          path: fixturePath('repeated-route-hero'),
+          slug: repeatedSlug,
+          title: 'Repeated route hero',
+        },
+        draft: false,
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/at most one trayportHero/i)
+    await expectNoDocument('pages', repeatedSlug)
+  })
+
+  it('requires data-backed asset classes and coherent chart quarter ranges to publish', async () => {
+    const backedLegacyID = 1_500_000_000 + (Date.now() % 500_000_000)
+    const unbackedAssetClass = await payload.create({
+      collection: 'asset-classes',
+      context: mutationContext,
+      data: {
+        displayOrder: 1,
+        slug: fixtureKey('unbacked-chart-asset'),
+        title: 'Unbacked chart asset',
+      },
+      overrideAccess: true,
+    })
+    const backedAssetClass = await payload.create({
+      collection: 'asset-classes',
+      context: mutationContext,
+      data: {
+        displayOrder: 2,
+        legacySource: { legacyId: backedLegacyID, source: 'wordpress' },
+        slug: fixtureKey('backed-chart-asset'),
+        title: 'Backed chart asset',
+      },
+      overrideAccess: true,
+    })
+    const chartHub = await payload.create({
+      collection: 'hubs',
+      context: publishMutationContext,
+      data: {
+        _status: 'published',
+        contentMode: 'map-only',
+        legacySource: { legacyId: backedLegacyID + 1, source: 'wordpress' },
+        slug: fixtureKey('chart-hub'),
+        title: 'Chart hub',
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+
+    const expectSemanticRejection = async (
+      name: string,
+      overrides: Parameters<typeof dataChartSection>[1],
+      message: RegExp,
+    ) => {
+      const slug = fixtureKey(name)
       await expect(
-        findRouteClaim({
-          draft: true,
-          path,
-          payload,
-        }),
-      ).resolves.toMatchObject({
-        state: 'reserved',
-      })
-      await expect(
-        payload.update({
+        payload.create({
           collection: 'pages',
           context: publishMutationContext,
           data: {
             _status: 'published',
+            layout: [dataChartSection(backedAssetClass.id, overrides)],
+            pageType: 'standard',
+            path: fixturePath(name),
+            slug,
+            title: name,
           },
           draft: false,
-          id: page.id,
           overrideAccess: true,
         }),
-      ).rejects.toThrow(/cannot publish until its required production block is implemented/i)
+      ).rejects.toThrow(message)
+      await expectNoDocument('pages', slug)
     }
+
+    const unbackedSlug = fixtureKey('unbacked-data-chart')
+    await expect(
+      payload.create({
+        collection: 'pages',
+        context: publishMutationContext,
+        data: {
+          _status: 'published',
+          layout: [dataChartSection(unbackedAssetClass.id)],
+          pageType: 'standard',
+          path: fixturePath('unbacked-data-chart'),
+          slug: unbackedSlug,
+          title: 'Unbacked data chart',
+        },
+        draft: false,
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/imported asset class with an application-data key/i)
+    await expectNoDocument('pages', unbackedSlug)
+
+    const partialSlug = fixtureKey('partial-data-chart-range')
+    await expect(
+      payload.create({
+        collection: 'pages',
+        context: publishMutationContext,
+        data: {
+          _status: 'published',
+          layout: [dataChartSection(backedAssetClass.id, { fromYear: 2024 })],
+          pageType: 'standard',
+          path: fixturePath('partial-data-chart-range'),
+          slug: partialSlug,
+          title: 'Partial data chart range',
+        },
+        draft: false,
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/both a from year and from quarter/i)
+    await expectNoDocument('pages', partialSlug)
+
+    const reversedSlug = fixtureKey('reversed-data-chart-range')
+    await expect(
+      payload.create({
+        collection: 'pages',
+        context: publishMutationContext,
+        data: {
+          _status: 'published',
+          layout: [
+            dataChartSection(backedAssetClass.id, {
+              fromQuarter: 4,
+              fromYear: 2025,
+              toQuarter: 1,
+              toYear: 2024,
+            }),
+          ],
+          pageType: 'standard',
+          path: fixturePath('reversed-data-chart-range'),
+          slug: reversedSlug,
+          title: 'Reversed data chart range',
+        },
+        draft: false,
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/start quarter must not be after its end quarter/i)
+    await expectNoDocument('pages', reversedSlug)
+
+    await expectSemanticRejection(
+      'filtered-execution-chart',
+      { includedHubs: [chartHub.id] },
+      /execution-type data charts cannot filter hubs/i,
+    )
+    await expectSemanticRejection(
+      'invalid-hub-chart-pair',
+      { seriesDimension: 'hub' },
+      /hub data charts require volume columns or a price line/i,
+    )
+    await expectSemanticRejection(
+      'overlapping-hub-filters',
+      {
+        chartType: 'line',
+        dataType: 'price',
+        excludedHubs: [chartHub.id],
+        includedHubs: [chartHub.id],
+        seriesDimension: 'hub',
+      },
+      /cannot include and exclude the same hub/i,
+    )
+
+    await expect(
+      payload.create({
+        collection: 'pages',
+        context: publishMutationContext,
+        data: {
+          _status: 'published',
+          layout: [
+            dataChartSection(backedAssetClass.id, {
+              fromQuarter: 1,
+              fromYear: 2024,
+              toQuarter: 4,
+              toYear: 2025,
+            }),
+          ],
+          pageType: 'standard',
+          path: fixturePath('valid-data-chart-range'),
+          slug: fixtureKey('valid-data-chart-range'),
+          title: 'Valid data chart range',
+        },
+        draft: false,
+        overrideAccess: true,
+      }),
+    ).resolves.toMatchObject({ _status: 'published' })
+
+    await expect(
+      payload.create({
+        collection: 'pages',
+        context: publishMutationContext,
+        data: {
+          _status: 'published',
+          layout: [
+            dataChartSection(backedAssetClass.id, {
+              chartType: 'line',
+              dataType: 'price',
+              displayInterval: 'month',
+              includedHubs: [chartHub.id],
+              seriesDimension: 'hub',
+            }),
+          ],
+          pageType: 'standard',
+          path: fixturePath('valid-hub-data-chart'),
+          slug: fixtureKey('valid-hub-data-chart'),
+          title: 'Valid hub data chart',
+        },
+        draft: false,
+        overrideAccess: true,
+      }),
+    ).resolves.toMatchObject({ _status: 'published' })
   })
 
-  it('requires managed content for full articles and public venue details', async () => {
+  it('requires managed or structured content for full articles and public venue details', async () => {
     const articleSlug = fixtureKey('empty-full-article')
     await expect(
       payload.create({
@@ -605,8 +982,43 @@ describe.sequential('route archetype invariants', () => {
         draft: false,
         overrideAccess: true,
       }),
-    ).rejects.toThrow(/requires a managed description or layout/i)
+    ).rejects.toThrow(/requires a managed description, layout, or market connections/i)
     await expectNoDocument('venues', venueSlug)
+
+    const hub = await payload.create({
+      collection: 'hubs',
+      context: publishMutationContext,
+      data: {
+        _status: 'published',
+        contentMode: 'map-only',
+        marketDataKey: fixtureKey('structured-venue-hub'),
+        slug: fixtureKey('structured-venue-hub'),
+        title: 'Structured venue market',
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+    const structuredVenueSlug = fixtureKey('structured-public-venue')
+    await expect(
+      payload.create({
+        collection: 'venues',
+        context: publishMutationContext,
+        data: {
+          _status: 'published',
+          contentMode: 'page',
+          marketConnections: [{ connectionType: 'd', hub: hub.id }],
+          path: fixturePath('structured-public-venue'),
+          slug: structuredVenueSlug,
+          title: 'Structured public venue',
+        },
+        draft: false,
+        overrideAccess: true,
+      }),
+    ).resolves.toMatchObject({
+      contentMode: 'page',
+      description: null,
+      marketConnections: [expect.objectContaining({ connectionType: 'd' })],
+    })
   })
 
   it('publishes protected gate pages without media and valid public media', async () => {
@@ -632,6 +1044,7 @@ describe.sequential('route archetype invariants', () => {
 
     const image = await payload.create({
       collection: 'media',
+      context: mutationContext,
       data: {
         alt: '',
         decorative: true,
@@ -662,7 +1075,12 @@ describe.sequential('route archetype invariants', () => {
       ).rejects.toThrow(/must use a video MIME type/i)
       await expectNoDocument('learning-videos', imageVideoSlug)
     } finally {
-      await payload.delete({ collection: 'media', id: image.id, overrideAccess: true })
+      await payload.delete({
+        collection: 'media',
+        context: mutationContext,
+        id: image.id,
+        overrideAccess: true,
+      })
     }
 
     const invalidExternalSlug = fixtureKey('invalid-external-video')

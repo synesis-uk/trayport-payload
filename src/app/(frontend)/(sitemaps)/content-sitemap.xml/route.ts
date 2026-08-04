@@ -1,7 +1,10 @@
 import configPromise from '@payload-config'
+import { cacheLife, cacheTag } from 'next/cache'
 import { getServerSideSitemap } from 'next-sitemap'
+import { connection } from 'next/server'
 import { getPayload } from 'payload'
 
+import { CONTENT_SITEMAP_CACHE_TAG } from '@/data/cacheTags'
 import type { Article, Hub, LearningVideo, Page, RouteRegistry, Venue } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
 
@@ -10,6 +13,12 @@ type ContentOwnerCollection = Extract<
   RouteRegistry['ownerCollection'],
   'articles' | 'hubs' | 'learning-videos' | 'pages' | 'venues'
 >
+
+const CONTENT_SITEMAP_CACHE_LIFE = {
+  expire: 3600,
+  revalidate: 300,
+  stale: 300,
+} as const
 
 const ownerIDs = (claims: RouteRegistry[], ownerCollection: ContentOwnerCollection): number[] =>
   claims
@@ -36,7 +45,6 @@ export const getContentSitemap = async () => {
   const result = await payload.find({
     collection: 'route-registry',
     depth: 0,
-    limit: 1000,
     overrideAccess: true,
     pagination: false,
     select: {
@@ -174,8 +182,15 @@ export const getContentSitemap = async () => {
     }))
 }
 
-export async function GET() {
-  return getServerSideSitemap(await getContentSitemap())
+const getCachedContentSitemap = async () => {
+  'use cache'
+
+  cacheLife(CONTENT_SITEMAP_CACHE_LIFE)
+  cacheTag(CONTENT_SITEMAP_CACHE_TAG)
+  return getContentSitemap()
 }
 
-export const dynamic = 'force-dynamic'
+export async function GET() {
+  await connection()
+  return getServerSideSitemap(await getCachedContentSitemap())
+}

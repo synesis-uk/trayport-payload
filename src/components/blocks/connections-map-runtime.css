@@ -1,0 +1,38 @@
+.trayport-coverage-map__interactive .mapboxgl-ctrl-logo {
+  top: 0.25rem;
+  transform: translate(0, 0.25rem) scale(0.9);
+}
+
+.trayport-coverage-map__interactive .mapbox-improve-map {
+  display: none;
+}
+
+.trayport-coverage-map__interactive .mapboxgl-ctrl-bottom-right {
+  transform: translateY(0.25rem) scale(0.9);
+}
+
+.trayport-coverage-map__interactive .mapboxgl-popup {
+  border-style: none;
+}
+
+.trayport-coverage-map__interactive .mapboxgl-popup-content {
+  background-color: #fff;
+  border-radius: 0.125rem;
+  box-shadow:
+    0 1px 3px 0 rgb(0 0 0 / 10%),
+    0 1px 2px -1px rgb(0 0 0 / 10%);
+  margin-inline: auto;
+  overflow: hidden;
+  padding: 0.25rem;
+}
+
+.trayport-coverage-map__interactive .mapboxgl-popup-close-button {
+  border-radius: 9999px;
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  padding-inline: 0.25rem;
+}
+
+.trayport-coverage-map__interactive .mapboxgl-popup-tip {
+  display: none;
+}

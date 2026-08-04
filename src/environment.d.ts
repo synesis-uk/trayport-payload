@@ -4,6 +4,8 @@ declare global {
       PAYLOAD_SECRET: string
       DATABASE_URL: string
       NEXT_PUBLIC_SERVER_URL: string
+      MEDIA_STORAGE_LOCAL_PATH?: string
+      MEDIA_STORAGE_MODE?: 'build' | 'local-development' | 'local-persistent' | 's3'
       PAYLOAD_DB_PUSH?: string
       PAYLOAD_COOKIE_SECURE?: string
       S3_ACCESS_KEY_ID?: string

@@ -1,19 +1,67 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, TextFieldSingleValidation } from 'payload'
 
 import {
   FixedToolbarFeature,
   InlineToolbarFeature,
   lexicalEditor,
 } from '@payloadcms/richtext-lexical'
-import path from 'path'
-import { fileURLToPath } from 'url'
 
 import { admins, adminsOrEditors, isAdmin } from '@/access/roles'
+import { resolveMediaStorageConfig } from '@/config/mediaStorage'
 import { anyone } from '../access/anyone'
 import { createLegacySourceField } from '@/fields/legacySource'
+import { imageUploadField } from '@/fields/mediaUpload'
+import { validateExternalMediaURL } from '@/routing/urlPolicy'
 
-const filename = fileURLToPath(import.meta.url)
-const dirname = path.dirname(filename)
+import {
+  revalidateCacheDependency,
+  revalidateDeletedCacheDependency,
+} from './hooks/revalidateDependencies'
+
+const mediaStorage = resolveMediaStorageConfig()
+
+export const validateMediaAlternativeText = ({
+  alt,
+  decorative,
+  mimeType,
+}: {
+  alt: unknown
+  decorative: unknown
+  mimeType: unknown
+}): true | string => {
+  if (typeof mimeType !== 'string' || !mimeType.startsWith('image/')) return true
+
+  const hasAlternativeText = typeof alt === 'string' && Boolean(alt.trim())
+  if (decorative === true) {
+    return hasAlternativeText ? 'Clear the alternative text for a decorative image.' : true
+  }
+
+  return hasAlternativeText ? true : 'Add alternative text or mark this image as decorative.'
+}
+
+const validateMediaAlt: TextFieldSingleValidation = (value, { data }) => {
+  const document = data as { decorative?: unknown; mimeType?: unknown } | undefined
+
+  return validateMediaAlternativeText({
+    alt: value,
+    decorative: document?.decorative,
+    mimeType: document?.mimeType,
+  })
+}
+
+const validateMediaExternalURL: TextFieldSingleValidation = (value, { data }) => {
+  const document = data as { legacySource?: unknown } | undefined
+  const legacySource =
+    document?.legacySource && typeof document.legacySource === 'object'
+      ? (document.legacySource as { source?: unknown })
+      : null
+
+  return legacySource?.source === 'wordpress' &&
+    typeof value === 'string' &&
+    /^http:\/\/trayport\.local\/app\/uploads\//iu.test(value)
+    ? true
+    : validateExternalMediaURL(value)
+}
 
 export const Media: CollectionConfig = {
   slug: 'media',
@@ -44,6 +92,7 @@ export const Media: CollectionConfig = {
         description:
           'Describe the purpose of an image for people who cannot see it. Leave empty for decorative images or non-image files.',
       },
+      validate: validateMediaAlt,
     },
     {
       type: 'row',
@@ -100,8 +149,10 @@ export const Media: CollectionConfig = {
       name: 'externalURL',
       type: 'text',
       admin: {
-        description: 'Optional externally hosted source, primarily for video.',
+        description:
+          'Optional reviewed CDN source. Legacy local-source URLs remain as migration provenance but are never rendered.',
       },
+      validate: validateMediaExternalURL,
     },
     {
       name: 'sourceFileHash',
@@ -117,19 +168,21 @@ export const Media: CollectionConfig = {
       },
       index: true,
     },
-    {
+    imageUploadField({
       name: 'poster',
-      type: 'upload',
       admin: {
         condition: (data) =>
           typeof data?.mimeType === 'string' && data.mimeType.startsWith('video/'),
       },
-      relationTo: 'media',
-    },
+    }),
     createLegacySourceField(),
   ],
+  hooks: {
+    afterChange: [revalidateCacheDependency()],
+    afterDelete: [revalidateDeletedCacheDependency],
+  },
   upload: {
-    staticDir: path.resolve(dirname, '../../public/media'),
+    staticDir: mediaStorage.localPath,
     adminThumbnail: 'thumbnail',
     focalPoint: true,
     mimeTypes: ['image/*', 'video/*', 'application/pdf'],

@@ -1,23 +1,15 @@
 'use client'
 
-import { ArrowRight, ExternalLink, Search } from 'lucide-react'
 import Link from 'next/link'
-import { useMemo, useState, useSyncExternalStore } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 
-import type { Article } from '@/payload-types'
+import type { ArticleListingItem } from '@/data/listingContent'
+import { useHydrated } from '@/hooks/useHydrated'
+import { safeExternalHTTPSURL } from '@/routing/urlPolicy'
 
 import { TrayportMedia } from './TrayportMedia'
 
 const PAGE_INCREMENT = 9
-
-const subscribeToLocation = (onStoreChange: () => void) => {
-  window.addEventListener('popstate', onStoreChange)
-  return () => window.removeEventListener('popstate', onStoreChange)
-}
-
-const getLocationQuery = () => new URLSearchParams(window.location.search).get('q')?.trim() || ''
-
-const getServerQuery = () => ''
 
 const copyFor = (family: string) => {
   if (family === 'news') {
@@ -52,10 +44,10 @@ const copyFor = (family: string) => {
   }
 }
 
-const articleCategories = (article: Article) =>
+const articleCategories = (article: ArticleListingItem) =>
   (article.categories || []).filter((category) => typeof category === 'object')
 
-const categoryTitle = (article: Article) => {
+const categoryTitle = (article: ArticleListingItem) => {
   const category = articleCategories(article)[0]
   return category && typeof category === 'object' ? category.title : 'Insight'
 }
@@ -63,28 +55,69 @@ const categoryTitle = (article: Article) => {
 const formattedDate = (value?: string | null) =>
   value
     ? new Intl.DateTimeFormat('en-GB', {
-        day: '2-digit',
         month: 'short',
+        timeZone: 'UTC',
         year: 'numeric',
       }).format(new Date(value))
     : 'Latest'
 
-const ArticleImage = ({ article, priority = false }: { article: Article; priority?: boolean }) => (
+export interface ArticleListingIcons {
+  arrowRight: ReactNode
+  calendar: ReactNode
+  externalLink: ReactNode
+  news: ReactNode
+  search: ReactNode
+  searchInsight: ReactNode
+}
+
+export interface ArticleListingClientProps {
+  articles: ArticleListingItem[]
+  family: string
+  icons: ArticleListingIcons
+  initialPageSize: number
+  initialQuery?: string
+  showCategoryFilter: boolean
+}
+
+const rowIconForFamily = (family: string, icons: ArticleListingIcons): ReactNode => {
+  if (family === 'news') return icons.news
+  if (family === 'events') return icons.calendar
+  return icons.searchInsight
+}
+
+const articleDisplayDate = (article: ArticleListingItem) =>
+  article.displayDate || article.publishedAt
+
+const ArticleImage = ({
+  article,
+  preload = false,
+}: {
+  article: ArticleListingItem
+  preload?: boolean
+}) => (
   <div className="trayport-article-card__media">
     {article.heroMedia && typeof article.heroMedia === 'object' ? (
-      <TrayportMedia media={article.heroMedia} priority={priority} showFallbackLink={false} />
+      <TrayportMedia
+        composition="card"
+        media={article.heroMedia}
+        preload={preload}
+        showFallbackLink={false}
+      />
     ) : (
       <div aria-hidden className="trayport-article-card__placeholder" />
     )}
   </div>
 )
 
-const articleDestination = (article: Article): { external: boolean; href: string } | null => {
+const articleDestination = (
+  article: ArticleListingItem,
+): { external: boolean; href: string } | null => {
   if (article.contentMode === 'full' && article.path) {
     return { external: false, href: article.path }
   }
   if (article.externalDestination) {
-    return { external: true, href: article.externalDestination }
+    const href = safeExternalHTTPSURL(article.externalDestination)
+    return href ? { external: true, href } : null
   }
   return null
 }
@@ -92,10 +125,12 @@ const articleDestination = (article: Article): { external: boolean; href: string
 const ArticleCard = ({
   article,
   family,
+  icons,
   lead,
 }: {
-  article: Article
+  article: ArticleListingItem
   family: string
+  icons: ArticleListingIcons
   lead: boolean
 }) => {
   const destination = articleDestination(article)
@@ -108,12 +143,12 @@ const ArticleCard = ({
     .join(' ')
   const content = (
     <>
-      <ArticleImage article={article} priority={lead} />
+      <ArticleImage article={article} preload={lead} />
       <div className="trayport-article-card__body">
         <p className="trayport-article-card__meta">
           <span>{categoryTitle(article)}</span>
-          <time dateTime={article.publishedAt || undefined}>
-            {formattedDate(article.publishedAt)}
+          <time dateTime={articleDisplayDate(article) || undefined}>
+            {formattedDate(articleDisplayDate(article))}
           </time>
         </p>
         <h4>{article.title}</h4>
@@ -123,11 +158,7 @@ const ArticleCard = ({
             {destination.external
               ? `View ${copyFor(family).singular}`
               : `Read ${copyFor(family).singular}`}
-            {destination.external ? (
-              <ExternalLink aria-hidden size={16} />
-            ) : (
-              <ArrowRight aria-hidden size={16} />
-            )}
+            {destination.external ? icons.externalLink : icons.arrowRight}
           </span>
         ) : (
           <span className="trayport-article-card__status">Detail migration in progress</span>
@@ -157,14 +188,22 @@ const ArticleCard = ({
   )
 }
 
-const ArticleRow = ({ article }: { article: Article }) => {
+const ArticleRow = ({
+  article,
+  family,
+  icons,
+}: {
+  article: ArticleListingItem
+  family: string
+  icons: ArticleListingIcons
+}) => {
   const destination = articleDestination(article)
   const content = (
     <>
-      <Search aria-hidden className="trayport-article-row__icon" size={15} />
+      {rowIconForFamily(family, icons)}
       <p className="trayport-article-row__meta">
-        <time dateTime={article.publishedAt || undefined}>
-          {formattedDate(article.publishedAt)}
+        <time dateTime={articleDisplayDate(article) || undefined}>
+          {formattedDate(articleDisplayDate(article))}
         </time>
       </p>
       <h3>{article.title}</h3>
@@ -175,7 +214,7 @@ const ArticleRow = ({ article }: { article: Article }) => {
 
   if (!destination) {
     return (
-      <article className="trayport-article-row is-unavailable" data-route-status="non-routable">
+      <article className="is-unavailable trayport-article-row" data-route-status="non-routable">
         {content}
       </article>
     )
@@ -202,19 +241,16 @@ const ArticleRow = ({ article }: { article: Article }) => {
 export const ArticleListingClient = ({
   articles,
   family,
+  icons,
   initialPageSize,
+  initialQuery = '',
   showCategoryFilter,
-}: {
-  articles: Article[]
-  family: string
-  initialPageSize: number
-  showCategoryFilter: boolean
-}) => {
+}: ArticleListingClientProps) => {
   const copy = copyFor(family)
+  const hydrated = useHydrated()
   const [category, setCategory] = useState('all')
-  const locationQuery = useSyncExternalStore(subscribeToLocation, getLocationQuery, getServerQuery)
   const [queryOverride, setQueryOverride] = useState<string | null>(null)
-  const query = queryOverride ?? locationQuery
+  const query = queryOverride ?? initialQuery
   const [year, setYear] = useState('all')
   const [visible, setVisible] = useState(Math.max(initialPageSize, PAGE_INCREMENT))
 
@@ -276,7 +312,13 @@ export const ArticleListingClient = ({
           </div>
           <div className="trayport-featured-articles__grid">
             {featured.map((article, index) => (
-              <ArticleCard article={article} family={family} key={article.id} lead={index === 0} />
+              <ArticleCard
+                article={article}
+                family={family}
+                icons={icons}
+                key={article.id}
+                lead={index === 0}
+              />
             ))}
           </div>
         </section>
@@ -284,6 +326,7 @@ export const ArticleListingClient = ({
 
       {showCategoryFilter ? (
         <form
+          aria-busy={!hydrated}
           className="trayport-article-filters"
           onSubmit={(event) => event.preventDefault()}
           role="search"
@@ -291,9 +334,10 @@ export const ArticleListingClient = ({
           <label className="trayport-article-filters__search">
             <span>Search {copy.plural}</span>
             <span className="trayport-article-filters__input">
-              <Search aria-hidden size={18} />
+              {icons.search}
               <input
                 aria-label={`Search ${copy.plural}`}
+                disabled={!hydrated}
                 onChange={(event) => {
                   setQueryOverride(event.target.value)
                   resetVisible()
@@ -308,6 +352,7 @@ export const ArticleListingClient = ({
             <span>Category</span>
             <select
               aria-label="Category"
+              disabled={!hydrated}
               onChange={(event) => {
                 setCategory(event.target.value)
                 resetVisible()
@@ -326,6 +371,7 @@ export const ArticleListingClient = ({
             <span>Year</span>
             <select
               aria-label="Year"
+              disabled={!hydrated}
               onChange={(event) => {
                 setYear(event.target.value)
                 resetVisible()
@@ -345,7 +391,9 @@ export const ArticleListingClient = ({
 
       <div aria-live="polite" className="trayport-article-list">
         {list.length ? (
-          list.map((article) => <ArticleRow article={article} key={article.id} />)
+          list.map((article) => (
+            <ArticleRow article={article} family={family} icons={icons} key={article.id} />
+          ))
         ) : (
           <p className="trayport-listing__empty">No {copy.plural} match those filters.</p>
         )}
@@ -354,6 +402,7 @@ export const ArticleListingClient = ({
       {list.length < normalArticles.length ? (
         <button
           className="trayport-action trayport-action--secondary trayport-listing__more"
+          disabled={!hydrated}
           onClick={() => setVisible((count) => count + PAGE_INCREMENT)}
           type="button"
         >

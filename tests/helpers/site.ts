@@ -96,9 +96,84 @@ export const representativeRoutes = [
     path: '/venue/eex/',
     title: /EEX \| Exchange \| Trayport/i,
   },
+  {
+    heading: 'Our Use Of Cookies',
+    legacyId: 7589,
+    path: '/legal/cookie-policy/',
+    title: /Trayport \| Cookie Policy & Consent Settings/i,
+  },
+  {
+    heading: 'Trayport Market Matrix',
+    legacyId: 2231,
+    path: '/resources/market-matrix/',
+    title: /Trayport Market Matrix \| Commodity Market Overview/i,
+  },
+  {
+    heading: 'Legal',
+    legacyId: 4737,
+    path: '/legal/',
+    title: /Legal \| Website Terms.*Trayport/i,
+  },
+  {
+    heading: 'Terms of Use & Disclaimer',
+    legacyId: 7585,
+    path: '/terms-of-use-disclaimer/',
+    title: /Terms of Use and Disclaimer \| Legal \| Trayport/i,
+  },
+  {
+    heading: 'Legal Notice',
+    legacyId: 4803,
+    path: '/legal/legal-notice/',
+    title: /Legal Notice \| Legal \| Trayport/i,
+  },
+  {
+    heading: 'Modern Slavery',
+    legacyId: 7573,
+    path: '/legal/modern-slavery/',
+    title: /Modern Slavery \| Legal \| Trayport/i,
+  },
+  {
+    heading: 'Asia Pacific',
+    legacyId: 5983,
+    path: '/regions/asia-pacific/',
+    title: /Asia Pacific Energy Markets \| Trayport/i,
+  },
+  {
+    heading: 'North America',
+    legacyId: 2221,
+    path: '/regions/north-america/',
+    title: /North American Energy Markets \| Trayport/i,
+  },
+  {
+    heading: 'Power Your Career',
+    legacyId: 11475,
+    path: '/company/careers/',
+    title: /Careers at Trayport \| Jobs in Energy Trading Technology/i,
+  },
+  {
+    heading: 'Europe',
+    legacyId: 5981,
+    path: '/regions/europe/',
+    title: /Europe \| Energy Markets \| Trayport/i,
+  },
+  {
+    heading: 'Contact Us',
+    legacyId: 34,
+    path: '/contact/',
+    title: /Contact Trayport \| Get in Touch & Request a Demo \| Trayport/i,
+  },
 ] as const satisfies readonly RepresentativeRoute[]
 
 export const activeNavigationRoots = ['Company', 'Products', 'Markets', 'Regions', 'Resources']
+
+export const managedRedirectRoutes = [
+  {
+    legacyId: 4031,
+    path: '/request-a-demo/',
+    status: 302,
+    target: '/contact/',
+  },
+] as const
 
 export const featuredInsights = [
   {
@@ -122,4 +197,20 @@ export const featuredInsights = [
     title:
       'From Wellhead to World Market: What North American Gas Producers Need to Know About LNG Pricing and Risk',
   },
+] as const
+
+export const goldenRoutes = [
+  { heading: 'Connecting Trade Globally', name: 'home', path: '/' },
+  {
+    heading: 'Joule, the leading trading solution for energy and commodities markets',
+    name: 'joule',
+    path: '/products/joule/',
+  },
+  { heading: 'Insights', name: 'insights', path: '/resources/insights/' },
+  {
+    heading: 'German Power',
+    name: 'german-power',
+    path: '/market-coverage/german-power/',
+  },
+  { heading: 'EEX', name: 'eex', path: '/venue/eex/' },
 ] as const

@@ -1,0 +1,22 @@
+{
+  "payloadMigrations": [
+    "20260728_201453_initial_schema",
+    "20260730_002734_routable_content_foundation",
+    "20260730_015904_redirect_status",
+    "20260803_175438_production_pilot_content",
+    "20260803_181505_optional_managed_links",
+    "20260803_184425_production_pilot_safety",
+    "20260803_231412_visual_parity",
+    "20260804_024704_footer_navigation_shell",
+    "20260804_025213_cookie_policy_url",
+    "20260804_031832_home_joule_presentation_semantics",
+    "20260804_040104",
+    "20260804_041753_insights_display_date",
+    "20260804_044451_home_market_coverage_presentation",
+    "20260804_082210_action_forward_icon",
+    "20260804_093914_market_matrix_component",
+    "20260804_103936_data_chart_asset_class",
+    "20260804_104200_data_chart_asset_class_backfill",
+    "20260804_113221_data_chart_semantics"
+  ]
+}

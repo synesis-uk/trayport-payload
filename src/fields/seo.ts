@@ -1,6 +1,7 @@
 import type { GroupField } from 'payload'
 
 import { normalizeContentPath, validateContentPath } from './contentPath'
+import { imageUploadField } from './mediaUpload'
 
 const canonicalError = 'Use a normalized root-relative path or a complete HTTP(S) URL.'
 
@@ -25,11 +26,9 @@ export const seoField = (): GroupField => ({
       },
       maxLength: 180,
     },
-    {
+    imageUploadField({
       name: 'image',
-      type: 'upload',
-      relationTo: 'media',
-    },
+    }),
     {
       name: 'canonicalURL',
       type: 'text',

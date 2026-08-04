@@ -25,18 +25,42 @@ than recreating dormant WordPress administration structures.
 - `/learning-hub/`
 - `/learning-hub-video/trading-in-joule/`
 - `/venue/eex/`
+- `/legal/cookie-policy/`
+- `/resources/market-matrix/`
+- `/legal/`
+- `/terms-of-use-disclaimer/`
+- `/legal/legal-notice/`
+- `/legal/modern-slavery/`
+- `/regions/asia-pacific/`
+- `/regions/north-america/`
+- `/company/careers/`
+- `/regions/europe/`
+- `/contact/`
 
-These 14 routes are the implemented frontend slice. The verified production
+These 25 content routes are the rendered frontend slice. WordPress root 4031 is
+also accepted as a temporary managed `302` from `/request-a-demo/` to
+`/contact/`, giving 26 immutable source roots without importing the unused
+HubSpot form or its presentation media. The redirect is removed when a real
+first-party submission journey is ready.
+
+The verified production
 source corpus contains 296 canonical routes; those routes are inventoried and
 classified, but they are not all imported or rendered by this frontend yet.
 The deterministic production target plan describes 294 future/current Payload
 document owners and two virtual indexes, but it is planning evidence rather than
-proof that the other 280 planned documents have been migrated or remediated.
+proof that the other 268 plan-only documents have been migrated or remediated.
 
 The Insights and News indexes are backed by all 39 and 31 published source
 records respectively. The Learning Hub owns 15 protected metadata records. The
-market graph imports 55 hubs and 58 markers; German Power uses its 21 live venue
+market graph imports 72 hubs, 62 markers, 66 venues, and 655 normalized
+venue-to-hub relationships; German Power retains its 21 derived compatibility
 relationships, while EEX renders 37 unique connected markets.
+
+This is a 26-route acceptance and runtime-closure milestone, not complete live
+navigation content parity. Navigation and footer destinations outside the
+accepted roots and two virtual indexes remain HTTPS links to the live WordPress
+site. Each fallback can be switched back to an internal path when its route is
+imported and accepted.
 
 ## Architecture
 
@@ -66,6 +90,12 @@ guide](docs/editor-guide.md) summarizes the available CMS controls. The
 defines the approved 296-route source scope, target archetypes, Payload
 ownership, block catalogue, editor workflows, and production gates.
 
+The public UI follows the [frontend system contract](docs/frontend-system.md): Tailwind 4 semantic
+tokens, locally owned shadcn/Radix primitives, Font Awesome interface icons, typed Payload adapters,
+and server components by default. The [component inventory](docs/frontend-inventory.md) records the
+current migration boundary, while the [improvement ledger](docs/frontend-improvements.md) keeps each
+intentional change explicit and reversible.
+
 ## Local setup
 
 Requirements:
@@ -73,6 +103,7 @@ Requirements:
 - Node.js 22
 - Corepack
 - Docker with Compose v2
+- A licensed Font Awesome kit token available as `FONTAWESOME_NPM_TOKEN`
 - The local source repository at `/home/admin/site/tp` for a live WordPress import
 
 Start the source WordPress stack if it is not already running:
@@ -84,7 +115,9 @@ make -C /home/admin/site/tp up-local
 Set up this repository:
 
 ```bash
+export FONTAWESOME_NPM_TOKEN='<licensed-kit-token>'
 make setup
+unset FONTAWESOME_NPM_TOKEN
 make import-poc
 make dev
 ```
@@ -104,6 +137,13 @@ The credentials and secrets in `.env.example` are local-only defaults. Replace
 all of them outside development. HTTPS deployments should set
 `PAYLOAD_COOKIE_SECURE=true`.
 
+The Home connections map works without external configuration by retaining its deterministic
+managed-media/SVG fallback. To activate the viewport-lazy reference Mapbox runtime locally, set both
+`MAPBOX_PUBLIC_TOKEN` to an approved browser-safe `pk` token and `MAPBOX_STYLE_URL` to an approved
+Mapbox style URI. The token is exposed to the browser and must be origin-restricted. Production
+activation also requires recorded Mapbox licence/attribution approval and approved ownership or use
+of the selected style; see [docs/deployment.md](docs/deployment.md#home-connections-map-activation).
+
 ## Importing WordPress content
 
 The importer is read-only against WordPress. It runs through WP-CLI inside the
@@ -118,7 +158,7 @@ make import-poc
 
 This command:
 
-1. verifies the exact WordPress source, six root IDs, uploads, PostgreSQL, and
+1. verifies the exact WordPress source, 26 ordered root IDs, uploads, PostgreSQL, and
    object storage;
 2. extracts a deterministic, secret-scrubbed NDJSON source graph;
 3. transforms every observed layout into typed Payload blocks;
@@ -153,6 +193,26 @@ make import-dry-run
 make import-load
 ```
 
+When an extracted image is unavailable in the local uploads mount but a reviewed original is still
+served by an audited HTTPS origin, recover only the approved attachment IDs after extraction and
+before transformation:
+
+```bash
+corepack pnpm content:recover-media -- \
+  --run-id <fresh-extracted-run-id> \
+  --origin https://trayport.com \
+  --legacy-ids 9698,9727
+```
+
+Recovery is deliberately narrow: it accepts image records already present in the extracted graph,
+requires the remote URL to retain the exact WordPress uploads-relative path, validates MIME type and
+recorded dimensions, caps each streamed response at 64 MiB with a 30-second timeout, and pins every
+binary's size, SHA-256, URL, and single HTTPS origin in the source manifest. Downloads are staged
+sequentially and the manifest/source commit is retry-safe. Transform and load revalidate the complete
+recovery evidence, while the loader reads recovered files only from that run's `recovered-media`
+directory and rechecks their hashes. Accepted or already transformed runs cannot be mutated; extract
+a new run instead.
+
 Generated data and reports are written to `migration/work/<run-id>/` and ignored
 by Git. Reports include content coverage, curated exclusions, stale/private
 links, missing media, the alt-text review queue, market-row results, load
@@ -179,11 +239,23 @@ canonical owners. Per-run output is written to
 
 The generated target plan is deterministic implementation input. Running it
 does not expand the production-pilot importer: the loaded and rendered source
-slice remains the 14 routes listed above, and the full 296-route import, body remediation,
+slice remains the 26-root closure listed above, and the full 296-route import, body remediation,
 media/link review, and parity validation remain future work.
 
 The loader is idempotent across accepted runs. Loading equivalent source data
 must produce no Payload or market-data writes.
+
+The latest accepted local evidence is the immutable
+`visual-final-parity-20260804-1835` run (2026-08-04). Its accepted source hash is
+`f8fde869755805d9cd299e341fce42a8936358bceb1ceb87d8a312897b417c4a` and its acceptance hash is
+`dce30c5b8df93d2ed77735ad043441d72e08c635e508d5a707fdcea2ca1affb1`. It records exact recovery
+evidence for WordPress media `9698` and `9727`; the published binaries also pass direct Payload GET,
+MIME, byte-size, and SHA-256 checks. The run also confirms that reusable-video administrative names
+do not become visible captions. Its first publish changed only Home page `pages:1898`; the repeat
+published load was fully idempotent: 437 records and three globals were unchanged, all 1,194 market
+rows were unchanged, and no relationships were unresolved. The ignored run directory remains the
+local forensic source; these identifiers make it possible to reproduce or audit the exact accepted
+input.
 
 ## Content administration
 
@@ -203,9 +275,9 @@ account becomes an administrator.
   structured data only: publication hooks forbid public paths and layouts.
 - The `route-indexes` global controls headings, introductions, and SEO for the
   virtual `/venue/` and `/market-coverage/` routes.
-- Publishing validates the 17 runtime archetypes. Conversion and interactive
-  market-matrix pages can be drafted but cannot publish until their planned
-  first-party production blocks exist.
+- Publishing validates the 18 content-route runtime archetypes. Conversion pages
+  remain draft-only until a first-party form exists; interactive Market Matrix
+  pages require exactly one managed `marketMatrix` component before publication.
 - A changed published path keeps its current public claim while the draft path
   is reserved; publication requires redirect confirmation and creates the
   redirect in the same transaction. Scheduled changes retain approval only for
@@ -240,9 +312,34 @@ Direct package commands:
 corepack pnpm typecheck
 corepack pnpm lint
 corepack pnpm test:int
+corepack pnpm test:ui
 corepack pnpm test:e2e
+corepack pnpm test:visual
 corepack pnpm build
 ```
+
+Interface icons come from the licensed Font Awesome kit used by the WordPress reference.
+Dependency installation therefore requires the kit token in the shell environment; it is not a
+runtime application secret and must not be committed. The committed `.npmrc` contains only scoped
+registry definitions and an environment-variable placeholder:
+
+```bash
+export FONTAWESOME_NPM_TOKEN='<licensed-kit-token>'
+corepack pnpm install
+unset FONTAWESOME_NPM_TOKEN
+```
+
+Do not add the token value to `.npmrc`, a Docker build argument, an image environment variable, or
+the build context.
+
+Set `DESIGN_SYSTEM_ENABLED=true` on a local server to open the database-free component gallery at
+<http://localhost:3000/design-system/>. It is disabled by default and always marked no-index.
+
+`pnpm test:visual` compares a production build already running at
+`PLAYWRIGHT_BASE_URL` (default `http://127.0.0.1:3000`) with the tracked WordPress references; it
+never starts a development server. Use `pnpm test:visual:dev` only for an explicitly non-acceptance
+development comparison. `pnpm visual:update-reference` is deliberately separate and first verifies
+each expected H1 so a wrong `trayport.local` vhost cannot overwrite the approved baseline.
 
 Playwright may require a one-time local browser install:
 
@@ -273,20 +370,67 @@ importer, rendering, block, media, link, role, or content-review gates.
 Production readiness remains blocked even though cross-collection route
 uniqueness and archetype publication invariants now pass.
 
-The proof-of-concept runtime image is web-only. Run `corepack pnpm payload
-migrate` from a source checkout or a dedicated migration image/job before
-rolling out the standalone web image.
+The Dockerfile now exposes separate `migrator` and `runner` targets. The first
+production release runs one web replica with a stop-first replacement strategy;
+the dedicated migrator runs and verifies committed Payload migrations before the
+replacement web process starts. The complete build, release, rollback, and
+health-probe contract is in [docs/deployment.md](docs/deployment.md).
 
-Build the container with the public origin that should be baked into Next.js and
-the generated robots file:
+BuildKit must receive the Font Awesome token as a secret while installing dependencies. Build the
+container with the public origin that should be baked into Next.js and the generated robots file:
 
 ```bash
+export FONTAWESOME_NPM_TOKEN='<licensed-kit-token>'
 docker build \
+  --secret id=FONTAWESOME_NPM_TOKEN,env=FONTAWESOME_NPM_TOKEN \
   --build-arg NEXT_PUBLIC_SERVER_URL=https://www.example.com \
   --tag trayport-web .
+unset FONTAWESOME_NPM_TOKEN
 ```
 
-The Docker build uses non-secret placeholders only while compiling. Supply the
-real `PAYLOAD_SECRET`, `DATABASE_URL`, S3, SMTP, preview, cron, and
-`NEXT_PUBLIC_SERVER_URL` values to the running container. Never reuse the
-build-only Payload placeholder at runtime.
+The dependency stage fails when the BuildKit secret is absent. The token is available only to the
+single `pnpm install` instruction and is neither copied into a layer nor accepted as `ARG`/`ENV`.
+The application build uses `MEDIA_STORAGE_MODE=build`, which cannot start a runtime server.
+
+Every runtime must set `MEDIA_STORAGE_MODE` explicitly in production:
+
+- `s3` is the normal durable mode and requires `S3_BUCKET`, `S3_ACCESS_KEY_ID`,
+  `S3_SECRET_ACCESS_KEY`, and `S3_REGION`. `S3_ENDPOINT` is optional for AWS and required for local
+  MinIO or another S3-compatible endpoint. `S3_FORCE_PATH_STYLE` accepts only `true` or `false`.
+
+  ```dotenv
+  MEDIA_STORAGE_MODE=s3
+  ```
+
+- `local-persistent` is the alternative durable mode. It requires an absolute
+  `MEDIA_STORAGE_LOCAL_PATH` backed by a persistent mount, for example:
+
+  ```bash
+  docker run \
+    --env MEDIA_STORAGE_MODE=local-persistent \
+    --env MEDIA_STORAGE_LOCAL_PATH=/var/lib/trayport/media \
+    --mount type=volume,source=trayport_media,target=/var/lib/trayport/media \
+    trayport-web
+  ```
+
+  The mounted directory must be writable by the image's `nextjs` user (UID 1001).
+
+- `local-development` writes to `public/media` by default and is rejected when
+  `NODE_ENV=production`. It must be selected explicitly when developing without MinIO.
+
+  ```dotenv
+  MEDIA_STORAGE_MODE=local-development
+  ```
+
+- `build` is reserved for `next build`; startup validation rejects it outside the build lifecycle.
+
+Any partial S3 configuration fails startup, including in a non-S3 or build mode. Complete S3
+variables also cannot be combined with a local runtime mode. The checked-in `.env.example` selects
+`s3`, so the existing Compose-managed MinIO workflow remains the default local setup.
+
+Supply the real `PAYLOAD_SECRET`, `DATABASE_URL`, media storage, SMTP, preview, cron, and
+`NEXT_PUBLIC_SERVER_URL` values to the running container. `NEXT_PUBLIC_SERVER_URL` must be the
+exact public HTTP(S) origin with no path, query string, fragment, or credentials. Never reuse the
+build-only Payload placeholder at runtime. The public origin is also baked into Next.js by the
+documented build argument; changing only the runtime value does not retarget compiled browser code,
+so build and runtime configuration must agree.

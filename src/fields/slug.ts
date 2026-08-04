@@ -1,6 +1,6 @@
 import type { TextField } from 'payload'
 
-const toSlug = (value: string): string =>
+export const normalizeTrayportSlug = (value: string): string =>
   value
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -25,7 +25,7 @@ export const trayportSlugField = (): TextField => ({
               ? siblingData.title
               : ''
 
-        return toSlug(source)
+        return normalizeTrayportSlug(source)
       },
     ],
   },

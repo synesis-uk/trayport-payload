@@ -1,7 +1,11 @@
 // @vitest-environment node
 
-import { resolveRouteClaimOwner } from '@/app/(frontend)/contentRoute'
-import { splitLeadingHero } from '@/components/Trayport/ContentViews'
+import {
+  contentRouteSelects,
+  resolveRouteClaimOwner,
+} from '@/app/(frontend)/contentRoute.loader.server'
+import { splitLeadingHero } from '@/components/content'
+import { contentPathSelect } from '@/data/contentRouteProjection'
 import type { PublicRouteClaim } from '@/routing/registry'
 import type { Payload } from 'payload'
 import { describe, expect, it, vi } from 'vitest'
@@ -48,6 +52,7 @@ describe('content route owner resolution', () => {
       draft: false,
       id: 'missing-owner',
       overrideAccess: false,
+      select: contentRouteSelects.pages,
     })
   })
 
@@ -73,6 +78,7 @@ describe('content route owner resolution', () => {
       disableErrors: true,
       id: 'missing-redirect',
       overrideAccess: false,
+      select: contentRouteSelects.redirects,
     })
 
     const missingTarget = vi
@@ -112,6 +118,7 @@ describe('content route owner resolution', () => {
       draft: false,
       id: 404,
       overrideAccess: false,
+      select: contentPathSelect,
     })
   })
 
@@ -196,6 +203,7 @@ describe('content route owner resolution', () => {
       disableErrors: true,
       id: '845400',
       overrideAccess: false,
+      select: contentRouteSelects.redirects,
     })
     expect(findByID).toHaveBeenNthCalledWith(2, {
       collection: 'learning-videos',
@@ -204,6 +212,7 @@ describe('content route owner resolution', () => {
       draft: false,
       id: 8454,
       overrideAccess: false,
+      select: contentPathSelect,
     })
   })
 

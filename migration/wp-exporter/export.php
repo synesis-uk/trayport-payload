@@ -176,6 +176,82 @@ function tp_normalize($value, array &$mediaIds, array &$termIds)
     return null;
 }
 
+/**
+ * Read only the active, public first-visit cookie notice content. The plugin's
+ * preference categories and vendor data deliberately remain outside the pilot.
+ */
+function tp_cookie_notice(): array
+{
+    $templates = get_option('wcc_banner_template_gdpr-1');
+    $html = is_array($templates) && isset($templates['en']['html'])
+        ? (string) $templates['en']['html']
+        : '';
+
+    if ($html === '' || !class_exists('DOMDocument')) {
+        return [];
+    }
+
+    $previousErrors = libxml_use_internal_errors(true);
+    $document = new DOMDocument();
+    $loaded = $document->loadHTML(
+        '<?xml encoding="utf-8" ?>' . $html,
+        LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+    );
+    libxml_clear_errors();
+    libxml_use_internal_errors($previousErrors);
+
+    if (!$loaded) {
+        return [];
+    }
+
+    $xpath = new DOMXPath($document);
+    $text = static function (?DOMNode $node): string {
+        if (!$node) {
+            return '';
+        }
+
+        return trim((string) preg_replace('/\s+/u', ' ', html_entity_decode(
+            $node->textContent,
+            ENT_QUOTES | ENT_HTML5,
+            'UTF-8'
+        )));
+    };
+    $first = static function (DOMXPath $xpath, string $query): ?DOMNode {
+        $nodes = $xpath->query($query);
+
+        return $nodes && $nodes->length > 0 ? $nodes->item(0) : null;
+    };
+
+    $container = $first($xpath, '//*[@data-tag="notice"]');
+    $titleNode = $first($xpath, '//*[@id="wcc-title"]');
+    $descriptionNode = $first($xpath, '//*[@id="wcc-notice-des"]');
+    $policyNode = $first($xpath, '//*[@id="wcc-notice-des"]//a[1]');
+    $acceptNode = $first($xpath, '//*[@data-tag="accept-button"]');
+    $rejectNode = $first($xpath, '//*[@data-tag="reject-button"]');
+    $policyLabel = $text($policyNode);
+    $message = $text($descriptionNode);
+
+    if ($policyLabel !== '') {
+        $position = strrpos($message, $policyLabel);
+        if ($position !== false) {
+            $message = rtrim(substr($message, 0, $position));
+        }
+    }
+
+    $policyUrl = $policyNode instanceof DOMElement ? $policyNode->getAttribute('href') : '';
+    $policyPath = $policyUrl !== '' ? wp_parse_url($policyUrl, PHP_URL_PATH) : null;
+
+    return [
+        'enabled' => $container !== null,
+        'title' => $text($titleNode),
+        'message' => $message,
+        'policy_label' => $policyLabel,
+        'policy_path' => is_string($policyPath) ? $policyPath : null,
+        'accept_label' => $text($acceptNode),
+        'reject_label' => $text($rejectNode),
+    ];
+}
+
 function tp_export_post(
     int $postId,
     array &$mediaIds,
@@ -291,6 +367,10 @@ function tp_export_media(int $mediaId): void
     $resolvedPath = get_attached_file($mediaId);
     $locallyReadable = is_string($resolvedPath) && $resolvedPath !== '' && is_readable($resolvedPath);
     $fileHash = $locallyReadable ? hash_file('sha256', $resolvedPath) : null;
+    $metadataFileSize = is_array($metadata) && isset($metadata['filesize'])
+        ? (int) $metadata['filesize']
+        : null;
+    $fileSize = $locallyReadable ? filesize($resolvedPath) : $metadataFileSize;
     $mimeType = (string) get_post_mime_type($mediaId);
     $alt = (string) get_post_meta($mediaId, '_wp_attachment_image_alt', true);
     $isImage = strpos($mimeType, 'image/') === 0;
@@ -306,9 +386,11 @@ function tp_export_media(int $mediaId): void
         'caption' => (string) wp_get_attachment_caption($mediaId),
         'description' => (string) get_post_field('post_content', $mediaId),
         'mimeType' => $mimeType,
+        'fileSize' => is_int($fileSize) && $fileSize > 0 ? $fileSize : null,
         'fileHash' => is_string($fileHash) ? $fileHash : null,
         'url' => wp_get_attachment_url($mediaId) ?: null,
         'relativePath' => is_string($relativePath) && $relativePath !== '' ? $relativePath : null,
+        'recoveryURL' => null,
         'width' => is_array($metadata) && isset($metadata['width']) ? (int) $metadata['width'] : null,
         'height' => is_array($metadata) && isset($metadata['height']) ? (int) $metadata['height'] : null,
         'availability' => $locallyReadable ? 'local' : 'unavailable',
@@ -461,9 +543,110 @@ function tp_export_reusable(
     ]);
 }
 
+/**
+ * Resolve the small, curated shortcode vocabulary used by the public company
+ * registration records. This intentionally does not execute arbitrary
+ * WordPress shortcodes; it reads the active `shortcode` record and only emits
+ * its bounded text, paragraph, or link value.
+ */
+function tp_resolve_company_shortcode(string $value): string
+{
+    return (string) preg_replace_callback('/\[[^\]]+\]/', static function (array $matches): string {
+        $ids = get_posts([
+            'post_type' => 'shortcode',
+            'post_status' => 'publish',
+            'posts_per_page' => 1,
+            'fields' => 'ids',
+            'no_found_rows' => true,
+            'meta_query' => [[
+                'key' => 'shortcode',
+                'value' => (string) $matches[0],
+            ]],
+        ]);
+        $shortcodeId = isset($ids[0]) ? (int) $ids[0] : 0;
+        if ($shortcodeId <= 0) {
+            return '';
+        }
+
+        $type = (string) get_field('type', $shortcodeId);
+        if ($type === 'text') {
+            return (string) get_field('text', $shortcodeId);
+        }
+        if ($type === 'paragraph') {
+            return (string) get_field('paragraph', $shortcodeId);
+        }
+        if ($type === 'link') {
+            $link = get_field('link', $shortcodeId);
+            if (!is_array($link) || empty($link['url']) || empty($link['title'])) {
+                return '';
+            }
+
+            $target = ($link['target'] ?? '') === '_blank' ? ' target="_blank" rel="noopener noreferrer"' : '';
+
+            return '<a href="' . esc_url((string) $link['url']) . '"' . $target . '>'
+                . esc_html((string) $link['title']) . '</a>';
+        }
+
+        return '';
+    }, $value);
+}
+
+function tp_export_company_data_reusable(
+    int $postId,
+    array &$mediaIds,
+    array &$termIds
+): void {
+    $post = get_post($postId);
+    if (!$post instanceof WP_Post || $post->post_type !== 'company-data') {
+        throw new RuntimeException("Company-data source post {$postId} does not exist.");
+    }
+
+    $fields = function_exists('get_fields') ? (get_fields($postId) ?: []) : [];
+    $keys = [
+        'name',
+        'company_type',
+        'nature_of_business',
+        'professional_law',
+        'phone',
+        'email',
+        'vat_id',
+        'company_number',
+        'commercial_register',
+        'registered_in',
+        'registered_office',
+    ];
+    $data = [];
+    foreach ($keys as $key) {
+        $value = $fields[$key] ?? '';
+        $data[$key] = is_string($value) ? tp_resolve_company_shortcode($value) : $value;
+    }
+
+    foreach (['directors', 'company_secretary'] as $key) {
+        $people = is_array($fields[$key] ?? null) ? $fields[$key] : [];
+        $data[$key] = array_values(array_filter(array_map(static function ($person): string {
+            $personId = tp_reference_id($person);
+            if ($personId <= 0) {
+                return '';
+            }
+
+            return trim((string) (get_field('name', $personId) ?: get_the_title($personId)));
+        }, $people)));
+    }
+
+    tp_emit([
+        'entity' => 'reusable',
+        'legacyId' => $postId,
+        'postType' => (string) $post->post_type,
+        'title' => html_entity_decode(get_the_title($postId), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+        'path' => tp_relative_path_for_post($postId),
+        'data' => (object) tp_normalize($data, $mediaIds, $termIds),
+    ]);
+}
+
 function tp_export_curated_reusables(array &$mediaIds, array &$termIds): void
 {
     tp_export_reusable(3055, ['stats'], $mediaIds, $termIds);
+    tp_export_reusable(3838, ['stats'], $mediaIds, $termIds);
     tp_export_reusable(
         7665,
         ['image', 'video', 'duration', 'name', 'short_description', 'description'],
@@ -499,13 +682,17 @@ function tp_export_curated_reusables(array &$mediaIds, array &$termIds): void
         );
     }
 
-    foreach ([2561, 2563, 2570, 2571, 2667, 2668, 2670, 9253, 10395] as $personId) {
+    foreach ([2561, 2563, 2570, 2571, 2667, 2668, 2670, 4145, 4146, 4837, 4839, 4841, 4843, 9253, 10395] as $personId) {
         tp_export_reusable(
             $personId,
             ['image', 'name', 'date', 'team', 'job_role', 'description', 'quote', 'external_link'],
             $mediaIds,
             $termIds
         );
+    }
+
+    foreach ([4846, 4848, 4849, 4850] as $companyDataId) {
+        tp_export_company_data_reusable($companyDataId, $mediaIds, $termIds);
     }
 
     foreach ([
@@ -577,7 +764,18 @@ function tp_normalized_marker_rows($value): array
 
 function tp_export_map_hubs(array &$termIds): void
 {
-    $pilotDependencyHubIds = [2490, 3332, 3333, 3336, 6776];
+    $assetClassTerms = get_terms([
+        'taxonomy' => 'asset-class',
+        'hide_empty' => false,
+    ]);
+    if (is_wp_error($assetClassTerms)) {
+        throw new RuntimeException('Could not enumerate Market Matrix asset classes.');
+    }
+    foreach ($assetClassTerms as $term) {
+        $termId = (int) $term->term_id;
+        $termIds['asset-class:' . $termId] = ['id' => $termId, 'taxonomy' => 'asset-class'];
+    }
+
     $hubIds = get_posts([
         'post_type' => 'hub',
         'post_status' => 'publish',
@@ -591,10 +789,8 @@ function tp_export_map_hubs(array &$termIds): void
     foreach ($hubIds as $hubId) {
         $classId = tp_reference_id(function_exists('get_field') ? get_field('class', $hubId) : null);
         $regionId = tp_reference_id(function_exists('get_field') ? get_field('region', $hubId) : null);
-        $isMapHub = in_array($classId, [21, 22], true)
-            && in_array($regionId, [29, 30, 31], true);
-        if (!$isMapHub && !in_array((int) $hubId, $pilotDependencyHubIds, true)) {
-            continue;
+        if ($classId <= 0 || $regionId <= 0) {
+            throw new RuntimeException("Market Matrix hub {$hubId} is missing its asset class or region.");
         }
 
         $termIds['asset-class:' . $classId] = ['id' => $classId, 'taxonomy' => 'asset-class'];
@@ -621,6 +817,39 @@ function tp_export_map_hubs(array &$termIds): void
                 function_exists('get_field') ? get_field('marker_locations', $hubId) : []
             ),
         ]);
+    }
+}
+
+/**
+ * Export every published venue used by the Market Matrix. This deliberately
+ * does not depend on TP_POC_HUB_ID: that variable only drives the legacy
+ * German Power relationship projection, whereas the Matrix is a site-wide
+ * venue-to-hub dataset.
+ */
+function tp_export_market_matrix_venues(array $rootIds, array &$mediaIds, array &$termIds): void
+{
+    $venueIds = get_posts([
+        'post_type' => 'venue',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'fields' => 'ids',
+        'orderby' => 'ID',
+        'order' => 'ASC',
+        'no_found_rows' => true,
+    ]);
+
+    foreach ($venueIds as $venueId) {
+        if (in_array((int) $venueId, $rootIds, true)) {
+            continue;
+        }
+        tp_export_post(
+            (int) $venueId,
+            $mediaIds,
+            $termIds,
+            ['type', 'display_name', 'website', 'connections'],
+            false,
+            'venue-summary'
+        );
     }
 }
 
@@ -772,11 +1001,17 @@ $termIds = [];
 foreach ($rootIds as $postId) {
     $postType = get_post_type($postId);
     if ($postType === 'page') {
+        $template = (string) get_page_template_slug($postId);
+        $pageFields = (int) $postId === 4031
+            ? ['page_settings']
+            : ($template === 'layouts/article.blade.php'
+                ? ['article_header', 'sections', 'page_settings']
+                : ['sections_new', 'page_settings']);
         tp_export_post(
             (int) $postId,
             $mediaIds,
             $termIds,
-            ['sections_new', 'page_settings'],
+            $pageFields,
             true,
             'root'
         );
@@ -926,25 +1161,16 @@ if ($hubId > 0) {
         'hubLegacyId' => $hubId,
         'connections' => $hubConnections['connections'],
     ]);
-
-    foreach ($hubConnections['venueIds'] as $venueId) {
-        if (in_array((int) $venueId, $rootIds, true)) {
-            continue;
-        }
-        tp_export_post(
-            (int) $venueId,
-            $mediaIds,
-            $termIds,
-            ['type', 'display_name', 'website'],
-            false,
-            'venue-summary'
-        );
-    }
 }
+
+tp_export_market_matrix_venues($rootIds, $mediaIds, $termIds);
 
 $safeOptions = [
     'dropdown' => get_field('dropdown', 'option'),
     'footer_new' => get_field('footer_new', 'option'),
+    'footer_company_registration_text' => get_field('footer_company_registration_text', 'option'),
+    'footer_parent_company_text' => get_field('footer_parent_company_text', 'option'),
+    'cookie_notice' => tp_cookie_notice(),
     'legal' => [
         'disclaimer' => get_field('paragraph', 4819),
         'address' => get_field('text', 4818),
@@ -987,6 +1213,20 @@ tp_emit_warning(
     'E-World secondary HubSpot form is intentionally omitted from the pilot.',
     10030,
     'posts.10030.sections.4'
+);
+tp_emit_warning(
+    'deferred-hubspot-form',
+    'info',
+    'The unused Contact sales-enquiry HubSpot form is intentionally omitted from the managed contact-details page.',
+    34,
+    'pages.34.sections_new.1.columns.0.components.1'
+);
+tp_emit_warning(
+    'deferred-hubspot-form',
+    'info',
+    'The unused Contact general-enquiry HubSpot form is intentionally omitted from the managed contact-details page.',
+    34,
+    'pages.34.sections_new.1.columns.0.components.5'
 );
 tp_emit_warning(
     'protected-learning-media',

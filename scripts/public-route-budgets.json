@@ -1,0 +1,81 @@
+{
+  "forbiddenFirstLoadStrings": [
+    "building-lock",
+    "chart-waterfall",
+    "Featured insights",
+    "Trayport login required",
+    "autoTRADER connection",
+    "This browser cannot play the video.",
+    "data-trayport-chart-runtime",
+    "Mapbox GL JS",
+    "Previous slide",
+    "RefreshRouteOnSave",
+    "onPreviewExit"
+  ],
+  "forbiddenFirstLoadCSSStrings": ["mapboxgl-ctrl-logo"],
+  "routes": [
+    {
+      "artifacts": {
+        "html": ".next/server/app/index.html",
+        "segments": ".next/server/app/index.segments"
+      },
+      "budgets": {
+        "allSegmentRSCGzipBytes": 10240,
+        "allSegmentRSCRawBytes": 36864,
+        "cssChunks": 8,
+        "cssGzipBytes": 49152,
+        "cssRawBytes": 262144,
+        "fullSegmentRSCGzipBytes": 5120,
+        "fullSegmentRSCRawBytes": 20480,
+        "htmlGzipBytes": 4096,
+        "htmlRawBytes": 12288,
+        "jsChunks": 19,
+        "jsGzipBytes": 212992,
+        "jsRawBytes": 692224
+      },
+      "route": "/"
+    },
+    {
+      "artifacts": {
+        "html": ".next/server/app/[...segments].html",
+        "segments": ".next/server/app/[...segments].segments"
+      },
+      "budgets": {
+        "allSegmentRSCGzipBytes": 10240,
+        "allSegmentRSCRawBytes": 36864,
+        "cssChunks": 8,
+        "cssGzipBytes": 49152,
+        "cssRawBytes": 262144,
+        "fullSegmentRSCGzipBytes": 5120,
+        "fullSegmentRSCRawBytes": 20480,
+        "htmlGzipBytes": 4096,
+        "htmlRawBytes": 12288,
+        "jsChunks": 19,
+        "jsGzipBytes": 212992,
+        "jsRawBytes": 692224
+      },
+      "route": "/[...segments]"
+    },
+    {
+      "artifacts": {
+        "html": ".next/server/app/_not-found.html",
+        "segments": ".next/server/app/_not-found.segments"
+      },
+      "budgets": {
+        "allSegmentRSCGzipBytes": 8192,
+        "allSegmentRSCRawBytes": 28672,
+        "cssChunks": 4,
+        "cssGzipBytes": 32768,
+        "cssRawBytes": 163840,
+        "fullSegmentRSCGzipBytes": 4096,
+        "fullSegmentRSCRawBytes": 16384,
+        "htmlGzipBytes": 5120,
+        "htmlRawBytes": 24576,
+        "jsChunks": 10,
+        "jsGzipBytes": 163840,
+        "jsRawBytes": 573440
+      },
+      "route": "/_not-found"
+    }
+  ]
+}

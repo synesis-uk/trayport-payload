@@ -37,6 +37,16 @@ Editors choose named variants rather than arbitrary CSS, colours, or HTML. This
 keeps new pages consistent with the refreshed frontend while retaining enough
 controls to reconstruct the proof-of-concept routes.
 
+Imported rich text retains semantic H2-H4 headings, ordered and unordered lists,
+and nested list structure as native Lexical nodes. Full-article source sections
+are wrapped in the same current, bounded Content Section fields used by authored
+pages; legacy `theme` and `spacing` switches are not exposed or carried forward.
+
+Venue descriptions are authored page content and always render when present,
+even when the same copy is also used as the SEO description. The public site is
+currently light-only: an operating-system dark preference does not invert rich
+text or enable an unapproved dark theme.
+
 ## Preview and publishing
 
 Routable content supports drafts, versions, autosave, scheduled publishing, and
@@ -45,8 +55,8 @@ publishing; publishing revalidates the route and related sitemap/listing data.
 
 ## Site-wide controls
 
-- **Navigation** controls the five primary roots, dropdown links, utility links,
-  and primary action.
+- **Navigation** controls the five primary roots, dropdown links, and the three
+  shared utility destinations used for Joule, Request a Demo, and Contact Us.
 - **Footer** controls link columns, legal links, certification marks, and
   copyright text.
 - **Site settings** controls brand assets, default SEO, contact/social details,
@@ -61,16 +71,48 @@ explicitly. Imported records identify whether alt text came from WordPress, a
 title fallback, or requires editor review. The migration report contains the
 initial review queue.
 
+The Media library may also hold PDFs for explicit document workflows. Visual fields
+show only the asset types their frontend presentation supports: image fields
+accept images, video fields accept videos, and the general Hero/Media
+presentations accept images or videos. The same MIME rules are enforced when a
+document is saved through the API, so a PDF cannot be stored in a hero,
+background, card, gallery, logo, poster, or sharing-image field.
+
 ## Data boundary
 
 Payload stores editorial chart configuration, but not the imported monthly
-market facts. Those facts live in `app.market_volume_monthly` and are read by
-the frontend chart component. Changing market facts is an application-data
+market facts. Each Data Chart must select a managed Asset Class. For publication,
+that relationship must resolve to an imported Asset Class with an application-data
+key in `legacySource.legacyId`; that key, rather than an editable number on the
+chart, drives the query into `app.market_volume_monthly`.
+
+The editor exposes only implemented choices:
+
+- metric: `Volume` or `Price`;
+- series: `Execution type` or `Hub`; and
+- display interval: `Month`, `Quarter`, or `Year`.
+
+Execution-type charts must use Volume with Stacked columns and cannot filter Hubs.
+Hub charts may use Volume with Columns or Price with a Line. Their optional Included
+Hubs and Excluded Hubs relationships are respectively an allow-list and deny-list;
+the same Hub cannot appear in both. These controls reference managed imported Hubs,
+not free-form market-data keys.
+
+A chart date bound is optional, but each supplied bound must include both year and
+quarter. When both bounds are present, the start quarter cannot be later than the
+end quarter. The runtime returns at most the most recent 40 matching month, quarter,
+or year periods. Changing market facts or that safety cap remains an application-data
 operation, not a CMS editing task.
+
+Preview distinguishes four outcomes. A populated query renders the chart and its
+optional “View chart data” table; an empty result says no imported values matched;
+an unavailable result reports a temporary data/relationship failure; and an older
+unsupported draft is identified explicitly rather than silently rendered as another
+chart shape. Publication rejects unsupported combinations.
 
 ## Proof-of-concept limits
 
 HubSpot, public forms, Commodities Report, public-user accounts, full-site
-search, and dormant WordPress content types are not included. Paths are unique
-inside each routable content type; cross-type route reservation is a follow-on
-hardening item before broad production authoring.
+search, and dormant WordPress content types are not included. A protected route
+registry now reserves one canonical owner across every routable collection,
+managed redirects, and virtual indexes before broad production authoring.

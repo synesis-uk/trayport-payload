@@ -78,6 +78,91 @@ const managedTerms = [
 ]
 
 export const productionFixture = (): RuntimeInventorySnapshot => {
+  const expandedPilotPageFixtures = new Map<
+    number,
+    { authoritativeField: string; path: string; template: string }
+  >([
+    [
+      2231,
+      {
+        authoritativeField: 'sections_new',
+        path: '/resources/market-matrix/',
+        template: 'layouts/market-matrix.blade.php',
+      },
+    ],
+    [
+      4737,
+      {
+        authoritativeField: 'sections_new',
+        path: '/legal/',
+        template: 'layouts/default-new.blade.php',
+      },
+    ],
+    [
+      7589,
+      {
+        authoritativeField: 'sections_new',
+        path: '/legal/cookie-policy/',
+        template: 'layouts/cookie-consent.blade.php',
+      },
+    ],
+    [
+      7585,
+      {
+        authoritativeField: 'sections_new',
+        path: '/terms-of-use-disclaimer/',
+        template: 'layouts/default-new.blade.php',
+      },
+    ],
+    [
+      4803,
+      {
+        authoritativeField: 'sections',
+        path: '/legal/legal-notice/',
+        template: 'layouts/article.blade.php',
+      },
+    ],
+    [
+      7573,
+      {
+        authoritativeField: 'sections',
+        path: '/legal/modern-slavery/',
+        template: 'layouts/article.blade.php',
+      },
+    ],
+    [
+      5983,
+      {
+        authoritativeField: 'sections_new',
+        path: '/regions/asia-pacific/',
+        template: 'layouts/default-new.blade.php',
+      },
+    ],
+    [
+      2221,
+      {
+        authoritativeField: 'sections_new',
+        path: '/regions/north-america/',
+        template: 'layouts/default-new.blade.php',
+      },
+    ],
+    [
+      11475,
+      {
+        authoritativeField: 'sections_new',
+        path: '/company/careers/',
+        template: 'layouts/default-new.blade.php',
+      },
+    ],
+    [
+      5981,
+      {
+        authoritativeField: 'sections_new',
+        path: '/regions/europe/',
+        template: 'layouts/default-new.blade.php',
+      },
+    ],
+  ])
   const explicitPages = [
     inventoryNode(1898, 'page', '/', {
       authoritativeField: 'sections_new',
@@ -109,11 +194,17 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
     1926,
     9244,
     3001,
-    ...Array.from({ length: 37 }, (_, index) => 3007 + index),
+    ...Array.from(
+      { length: 37 },
+      (_, index) =>
+        [2231, 4737, 7589, 7585, 4803, 7573, 5983, 2221, 11475, 5981][index] || 3007 + index,
+    ),
     2203,
   ]
-  const additionalPages = additionalPageIDs.map((legacyId, index) =>
-    inventoryNode(
+  const additionalPages = additionalPageIDs.map((legacyId, index) => {
+    const expandedPilotPage = expandedPilotPageFixtures.get(legacyId)
+
+    return inventoryNode(
       legacyId,
       'page',
       legacyId === 10140
@@ -130,31 +221,28 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
                   ? '/resources/news/'
                   : legacyId === 2203
                     ? '/company/about-us/'
-                    : index === 10
-                      ? '/privacy/'
-                      : `/page-${index + 1}/`,
+                    : expandedPilotPage?.path || `/page-${index + 1}/`,
       {
-        authoritativeField: 'sections_new',
+        authoritativeField: expandedPilotPage?.authoritativeField || 'sections_new',
         template:
           legacyId === 9248 || legacyId === 9244
             ? 'layouts/articles-list.blade.php'
             : legacyId === 3311
               ? 'layouts/learning-hub-home.blade.php'
-              : index === 3
-                ? 'layouts/market-matrix.blade.php'
-                : index === 10
-                  ? 'layouts/cookie-consent.blade.php'
-                  : 'layouts/default-new.blade.php',
+              : expandedPilotPage?.template || 'layouts/default-new.blade.php',
         componentLayouts: [
           {
-            layout: 'hero',
-            scope: 'page-top-level',
-            sourcePath: `posts.${legacyId}.acf.sections_new[0]`,
+            layout: expandedPilotPage?.authoritativeField === 'sections' ? 'paragraph' : 'hero',
+            scope:
+              expandedPilotPage?.authoritativeField === 'sections'
+                ? 'article-top-level'
+                : 'page-top-level',
+            sourcePath: `posts.${legacyId}.acf.${expandedPilotPage?.authoritativeField || 'sections_new'}[0]`,
           },
         ],
       },
-    ),
-  )
+    )
+  })
   const referenceOwner = additionalPages[4]
   referenceOwner.references = [
     {

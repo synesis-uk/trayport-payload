@@ -4,12 +4,18 @@ import { admins, adminsOrEditors, publicOrCMSUsers } from '@/access/roles'
 import { trayportLayoutBlocks } from '@/blocks/Trayport/config'
 import { contentPathField } from '@/fields/contentPath'
 import { createLegacySourceField } from '@/fields/legacySource'
+import { imageOrVideoUploadField } from '@/fields/mediaUpload'
 import { publishedAtField } from '@/fields/publishedAt'
 import { confirmPathRedirectField } from '@/fields/routeControls'
 import { seoField } from '@/fields/seo'
 import { trayportSlugField } from '@/fields/slug'
 import { validateRoutableDocument } from '@/routing/archetypes'
 import { releaseRoutableRoute, syncRoutableRoute } from '@/routing/registry'
+import {
+  externalHTTPSDestinationPolicy,
+  normalizeDestinationValue,
+  validateExternalHTTPSURL,
+} from '@/routing/urlPolicy'
 import { generateContentPreviewPath } from '@/utilities/generateContentPreviewPath'
 
 import {
@@ -27,7 +33,7 @@ export const Articles: CollectionConfig = {
     update: adminsOrEditors,
   },
   admin: {
-    defaultColumns: ['title', 'path', 'publishedAt', '_status', 'updatedAt'],
+    defaultColumns: ['title', 'path', 'displayDate', 'publishedAt', '_status', 'updatedAt'],
     group: 'Content',
     livePreview: {
       url: ({ data }) => generateContentPreviewPath(data?.path),
@@ -37,6 +43,7 @@ export const Articles: CollectionConfig = {
   },
   defaultPopulate: {
     excerpt: true,
+    displayDate: true,
     externalDestination: true,
     heroMedia: true,
     meta: {
@@ -70,11 +77,9 @@ export const Articles: CollectionConfig = {
               },
               maxLength: 320,
             },
-            {
+            imageOrVideoUploadField({
               name: 'heroMedia',
-              type: 'upload',
-              relationTo: 'media',
-            },
+            }),
             {
               name: 'layout',
               type: 'blocks',
@@ -117,10 +122,12 @@ export const Articles: CollectionConfig = {
                 description:
                   'Optional fully qualified destination for listing-only records. These records never own an internal route.',
               },
-              validate: (value: string | null | undefined) =>
-                !value ||
-                /^https:\/\/[^/?#]+(?:[/?#].*)?$/i.test(value) ||
-                'Use a complete HTTPS URL.',
+              hooks: {
+                beforeValidate: [
+                  ({ value }) => normalizeDestinationValue(value, externalHTTPSDestinationPolicy),
+                ],
+              },
+              validate: (value: string | null | undefined) => validateExternalHTTPSURL(value),
             },
             {
               name: 'articleType',
@@ -188,6 +195,17 @@ export const Articles: CollectionConfig = {
               ],
             },
             {
+              name: 'displayDate',
+              type: 'date',
+              admin: {
+                date: {
+                  pickerAppearance: 'dayOnly',
+                },
+                description:
+                  'Editorial date shown on cards and listings. Year filters use Published At; Published At is also the display fallback when this is empty.',
+              },
+            },
+            {
               name: 'byline',
               type: 'text',
               admin: {
@@ -240,11 +258,8 @@ export const Articles: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [validateRoutableDocument('articles')],
-    afterChange: [syncRoutableRoute('articles'), revalidateRoutableContent('content-sitemap')],
-    afterDelete: [
-      releaseRoutableRoute('articles'),
-      revalidateDeletedRoutableContent('content-sitemap'),
-    ],
+    afterChange: [syncRoutableRoute('articles'), revalidateRoutableContent()],
+    afterDelete: [releaseRoutableRoute('articles'), revalidateDeletedRoutableContent()],
   },
   versions: {
     drafts: {

@@ -148,11 +148,8 @@ export const Pages: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [validateRoutableDocument('pages')],
-    afterChange: [syncRoutableRoute('pages'), revalidateRoutableContent('content-sitemap')],
-    afterDelete: [
-      releaseRoutableRoute('pages'),
-      revalidateDeletedRoutableContent('content-sitemap'),
-    ],
+    afterChange: [syncRoutableRoute('pages'), revalidateRoutableContent()],
+    afterDelete: [releaseRoutableRoute('pages'), revalidateDeletedRoutableContent()],
   },
   versions: {
     drafts: {
