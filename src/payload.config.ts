@@ -37,11 +37,16 @@ const smtpPort = Number.parseInt(process.env.SMTP_PORT || '1025', 10)
 export default buildConfig({
   admin: {
     components: {
-      beforeDashboard: ['@/components/AdminBranding/BeforeDashboard'],
       beforeLogin: ['@/components/BeforeLogin'],
+      beforeNav: ['@/components/AdminBranding/NavBrand'],
       graphics: {
         Icon: '@/components/AdminBranding/Icon',
         Logo: '@/components/AdminBranding/Logo',
+      },
+      views: {
+        dashboard: {
+          Component: '@/components/AdminBranding/Dashboard',
+        },
       },
     },
     importMap: {
