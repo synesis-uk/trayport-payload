@@ -13,6 +13,7 @@ import { ParagraphFeatureClient as ParagraphFeatureClient_e70f5e05f09f93e00b997e
 import { LayoutRowLabel as LayoutRowLabel_1c0e8245ed67e6fcf538136d88f7a704 } from '@/components/AdminEditor/RowLabels.client'
 import { ComponentRowLabel as ComponentRowLabel_1c0e8245ed67e6fcf538136d88f7a704 } from '@/components/AdminEditor/RowLabels.client'
 import { ColumnRowLabel as ColumnRowLabel_1c0e8245ed67e6fcf538136d88f7a704 } from '@/components/AdminEditor/RowLabels.client'
+import { DocumentSidebarToggle as DocumentSidebarToggle_cfb66176d7897391da361df111bfd9d8 } from '@/components/AdminEditor/DocumentSidebarToggle.client'
 import { MarketDataImportActions as MarketDataImportActions_6bf9896362d98240a5df03f26a948636 } from '@/data/market-data/imports/MarketDataImportActions.client'
 import { InlineToolbarFeatureClient as InlineToolbarFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { FixedToolbarFeatureClient as FixedToolbarFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
@@ -44,6 +45,7 @@ export const importMap = {
   "@/components/AdminEditor/RowLabels.client#LayoutRowLabel": LayoutRowLabel_1c0e8245ed67e6fcf538136d88f7a704,
   "@/components/AdminEditor/RowLabels.client#ComponentRowLabel": ComponentRowLabel_1c0e8245ed67e6fcf538136d88f7a704,
   "@/components/AdminEditor/RowLabels.client#ColumnRowLabel": ColumnRowLabel_1c0e8245ed67e6fcf538136d88f7a704,
+  "@/components/AdminEditor/DocumentSidebarToggle.client#DocumentSidebarToggle": DocumentSidebarToggle_cfb66176d7897391da361df111bfd9d8,
   "@/data/market-data/imports/MarketDataImportActions.client#MarketDataImportActions": MarketDataImportActions_6bf9896362d98240a5df03f26a948636,
   "@payloadcms/richtext-lexical/client#InlineToolbarFeatureClient": InlineToolbarFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#FixedToolbarFeatureClient": FixedToolbarFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,

@@ -20,6 +20,44 @@ import {
 
 const mediaStorage = resolveMediaStorageConfig()
 const s3Configuration = mediaStorage.s3
+const documentSidebarToggle =
+  '@/components/AdminEditor/DocumentSidebarToggle.client#DocumentSidebarToggle'
+
+const documentSidebarPlugin: Plugin = (config) => ({
+  ...config,
+  collections: config.collections?.map((collection) => ({
+    ...collection,
+    admin: {
+      ...collection.admin,
+      components: {
+        ...collection.admin?.components,
+        edit: {
+          ...collection.admin?.components?.edit,
+          beforeDocumentControls: [
+            documentSidebarToggle,
+            ...(collection.admin?.components?.edit?.beforeDocumentControls || []),
+          ],
+        },
+      },
+    },
+  })),
+  globals: config.globals?.map((global) => ({
+    ...global,
+    admin: {
+      ...global.admin,
+      components: {
+        ...global.admin?.components,
+        elements: {
+          ...global.admin?.components?.elements,
+          beforeDocumentControls: [
+            documentSidebarToggle,
+            ...(global.admin?.components?.elements?.beforeDocumentControls || []),
+          ],
+        },
+      },
+    },
+  })),
+})
 
 const validateRedirectCustomURL: TextFieldSingleValidation = (value, { siblingData }) => {
   const destination = siblingData as { type?: unknown } | undefined
@@ -117,4 +155,5 @@ export const plugins: Plugin[] = [
     },
     enabled: mediaStorage.mode === 's3',
   }),
+  documentSidebarPlugin,
 ]

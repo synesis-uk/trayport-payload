@@ -154,6 +154,7 @@ export const ContentSection: Block = {
       maxRows: 8,
       required: true,
       admin: {
+        className: 'trayport-admin-columns',
         components: {
           RowLabel: '@/components/AdminEditor/RowLabels.client#ColumnRowLabel',
         },
