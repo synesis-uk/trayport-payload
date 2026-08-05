@@ -7,10 +7,14 @@ import { TrayportMedia } from '@/components/Trayport/TrayportMedia'
 import { getConnectionsMapRuntimeConfig } from '@/config/connectionsMap.server'
 import { loadMarketCoverageIndex } from '@/data/contentIndexes.server'
 import { loadMarketMatrixIndex } from '@/data/marketMatrix.server'
+import { filterRegionalMarketMapIndex, regionalMapRelationshipID } from '@/data/regionalMarketMap'
+import { loadRegionalMarketMapIndex } from '@/data/regionalMarketMap.server'
 
 import { DynamicMarketMatrixPresentation } from './DynamicMarketMatrixPresentation.client'
 import { loadDataChartMarketData } from './dataChartData.server'
 import { normalizeMarketMatrixComponent } from './marketMatrixModel'
+import { normalizeActions } from './normalizers'
+import { RegionalMarketMapPresentation } from './RegionalMarketMapPresentation'
 import {
   normalizeDataChartComponent,
   normalizeMarketCoverageComponent,
@@ -26,7 +30,68 @@ export const MarketCoverageComponentAdapter = async ({
   block,
   draft = false,
 }: TrayportDraftAwareSectionComponentAdapterProps<'marketCoverage'>) => {
-  const { allMarkers, hubCount } = await loadMarketCoverageIndex({ draft })
+  if (block.mode === 'regionalConnectivity') {
+    const relationshipIDs = (value: unknown): string[] =>
+      (Array.isArray(value) ? value : []).flatMap((item) => regionalMapRelationshipID(item) || [])
+    const fullIndex = await loadRegionalMarketMapIndex({ draft })
+    const index = filterRegionalMarketMapIndex(fullIndex, {
+      assetClassIDs: relationshipIDs(block.assetClasses),
+      hubIDs: relationshipIDs(block.includedHubs),
+      regionIDs: relationshipIDs(block.regions),
+      venueTypeIDs: relationshipIDs(block.venueTypes),
+    })
+    const defaultAssetClassID = regionalMapRelationshipID(block.defaultAssetClass)
+    const markerRadius = Math.min(Math.max(Number(block.markerSize) || 5, 2), 8)
+    const rawLineWidth = Number(block.lineWidth)
+    const rawLineOpacity = Number(block.lineOpacity)
+
+    return (
+      <RegionalMarketMapPresentation
+        actions={normalizeActions(block.actions)}
+        background={
+          block.backgroundMedia ? (
+            <TrayportMedia
+              background
+              composition="content"
+              media={block.backgroundMedia}
+              showFallbackLink={false}
+            />
+          ) : undefined
+        }
+        body={
+          block.body ? (
+            <RichText className="trayport-richtext" data={block.body} enableGutter={false} />
+          ) : undefined
+        }
+        model={{
+          dataDisplay: block.dataDisplay === 'hover' ? 'hover' : 'always',
+          defaultAssetClassID,
+          height: Math.min(Math.max(Number(block.height) || 600, 320), 800),
+          index,
+          lineColor: block.lineColor || '#009cde',
+          lineOpacity: Number.isFinite(rawLineOpacity)
+            ? Math.min(Math.max(rawLineOpacity, 0), 1)
+            : 0.5,
+          lineWidth: Math.max(
+            (Number.isFinite(rawLineWidth) ? Math.min(Math.max(rawLineWidth, 0), 1) : 0.5) * 8,
+            1,
+          ),
+          mapStyle: block.style === 'light' ? 'light' : 'dark',
+          markerRadius,
+          showAssetClassFilter: block.showAssetClassFilter !== false,
+          showLines: block.showLines !== false,
+          showMarketData: block.showMarketData === true,
+          showSidebar: block.showSidebar !== false,
+          title: block.title || 'Explore market connectivity',
+          zoomTo: block.zoomTo === 'region' ? 'region' : 'markers',
+        }}
+        presentation={block.presentation === 'mapOnly' ? 'mapOnly' : 'summary'}
+        runtime={getConnectionsMapRuntimeConfig(block.style === 'light' ? 'light' : 'dark')}
+      />
+    )
+  }
+
+  const { hubCount, markers } = await loadMarketCoverageIndex({ draft })
   const model = normalizeMarketCoverageComponent(block, {
     background: block.backgroundMedia ? (
       <TrayportMedia
@@ -40,16 +105,12 @@ export const MarketCoverageComponentAdapter = async ({
       <RichText className="trayport-richtext" data={block.body} enableGutter={false} />
     ) : undefined,
     hubCount,
-    markers: allMarkers,
+    markers,
   })
 
   return (
     <MarketCoveragePresentation
-      mapRuntime={
-        model.presentation === 'mapOnly' && model.mapStyle === 'dark'
-          ? getConnectionsMapRuntimeConfig()
-          : null
-      }
+      mapRuntime={model.markerGroups.length ? getConnectionsMapRuntimeConfig(model.mapStyle) : null}
       model={model}
     />
   )
@@ -71,21 +132,36 @@ export const DataChartComponentAdapter = async ({
     return <DataChartPresentation model={normalizeUnsupportedDataChartComponent(block)} />
   }
 
+  const managedAssetClass =
+    block.assetClass && typeof block.assetClass === 'object' ? block.assetClass : null
+  const assetClassKey = managedAssetClass?.marketDataKey?.trim() || null
+  const managedAssetClassLegacyID = Number(managedAssetClass?.legacySource?.legacyId)
   const assetClassLegacyID =
-    typeof block.assetClass === 'object'
-      ? Number(block.assetClass.legacySource?.legacyId)
+    Number.isInteger(managedAssetClassLegacyID) && managedAssetClassLegacyID > 0
+      ? managedAssetClassLegacyID
       : Number(block.assetClassLegacyId)
-  const managedHubLegacyIDs = (values: typeof block.includedHubs | typeof block.excludedHubs) =>
-    (values || []).flatMap((value) => {
-      if (!value || typeof value !== 'object') return []
+  const managedHubIdentifiers = (values: typeof block.includedHubs | typeof block.excludedHubs) => {
+    const keys: string[] = []
+    const legacyIDs: number[] = []
+    let unresolved = 0
+
+    for (const value of values || []) {
+      if (!value || typeof value !== 'object') {
+        unresolved += 1
+        continue
+      }
+      const key = value.marketDataKey?.trim()
       const legacyID = Number(value.legacySource?.legacyId)
-      return Number.isInteger(legacyID) && legacyID > 0 ? [legacyID] : []
-    })
-  const includedHubLegacyIDs = managedHubLegacyIDs(block.includedHubs)
-  const excludedHubLegacyIDs = managedHubLegacyIDs(block.excludedHubs)
-  const hasUnresolvedHubRelationship =
-    includedHubLegacyIDs.length !== (block.includedHubs || []).length ||
-    excludedHubLegacyIDs.length !== (block.excludedHubs || []).length
+      if (key) keys.push(key)
+      if (Number.isInteger(legacyID) && legacyID > 0) legacyIDs.push(legacyID)
+      if (!key && !(Number.isInteger(legacyID) && legacyID > 0)) unresolved += 1
+    }
+
+    return { keys, legacyIDs, unresolved }
+  }
+  const includedHubs = managedHubIdentifiers(block.includedHubs)
+  const excludedHubs = managedHubIdentifiers(block.excludedHubs)
+  const hasUnresolvedHubRelationship = includedHubs.unresolved > 0 || excludedHubs.unresolved > 0
   const unavailableResult: MarketDataResult = {
     categories: [],
     dataType: block.dataType,
@@ -97,13 +173,16 @@ export const DataChartComponentAdapter = async ({
   const result = hasUnresolvedHubRelationship
     ? unavailableResult
     : await loadDataChartMarketData({
+        assetClassKey,
         assetClassLegacyID,
         dataType: block.dataType,
         displayInterval: block.displayInterval,
-        excludedHubLegacyIDs,
+        excludedHubKeys: excludedHubs.keys,
+        excludedHubLegacyIDs: excludedHubs.legacyIDs,
         fromQuarter: Number(block.fromQuarter) || null,
         fromYear: Number(block.fromYear) || null,
-        includedHubLegacyIDs,
+        includedHubKeys: includedHubs.keys,
+        includedHubLegacyIDs: includedHubs.legacyIDs,
         limit: 40,
         seriesDimension: block.seriesDimension,
         toQuarter: Number(block.toQuarter) || null,

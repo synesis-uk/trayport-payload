@@ -4,9 +4,10 @@
 
 The current implementation includes Payload collections for pages, articles,
 hubs, venues, learning videos, learning-video categories, media, taxonomies,
-users, and the protected route registry; globals for navigation, footer, site
-settings, and virtual-index configuration; and the redirects plugin. It also
-stores market facts in application PostgreSQL.
+users, non-authenticating customer identities, controlled market-data imports,
+and the protected route registry; globals for navigation, footer, site settings,
+and virtual-index configuration; and the redirects plugin. It stores bulk
+market facts in application PostgreSQL.
 
 The routable-content foundation below is implemented. The larger field and
 content-parity requirements remain the production contract. The production
@@ -27,7 +28,7 @@ admin structure.
 | `article-categories` | Payload | Non-routable taxonomy | News/Event/Insights discovery and filtering |
 | `asset-classes` | Payload | Non-routable taxonomy | Market classification and stable market-data key |
 | `venue-types` | Payload | Non-routable taxonomy | Broker/exchange/clearing grouping |
-| `regions` | Payload | Non-routable taxonomy | Map grouping and default view configuration |
+| `regions` | Payload | Non-routable taxonomy | Managed boundaries, centers, points of interest, map grouping, and default view configuration |
 | `navigation` | Payload global | Links to route owners | Primary roots, dropdowns, shared actions, utility links |
 | `footer` | Payload global | Links to route owners | Footer columns, legal links, certification marks, copyright |
 | `site-settings` | Payload global | None | Brand, default SEO, contact, social, notices, consent integration |
@@ -35,6 +36,8 @@ admin structure.
 | `redirects` | Payload plugin collection | Claims legacy source paths | URL continuity with validated destinations |
 | `route-registry` | Payload + PostgreSQL | Authoritative route namespace | Protected content, redirect, and virtual claims with a globally unique normalized path |
 | `users` | Payload auth collection | None | CMS authentication and administrator/editor roles |
+| `customer-identities` | Payload | None | Non-authenticating TIM reconciliation/status metadata; never credentials, tokens, sessions, or passwords |
+| `market-data-imports` | Payload + application PostgreSQL | None | Administrator-controlled validation/preview/commit history for transactional market-fact ingestion |
 | `legacySource` | Migration-owned field group | None | Stable source key, legacy ID, original URL, source timestamp, content hash |
 | `app.market_volume_monthly` | Application PostgreSQL | None | Normalized market-volume facts read by the frontend |
 
@@ -91,11 +94,11 @@ archetype and enforce required paths, root ownership, allowed top-level blocks,
 minimum publishable layout, and content-index listing placement.
 
 The homepage is a singleton and must own `/`. Content indexes require their
-approved listing behavior. Conversion pages remain draft-only until the
-first-party form exists. Interactive pages can publish only with exactly one
-managed `marketMatrix` component. Legal cookie content can use the current route/layout foundation,
-but explicit consent-category behavior remains part of the planned production
-block gate.
+approved listing behavior. Conversion pages remain draft-only until the bounded
+HubSpot embed exists and has approved consent/error behavior. Interactive pages
+can publish only with exactly one managed `marketMatrix` component. Legal cookie
+content can use the current route/layout foundation, but the CookieYes Next.js
+integration remains an external-service gate.
 
 Page hierarchy may support admin organization and breadcrumbs, but `parent`
 does not implicitly create a path. The canonical path remains explicit and
@@ -130,11 +133,13 @@ Target hub modes:
   structured market data;
 - `map-only`: supports maps and relationships but owns no public detail route.
 
-Hub structured data includes title/display label, code, location and
-coordinates, marker locations, media, asset classes, venue types, regions,
-related hubs, and venue connections. Stable `marketDataKey` values connect
+Hub structured data includes title/display label, code, Hub type, country and
+connected-country codes, location/coordinates, marker locations, media, asset
+classes, venue types, regions, related hubs, venue connections, and optional
+explicit route geometry. Stable `marketDataKey` values and aliases connect
 editorial configuration to application data without copying market facts into
-Payload.
+Payload. Regions own bounded GeoJSON, centers, and points of interest; Asset
+Classes own map appearance and their stable market-data identity.
 
 Venue `marketConnections` is the authoritative editable connectivity source for
 the Market Matrix. The German Power hub `connections` array remains a hidden,
@@ -165,7 +170,10 @@ view, SEO, authenticated draft preview, revalidation, and sitemap behavior.
 
 Existing structured fields—code, display name, website, logo, types, asset
 classes, regions, location, description, and display order—remain managed
-data. Connectivity is expressed through relationships, not copied prose.
+data. Connectivity is expressed through relationships, not copied prose. Those
+relationships are also the single source for the accessible Market Matrix,
+including Asset Class/Region/Hub filters, grouped venues, managed links, and the
+current-view CSV and formatted Excel exports.
 
 The 66 approved listing children still require production import/content
 review in `page` mode, including any additional contacts/about fields needed
@@ -209,6 +217,20 @@ and protected asset delivery are not implemented yet. The production pilot
 therefore owns one selected metadata gate and keeps the other 14 records as
 listing-only fallbacks to the live site.
 
+## Customer identity and TIM boundary
+
+Payload editor accounts and customer identities are deliberately different
+models. `users` authenticates Administrators and Editors in the CMS.
+`customer-identities` is a non-auth collection that can retain provider,
+external-subject, display, customer/account, entitlement, status, and last-sync
+metadata needed to reconcile a future TIM session.
+
+The collection must not accept or expose a TIM password, access/refresh token,
+session, cookie, auto-login secret, or protected document credential. TIM remains
+the launch authentication authority. Its sign-in, logout, expiry/revocation,
+protected documentation links, and existing auto-login outcome are deferred from
+the local slice and require an explicit server-side integration.
+
 ## Taxonomies and structured dependencies
 
 Keep only taxonomies that drive the target experience:
@@ -242,10 +264,10 @@ Dropdown roots may intentionally have no link. The import must not turn legacy
 `for_page` values into anchors when `menu_block` exists.
 
 During incremental migration, a navigation or footer destination remains
-root-relative only when one of the 26 accepted roots or two virtual routes owns
+root-relative only when one of the 27 accepted roots or two virtual routes owns
 it. Every other same-site destination is rewritten to its canonical
-`https://www.trayport.com/` URL. Acceptance currently validates exactly 35 unique
-live fallback paths: 30 leaf destinations plus the five clickable section roots.
+`https://www.trayport.com/` URL. Acceptance currently validates exactly 34 unique
+live fallback paths: 29 leaf destinations plus the five clickable section roots.
 This bridge is removed per route when that destination
 joins the accepted imported set.
 
@@ -254,8 +276,10 @@ joins the accepted imported set.
 WordPress page 4031 is identity-only migration input. Payload does not import
 its HubSpot form, dead form prompt, or unused hero media. The redirects
 collection owns `/request-a-demo/` as a `302` reference to managed `/contact/`.
-Rollback is per-route: remove the redirect only when a first-party conversion
-page is publishable at the same path, then transfer the route claim atomically.
+This is a route-specific pilot disposition, not a global removal of HubSpot.
+Rollback is per-route: remove the redirect only when an approved HubSpot-backed
+conversion page is publishable at the same path, then transfer the route claim
+atomically.
 
 ### Footer
 
@@ -264,9 +288,10 @@ text, and optional brand intro. Replace the stale Careers target during import.
 
 ### Site settings
 
-Model brand assets, default SEO, contact details, social links, notices, and
-cookie/consent integration. This replaces the current hard-coded social URLs
-and shortcode-driven cookie category view.
+Model brand assets, default SEO, contact details, social links, notices,
+retained HubSpot form identifiers, and CookieYes configuration references. This
+replaces hard-coded social URLs and the shortcode wrapper without replacing
+CookieYes as the consent authority.
 
 Globals retain drafts, versions, scheduled publication, and revalidation.
 
@@ -323,6 +348,22 @@ The migration:
 
 Production URLs must not depend on the local WordPress uploads host.
 
+## Market maps
+
+`marketCoverage` has two bounded modes. `globalConnections` reproduces the
+simple whole-world Asset Class connection schematic from managed Hub
+relationships and always retains an accessible server-rendered fallback.
+`regionalConnectivity` reproduces the live regional experience with managed
+Region geometry and points of interest, Hub/country/type metadata, explicit
+connection geometry, Venue/type hierarchy, Asset Class controls, optional
+period market summaries, and a corresponding linked list/sidebar.
+
+Mapbox is required for the full regional interaction, but the provider token
+and style URLs remain runtime configuration rather than CMS data. Missing or
+failed configuration leaves useful controls and the accessible data view in
+place. Editors manage bounded content/data; they cannot enter provider secrets,
+arbitrary executable code, or unvalidated geometry.
+
 ## Application market data
 
 Payload owns chart title, unit, accessible summary, optional range, a required
@@ -331,14 +372,15 @@ managed Asset Class relationship, the `volume` or `price` metric, the
 grouping. Hub-series charts may also own disjoint managed `includedHubs` and
 `excludedHubs` relationships. Monthly market facts live only in
 `app.market_volume_monthly` and are loaded transactionally from the WordPress
-source tables.
+source tables or a validated administrator import.
 
-For publication, the related Asset Class must carry a positive imported
-`legacySource.legacyId`. The frontend derives its application-data lookup key from
-that relationship; the hidden `assetClassLegacyId` retained on imported/older chart
-blocks is migration provenance and compatibility data, not an editor-controlled
-authority. Optional range endpoints are coherent quarter pairs: year and quarter
-must appear together, and a complete start must not be after a complete end.
+For publication, the related Asset Class must carry a stable normalized
+`marketDataKey`; Asset Classes and Hubs may also carry aliases for resolving
+controlled source files. The frontend derives application-data keys from those
+relationships. Legacy numeric IDs retained on imported/older blocks or facts
+are provenance/compatibility values, not editor-controlled authority. Optional
+range endpoints are coherent quarter pairs: year and quarter must appear
+together, and a complete start must not be after a complete end.
 
 The only publishable combinations are execution-type volume stacked columns, Hub
 volume columns, and Hub price lines. Execution-type charts cannot carry Hub filters.
@@ -351,6 +393,16 @@ The importer maps WordPress `charts-new` `for`, `display_interval`, `hubs`, and
 interval semantics alone produce date bounds; malformed defaults in inactive ACF
 groups are ignored. Transform and publication validation enforce the supported
 shape, coherent range, disjoint Hub filters, and relationship closure.
+
+Administrators operate new market-data loads through `market-data-imports`.
+The workflow parses a bounded input, resolves Asset Class and Hub keys/titles/
+aliases, reports malformed rows, duplicate facts, unresolved identities, and
+coverage, and stores a preview before commit. Commit revalidates the same input
+and performs metric-preserving transactional upserts into the application table;
+the import record retains status, counts, evidence, and failure detail. A narrow
+explicit override may accept missing-Hub coverage only; it cannot force malformed,
+ambiguous, or duplicate values. Editors can inspect the resulting chart behavior
+but cannot mutate facts or run imports.
 
 The frontend reports `available`, `empty`, `unavailable`, and `unsupported` states
 explicitly. An unavailable database or unresolved managed Hub never masquerades as

@@ -27,6 +27,7 @@ than recreating dormant WordPress administration structures.
 - `/venue/eex/`
 - `/legal/cookie-policy/`
 - `/resources/market-matrix/`
+- `/resources/markets-map/`
 - `/legal/`
 - `/terms-of-use-disclaimer/`
 - `/legal/legal-notice/`
@@ -37,18 +38,19 @@ than recreating dormant WordPress administration structures.
 - `/regions/europe/`
 - `/contact/`
 
-These 25 content routes are the rendered frontend slice. WordPress root 4031 is
+These 26 content routes are the rendered frontend slice. WordPress root 4031 is
 also accepted as a temporary managed `302` from `/request-a-demo/` to
-`/contact/`, giving 26 immutable source roots without importing the unused
+`/contact/`, giving 27 immutable source roots without importing the unused
 HubSpot form or its presentation media. The redirect is removed when a real
-first-party submission journey is ready.
+approved HubSpot-backed submission journey is ready. This route-specific bridge
+does not remove retained HubSpot form identifiers from launch scope.
 
 The verified production
 source corpus contains 296 canonical routes; those routes are inventoried and
 classified, but they are not all imported or rendered by this frontend yet.
 The deterministic production target plan describes 294 future/current Payload
 document owners and two virtual indexes, but it is planning evidence rather than
-proof that the other 268 plan-only documents have been migrated or remediated.
+proof that the other 267 plan-only documents have been migrated or remediated.
 
 The Insights and News indexes are backed by all 39 and 31 published source
 records respectively. The Learning Hub owns 15 protected metadata records. The
@@ -62,12 +64,17 @@ accepted roots and two virtual indexes remain HTTPS links to the live WordPress
 site. Each fallback can be switched back to an internal path when its route is
 imported and accepted.
 
+The current slice status, locked external-service decisions, and local → simple
+AWS review → Trayport ECS delivery order are recorded in
+[docs/delivery-slices.md](docs/delivery-slices.md).
+
 ## Architecture
 
 - Next.js 16 serves the public site and Payload admin.
 - Payload 3 owns pages, articles, hubs, venues, learning videos and their
   categories, taxonomies, navigation, footer, site settings, virtual-index
-  configuration, media metadata, drafts, previews, roles, and publishing.
+  configuration, media metadata, non-authenticating customer identities,
+  controlled market-data import history, drafts, previews, roles, and publishing.
 - PostgreSQL 16 stores Payload data and the separate
   `app.market_volume_monthly` application table. A protected `route-registry`
   collection uses a PostgreSQL unique path constraint and transaction-aware
@@ -137,12 +144,13 @@ The credentials and secrets in `.env.example` are local-only defaults. Replace
 all of them outside development. HTTPS deployments should set
 `PAYLOAD_COOKIE_SECURE=true`.
 
-The Home connections map works without external configuration by retaining its deterministic
-managed-media/SVG fallback. To activate the viewport-lazy reference Mapbox runtime locally, set both
-`MAPBOX_PUBLIC_TOKEN` to an approved browser-safe `pk` token and `MAPBOX_STYLE_URL` to an approved
-Mapbox style URI. The token is exposed to the browser and must be origin-restricted. Production
-activation also requires recorded Mapbox licence/attribution approval and approved ownership or use
-of the selected style; see [docs/deployment.md](docs/deployment.md#home-connections-map-activation).
+The global connections map works without external configuration by retaining its deterministic
+managed-media/SVG fallback. Full regional maps use a viewport-lazy Mapbox runtime. Set
+`MAPBOX_PUBLIC_TOKEN` to an approved browser-safe `pk` token and configure
+`MAPBOX_STYLE_DARK_URL` plus `MAPBOX_STYLE_LIGHT_URL` with approved Mapbox style URIs. The token is
+exposed to the browser and must be origin-restricted. Production activation also requires recorded
+Mapbox licence/attribution approval and approved ownership/use of the selected styles; see
+[docs/deployment.md](docs/deployment.md#market-map-activation).
 
 ## Importing WordPress content
 
@@ -239,20 +247,20 @@ canonical owners. Per-run output is written to
 
 The generated target plan is deterministic implementation input. Running it
 does not expand the production-pilot importer: the loaded and rendered source
-slice remains the 26-root closure listed above, and the full 296-route import, body remediation,
+slice remains the 27-root closure listed above, and the full 296-route import, body remediation,
 media/link review, and parity validation remain future work.
 
 The loader is idempotent across accepted runs. Loading equivalent source data
 must produce no Payload or market-data writes.
 
 The latest accepted local evidence is the immutable
-`visual-final-parity-20260804-1835` run (2026-08-04). Its accepted source hash is
-`f8fde869755805d9cd299e341fce42a8936358bceb1ceb87d8a312897b417c4a` and its acceptance hash is
-`dce30c5b8df93d2ed77735ad043441d72e08c635e508d5a707fdcea2ca1affb1`. It records exact recovery
+`slices-01456-final-map-defaults-20260805` run. Its accepted source hash is
+`9067458021348d8977310ff418cd2a901d9f709f0efefd044e19765539060089` and its acceptance hash is
+`b3c504a4b85df01ba94bddeab98e02b94d3467fbe19a5180fe7adf0387dc2acc`. It records exact recovery
 evidence for WordPress media `9698` and `9727`; the published binaries also pass direct Payload GET,
 MIME, byte-size, and SHA-256 checks. The run also confirms that reusable-video administrative names
-do not become visible captions. Its first publish changed only Home page `pages:1898`; the repeat
-published load was fully idempotent: 437 records and three globals were unchanged, all 1,194 market
+do not become visible captions. Its first publish changed only the full map's live-parity default;
+the repeat published load was fully idempotent: 450 records and three globals were unchanged, all 1,194 market
 rows were unchanged, and no relationships were unresolved. The ignored run directory remains the
 local forensic source; these identifiers make it possible to reproduce or audit the exact accepted
 input.
@@ -276,7 +284,7 @@ account becomes an administrator.
 - The `route-indexes` global controls headings, introductions, and SEO for the
   virtual `/venue/` and `/market-coverage/` routes.
 - Publishing validates the 18 content-route runtime archetypes. Conversion pages
-  remain draft-only until a first-party form exists; interactive Market Matrix
+  remain draft-only until the bounded HubSpot integration exists; interactive Market Matrix
   pages require exactly one managed `marketMatrix` component before publication.
 - A changed published path keeps its current public claim while the draft path
   is reserved; publication requires redirect confirmation and creates the

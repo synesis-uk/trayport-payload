@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useId, useMemo, useState, type ReactNode } from 'react'
 
 import { AppLink } from '@/components/site/AppLink'
 import { Button } from '@/components/ui/button'
@@ -14,35 +14,24 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { MarketMatrixConnectionType } from '@/data/marketMatrix'
+import { reportClientError } from '@/utilities/reportClientError'
 import { cn } from '@/utilities/ui'
 
+import {
+  downloadMarketMatrixCSV,
+  downloadMarketMatrixXLSX,
+  marketMatrixConnectionLabel,
+  marketMatrixConnectionVisible,
+  type MarketMatrixExportData,
+} from './marketMatrixExport'
 import type { MarketMatrixPresentationModel, MarketMatrixView } from './marketMatrixModel'
+
+export { marketMatrixCSVCell } from './marketMatrixExport'
 
 const viewLabels: Record<MarketMatrixView, string> = {
   autoTrader: 'autoTRADER',
   combined: 'Joule and autoTRADER',
   joule: 'Joule',
-}
-
-const connectionVisible = (
-  connection: MarketMatrixConnectionType | undefined,
-  view: MarketMatrixView,
-): boolean => {
-  if (!connection) return false
-  if (view === 'combined') return true
-  if (view === 'joule') return connection === 'd' || connection === 'b'
-  return connection === 'a' || connection === 'b'
-}
-
-const connectionLabel = (
-  connection: MarketMatrixConnectionType,
-  view: MarketMatrixView,
-): string => {
-  if (view === 'joule') return 'Joule connection'
-  if (view === 'autoTrader') return 'autoTRADER connection'
-  if (connection === 'd') return 'Joule connection'
-  if (connection === 'a') return 'autoTRADER connection'
-  return 'Joule and autoTRADER connection'
 }
 
 const connectionTone = (connection: MarketMatrixConnectionType, view: MarketMatrixView): string => {
@@ -53,11 +42,6 @@ const connectionTone = (connection: MarketMatrixConnectionType, view: MarketMatr
   return 'bg-matrix-combined text-trayport-deep'
 }
 
-export const marketMatrixCSVCell = (value: string): string => {
-  const safeValue = /^\s*[=+\-@]/u.test(value) ? `'${value}` : value
-  return `"${safeValue.replaceAll('"', '""')}"`
-}
-
 const updateSelection = (selection: Set<string>, id: string, checked: boolean): Set<string> => {
   const next = new Set(selection)
   if (checked) next.add(id)
@@ -65,17 +49,37 @@ const updateSelection = (selection: Set<string>, id: string, checked: boolean): 
   return next
 }
 
-const MatrixLink = ({ destination, title }: { destination: string | null; title: string }) =>
-  destination ? (
+const hubOccurrenceID = (groupID: string, hubID: string): string => `${groupID}:${hubID}`
+
+const MatrixLink = ({ destination, title }: { destination: string | null; title: string }) => {
+  if (!destination) return title
+
+  const external = destination.startsWith('https://')
+
+  return (
     <AppLink
       className="font-semibold text-inherit underline decoration-current/30 underline-offset-4 hover:decoration-current"
-      link={{ newTab: false, type: 'custom', url: destination }}
+      link={{ newTab: external, type: 'custom', url: destination }}
     >
       {title}
+      {external ? (
+        <>
+          {' '}
+          <span className="sr-only">(opens in a new tab)</span>
+        </>
+      ) : null}
     </AppLink>
-  ) : (
-    title
   )
+}
+
+type ExportStatus = 'error' | 'idle' | 'loading' | 'success-csv' | 'success-xlsx'
+
+const exportStatusMessage: Record<Exclude<ExportStatus, 'idle'>, string> = {
+  error: "We couldn't create the download. Please try again.",
+  loading: 'Preparing the Excel workbook…',
+  'success-csv': 'CSV download ready.',
+  'success-xlsx': 'Excel download ready.',
+}
 
 export interface MarketMatrixPresentationProps {
   downloadIcon: ReactNode
@@ -91,9 +95,25 @@ export function MarketMatrixPresentation({ downloadIcon, model }: MarketMatrixPr
   const [selectedVenueTypes, setSelectedVenueTypes] = useState(
     () => new Set(model.venueTypes.map(({ id }) => id)),
   )
+  const [selectedHubOccurrences, setSelectedHubOccurrences] = useState(
+    () =>
+      new Set(
+        model.groups.flatMap((group) => group.hubs.map((hub) => hubOccurrenceID(group.id, hub.id))),
+      ),
+  )
+  const [collapsedVenueTypes, setCollapsedVenueTypes] = useState(() => new Set<string>())
+  const [exportStatus, setExportStatus] = useState<ExportStatus>('idle')
+
   const visibleGroups = useMemo(
-    () => model.groups.filter(({ id }) => selectedAssetClasses.has(id)),
-    [model.groups, selectedAssetClasses],
+    () =>
+      model.groups.flatMap((group) => {
+        if (!selectedAssetClasses.has(group.id)) return []
+        const hubs = group.hubs.filter((hub) =>
+          selectedHubOccurrences.has(hubOccurrenceID(group.id, hub.id)),
+        )
+        return hubs.length ? [{ ...group, hubs }] : []
+      }),
+    [model.groups, selectedAssetClasses, selectedHubOccurrences],
   )
   const visibleHubOccurrences = useMemo(
     () => visibleGroups.flatMap((group) => group.hubs.map((hub) => ({ groupID: group.id, hub }))),
@@ -111,7 +131,7 @@ export function MarketMatrixPresentation({ downloadIcon, model }: MarketMatrixPr
           selectedVenueTypes.has(venue.venueType.id) &&
           Object.entries(venue.connections).some(
             ([hubID, connection]) =>
-              visibleHubIDs.has(hubID) && connectionVisible(connection, view),
+              visibleHubIDs.has(hubID) && marketMatrixConnectionVisible(connection, view),
           ),
       ),
     [model.venues, selectedVenueTypes, view, visibleHubIDs],
@@ -126,29 +146,66 @@ export function MarketMatrixPresentation({ downloadIcon, model }: MarketMatrixPr
       }),
     [model.venueTypes, visibleVenues],
   )
+  const exportData = useMemo<MarketMatrixExportData>(
+    () => ({
+      caption: model.caption,
+      filters: {
+        assetClasses: visibleGroups.map(({ title }) => title),
+        hubs: visibleHubOccurrences.map(({ groupID, hub }) => {
+          const groupTitle = visibleGroups.find(({ id }) => id === groupID)?.title
+          return groupTitle ? `${hub.title} (${groupTitle})` : hub.title
+        }),
+        venueTypes: model.venueTypes
+          .filter(({ id }) => selectedVenueTypes.has(id))
+          .map(({ title }) => title),
+      },
+      groups: visibleGroups.map(({ hubs, id, title }) => ({
+        hubs: hubs.map(({ id: hubID, title: hubTitle }) => ({ id: hubID, title: hubTitle })),
+        id,
+        title,
+      })),
+      venues: visibleVenues.map(({ connections, id, title, venueType }) => ({
+        connections,
+        id,
+        title,
+        venueType,
+      })),
+      view,
+    }),
+    [
+      model.caption,
+      model.venueTypes,
+      selectedVenueTypes,
+      view,
+      visibleGroups,
+      visibleHubOccurrences,
+      visibleVenues,
+    ],
+  )
   const columnCount = Math.max(visibleHubs.length + 1, 1)
+  const canDownload = Boolean(visibleVenues.length && visibleHubs.length)
+  const hasHubFilters = model.groups.reduce((count, group) => count + group.hubs.length, 0) > 1
+  const hasFilters = model.assetClasses.length > 1 || model.venueTypes.length > 1 || hasHubFilters
 
-  const download = () => {
-    const header = ['Venue type', 'Venue', ...visibleHubs.map(({ title }) => title)]
-    const rows = visibleVenues.map((venue) => [
-      venue.venueType.title,
-      venue.title,
-      ...visibleHubs.map(({ id }) => {
-        const connection = venue.connections[id]
-        return connection && connectionVisible(connection, view)
-          ? connectionLabel(connection, view).replace(' connection', '')
-          : ''
-      }),
-    ])
-    const csv = [header, ...rows].map((row) => row.map(marketMatrixCSVCell).join(',')).join('\r\n')
-    const href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
-    const anchor = document.createElement('a')
-    anchor.download = 'trayport-market-matrix.csv'
-    anchor.href = href
-    document.body.append(anchor)
-    anchor.click()
-    anchor.remove()
-    window.setTimeout(() => URL.revokeObjectURL(href), 0)
+  const downloadCSV = () => {
+    try {
+      downloadMarketMatrixCSV(exportData)
+      setExportStatus('success-csv')
+    } catch {
+      setExportStatus('error')
+      reportClientError(new Error('Market matrix CSV export failed.'), 'frontend-route')
+    }
+  }
+
+  const downloadXLSX = async () => {
+    setExportStatus('loading')
+    try {
+      await downloadMarketMatrixXLSX(exportData)
+      setExportStatus('success-xlsx')
+    } catch {
+      setExportStatus('error')
+      reportClientError(new Error('Market matrix XLSX export failed.'), 'frontend-route')
+    }
   }
 
   return (
@@ -169,14 +226,38 @@ export function MarketMatrixPresentation({ downloadIcon, model }: MarketMatrixPr
         </div>
 
         {model.showDownload ? (
-          <Button disabled={!visibleVenues.length || !visibleHubs.length} onClick={download}>
-            {downloadIcon}
-            Download CSV
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={!canDownload || exportStatus === 'loading'} onClick={downloadCSV}>
+              {downloadIcon}
+              Download CSV
+            </Button>
+            <Button
+              disabled={!canDownload}
+              isLoading={exportStatus === 'loading'}
+              loadingLabel="Preparing Excel"
+              onClick={downloadXLSX}
+              variant="secondary"
+            >
+              Download Excel
+            </Button>
+          </div>
         ) : null}
       </div>
 
-      {model.showFilters && (model.assetClasses.length > 1 || model.venueTypes.length > 1) ? (
+      {exportStatus !== 'idle' ? (
+        <p
+          aria-live={exportStatus === 'error' ? 'assertive' : 'polite'}
+          className={cn(
+            'text-sm',
+            exportStatus === 'error' ? 'text-destructive' : 'text-muted-foreground',
+          )}
+          role={exportStatus === 'error' ? 'alert' : 'status'}
+        >
+          {exportStatusMessage[exportStatus]}
+        </p>
+      ) : null}
+
+      {model.showFilters && hasFilters ? (
         <details className="rounded-panel border border-border bg-muted/35 px-4 py-3">
           <summary className="min-h-control cursor-pointer py-2 font-semibold text-trayport-deep focus-visible:focus-ring">
             Filter matrix
@@ -231,13 +312,58 @@ export function MarketMatrixPresentation({ downloadIcon, model }: MarketMatrixPr
                 </div>
               </fieldset>
             ) : null}
+
+            {hasHubFilters ? (
+              <fieldset className="lg:col-span-2">
+                <legend className="mb-3 text-sm font-semibold">Market hubs</legend>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {model.groups.map((group) => {
+                    const groupID = `${instanceID}-hub-group-${group.id}`
+                    const groupEnabled = selectedAssetClasses.has(group.id)
+                    return (
+                      <div aria-labelledby={groupID} key={group.id} role="group">
+                        <p className="mb-2 text-sm font-medium" id={groupID}>
+                          {group.title}
+                        </p>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {group.hubs.map((hub) => {
+                            const occurrenceID = hubOccurrenceID(group.id, hub.id)
+                            const id = `${instanceID}-hub-${group.id}-${hub.id}`
+                            return (
+                              <div
+                                className="flex min-h-control items-center gap-3"
+                                key={occurrenceID}
+                              >
+                                <Checkbox
+                                  checked={selectedHubOccurrences.has(occurrenceID)}
+                                  disabled={!groupEnabled}
+                                  id={id}
+                                  onCheckedChange={(checked) =>
+                                    setSelectedHubOccurrences((current) =>
+                                      updateSelection(current, occurrenceID, checked === true),
+                                    )
+                                  }
+                                />
+                                <Label className={cn(!groupEnabled && 'opacity-50')} htmlFor={id}>
+                                  {hub.title} <span className="sr-only">in {group.title}</span>
+                                </Label>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </fieldset>
+            ) : null}
           </div>
         </details>
       ) : null}
 
       <div
-        className="flex flex-wrap gap-x-5 gap-y-2 text-sm"
         aria-label={`${viewLabels[view]} key`}
+        className="flex flex-wrap gap-x-5 gap-y-2 text-sm"
       >
         {(view === 'combined'
           ? [
@@ -312,55 +438,79 @@ export function MarketMatrixPresentation({ downloadIcon, model }: MarketMatrixPr
             </thead>
             {venuesByType.map((group) => {
               const venueTypeID = `${instanceID}-venue-type-${group.id}`
+              const venueRowsID = `${venueTypeID}-rows`
+              const collapsed = collapsedVenueTypes.has(group.id)
+
               return (
-                <tbody aria-labelledby={venueTypeID} key={group.id}>
-                  <tr>
-                    <th
-                      className="border-b border-border bg-muted px-4 py-2 text-left font-semibold text-trayport-deep"
-                      colSpan={columnCount}
-                      id={venueTypeID}
-                      scope="rowgroup"
-                    >
-                      {group.title} ({group.venues.length})
-                    </th>
-                  </tr>
-                  {group.venues.map((venue) => (
-                    <tr className="group/row" key={venue.id}>
+                <Fragment key={group.id}>
+                  <tbody aria-labelledby={venueTypeID}>
+                    <tr>
                       <th
-                        className="sticky left-0 z-10 border-r border-b border-border bg-background px-4 py-3 text-left font-medium group-hover/row:bg-trayport-soft"
-                        scope="row"
+                        className="border-b border-border bg-muted p-0 text-left font-semibold text-trayport-deep"
+                        colSpan={columnCount}
+                        scope="rowgroup"
                       >
-                        <MatrixLink destination={venue.destination} title={venue.title} />
+                        <button
+                          aria-controls={venueRowsID}
+                          aria-expanded={!collapsed}
+                          className="flex min-h-control w-full items-center justify-between gap-3 px-4 py-2 text-left focus-visible:focus-ring"
+                          onClick={() =>
+                            setCollapsedVenueTypes((current) =>
+                              updateSelection(current, group.id, !collapsed),
+                            )
+                          }
+                          type="button"
+                        >
+                          <span id={venueTypeID}>
+                            {group.title} ({group.venues.length})
+                          </span>
+                          <span aria-hidden>{collapsed ? '+' : '−'}</span>
+                        </button>
                       </th>
-                      {visibleHubOccurrences.map(({ groupID, hub }) => {
-                        const connection = venue.connections[hub.id]
-                        const connected = connectionVisible(connection, view)
-                        return (
-                          <td
-                            className={cn(
-                              'min-w-12 border-r border-b border-border p-0 text-center',
-                              connected && connection && connectionTone(connection, view),
-                            )}
-                            data-connection={connected ? connection : undefined}
-                            data-hub-occurrence={`${groupID}:${hub.id}`}
-                            key={`${groupID}-${hub.id}`}
-                          >
-                            {connected && connection ? (
-                              <span className="flex min-h-control items-center justify-center">
-                                <span aria-hidden className="text-base leading-none">
-                                  ●
-                                </span>
-                                <span className="sr-only">
-                                  {connectionLabel(connection, view)} to {hub.title}
-                                </span>
-                              </span>
-                            ) : null}
-                          </td>
-                        )
-                      })}
                     </tr>
-                  ))}
-                </tbody>
+                  </tbody>
+                  <tbody aria-labelledby={venueTypeID} id={venueRowsID}>
+                    {collapsed
+                      ? null
+                      : group.venues.map((venue) => (
+                          <tr className="group/row" key={venue.id}>
+                            <th
+                              className="sticky left-0 z-10 border-r border-b border-border bg-background px-4 py-3 text-left font-medium group-hover/row:bg-trayport-soft"
+                              scope="row"
+                            >
+                              <MatrixLink destination={venue.destination} title={venue.title} />
+                            </th>
+                            {visibleHubOccurrences.map(({ groupID, hub }) => {
+                              const connection = venue.connections[hub.id]
+                              const connected = marketMatrixConnectionVisible(connection, view)
+                              return (
+                                <td
+                                  className={cn(
+                                    'min-w-12 border-r border-b border-border p-0 text-center',
+                                    connected && connection && connectionTone(connection, view),
+                                  )}
+                                  data-connection={connected ? connection : undefined}
+                                  data-hub-occurrence={`${groupID}:${hub.id}`}
+                                  key={`${groupID}-${hub.id}`}
+                                >
+                                  {connected && connection ? (
+                                    <span className="flex min-h-control items-center justify-center">
+                                      <span aria-hidden className="text-base leading-none">
+                                        ●
+                                      </span>
+                                      <span className="sr-only">
+                                        {marketMatrixConnectionLabel(connection, view)} connection
+                                        to {hub.title}
+                                      </span>
+                                    </span>
+                                  ) : null}
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        ))}
+                  </tbody>
+                </Fragment>
               )
             })}
           </table>

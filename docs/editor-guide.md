@@ -21,6 +21,10 @@ provenance.
   accessibility metadata.
 - **Taxonomies** manage article categories, regions, asset classes, and venue
   types.
+- **Customer identities** expose non-authenticating TIM reconciliation/status
+  records. They do not authenticate CMS editors or store customer credentials.
+- **Market data imports** let Administrators validate, preview, and commit
+  bounded application-data files; Editors do not edit raw facts.
 
 ## Page composition
 
@@ -29,7 +33,8 @@ Pages, full articles, and public hubs use a deliberately small block set:
 - Hero
 - Content section with controlled column spans and themes
 - Heading, rich text, actions, and media
-- Feature, entity, statistic, FAQ, timeline, table, and gallery components
+- Feature, entity, statistic, FAQ, checklist, lifecycle, timeline, table, and
+  gallery components
 - Insights listing
 - Market coverage map, venue connectivity, and market-data charts
 
@@ -60,7 +65,7 @@ publishing; publishing revalidates the route and related sitemap/listing data.
 - **Footer** controls link columns, legal links, certification marks, and
   copyright text.
 - **Site settings** controls brand assets, default SEO, contact/social details,
-  notices, and the cookie notice.
+  notices, retained HubSpot form identifiers, and bounded CookieYes settings.
 - **Redirects** can be maintained by administrators and editors; deletion is
   administrator-only.
 
@@ -82,9 +87,10 @@ background, card, gallery, logo, poster, or sharing-image field.
 
 Payload stores editorial chart configuration, but not the imported monthly
 market facts. Each Data Chart must select a managed Asset Class. For publication,
-that relationship must resolve to an imported Asset Class with an application-data
-key in `legacySource.legacyId`; that key, rather than an editable number on the
-chart, drives the query into `app.market_volume_monthly`.
+that relationship must resolve to an Asset Class with a stable `marketDataKey`;
+that key, rather than an editable number on the chart, drives the query into
+`app.market_volume_monthly`. Asset Classes and Hubs may have aliases used only
+to resolve controlled import labels.
 
 The editor exposes only implemented choices:
 
@@ -104,15 +110,38 @@ end quarter. The runtime returns at most the most recent 40 matching month, quar
 or year periods. Changing market facts or that safety cap remains an application-data
 operation, not a CMS editing task.
 
+Administrators create a Market Data Import and run validation before commit.
+Review malformed/duplicate rows, unresolved Asset Class or Hub identities,
+coverage, and preview counts. Commit revalidates and upserts transactionally.
+The narrow force option accepts only a documented missing-Hub coverage case; it
+does not bypass malformed, ambiguous, or duplicate data.
+
 Preview distinguishes four outcomes. A populated query renders the chart and its
 optional “View chart data” table; an empty result says no imported values matched;
 an unavailable result reports a temporary data/relationship failure; and an older
 unsupported draft is identified explicitly rather than silently rendered as another
 chart shape. Publication rejects unsupported combinations.
 
-## Proof-of-concept limits
+## Maps and Market Matrix
 
-HubSpot, public forms, Commodities Report, public-user accounts, full-site
-search, and dormant WordPress content types are not included. A protected route
-registry now reserves one canonical owner across every routable collection,
-managed redirects, and virtual indexes before broad production authoring.
+Use `Global connections` for the simple whole-world Asset Class schematic. Use
+`Regional connectivity` for the full Mapbox view with Region and Asset Class
+controls, Hubs/routes/points of interest, the Venue/type sidebar, and optional
+period summaries. Maintain boundary/center/point data on Regions; location,
+country, type, route, and stable market identity on Hubs; display colour/labels
+on Asset Classes; and grouping hierarchy on Venue Types. Mapbox tokens/styles
+are deployment configuration and never editor fields.
+
+The Market Matrix derives from Venue market connections. Edit a relationship on
+the Venue rather than patching a page block. Preview Asset Class, Region, and Hub
+filters; collapsible Venue groups; destination links; CSV; and Excel before
+publishing.
+
+## Current limits
+
+The Commodities Report, full-site search, and dormant WordPress content types
+are excluded. HubSpot embeds, CookieYes runtime behavior, TIM sign-in,
+protected-document/auto-login behavior, real public form submissions, and the
+full production content population remain deferred. A protected route registry
+reserves one canonical owner across every routable collection, managed
+redirects, and virtual indexes before broad production authoring.

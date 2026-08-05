@@ -55,6 +55,7 @@ const relationshipTarget = (
   }
 
   if (field === 'office') return 'offices'
+  if (field === 'lifecycleItems') return 'lifecycle-items'
   if (field === 'regions') return 'regions'
   if (field === 'venueTypes') return 'venue-types'
   if (field === 'assetClass' || field === 'assetClasses') return 'asset-classes'

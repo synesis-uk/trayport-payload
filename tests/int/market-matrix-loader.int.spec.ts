@@ -41,6 +41,7 @@ const venue = {
   path: '/venue/eex/',
   title: 'EEX',
   venueTypes: [{ displayOrder: 1, id: 3, title: 'Exchange' }],
+  website: 'https://www.eex.com',
 }
 
 beforeEach(() => {
@@ -61,6 +62,7 @@ describe('market-matrix server loader', () => {
       venues: [
         {
           connections: { '10': 'b' },
+          destination: '/venue/eex/',
           id: '20',
           title: 'EEX',
         },
@@ -107,6 +109,7 @@ describe('market-matrix server loader', () => {
       publishedCached: true,
       routePath: '/resources/market-matrix/',
     })
+    expect(marketMatrixVenueSelect.website).toBe(true)
   })
 
   it('keeps authenticated draft relationship data outside the public cache', async () => {

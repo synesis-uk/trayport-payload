@@ -302,10 +302,8 @@ describe('production content-architecture contract', () => {
 
     expect(plannedSources).toEqual([
       'article-top-level:form',
-      'component:checklist',
       'component:column',
       'component:form',
-      'component:lifecycle',
       'shortcode:wcc_category_list',
     ])
     expect(plannedBlockTypes.filter((blockType) => implemented.has(blockType))).toEqual([])

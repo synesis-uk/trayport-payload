@@ -58,11 +58,14 @@ const relationshipID = (value: unknown): string | null => {
     : null
 }
 
-const destination = (source: UnknownRecord): string | null => {
+const destination = (
+  source: UnknownRecord,
+  externalField: 'externalDestination' | 'website',
+): string | null => {
   const path = text(source.path)
   if (path.startsWith('/')) return path
 
-  const external = text(source.externalDestination)
+  const external = text(source[externalField])
   return /^https:\/\//iu.test(external) ? external : null
 }
 
@@ -125,7 +128,7 @@ export const buildMarketMatrixIndex = (
 
     hubs.set(id, {
       assetClassIDs: [...new Set(hubAssetClasses)],
-      destination: destination(hub),
+      destination: destination(hub, 'externalDestination'),
       id,
       regionIDs: [
         ...new Set(values(hub.regions).flatMap((region) => relationshipID(region) || [])),
@@ -161,7 +164,7 @@ export const buildMarketMatrixIndex = (
 
     venues.set(id, {
       connections,
-      destination: destination(venue),
+      destination: destination(venue, 'website'),
       displayOrder: numericOrder(venue.displayOrder),
       id,
       title: text(venue.title) || 'Untitled venue',

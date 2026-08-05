@@ -11,8 +11,9 @@ temporary Contact redirect archetype. The content runtime registry contains the
 same 18 content-route IDs. Payload integration tests now prove their
 discriminators, required/forbidden route policies, top-level block policies,
 publication guards, virtual claims, and cross-collection collision behavior.
-This passing runtime gate is narrower than production parity: planned blocks
-and the remaining 268 plan-only documents are still incomplete.
+This passing runtime gate is narrower than production parity: deferred
+HubSpot/CookieYes integrations and the remaining 267 plan-only documents are
+still incomplete.
 
 ## Target archetypes
 
@@ -23,7 +24,7 @@ and the remaining 268 plan-only documents are still incomplete.
 | `page.product` | `pages` | Required | Layout | Passing runtime route/block invariant |
 | `page.landing` | `pages` | Required | Layout | Passing runtime route/block invariant |
 | `page.legal` | `pages` | Required | Layout and policy semantics | Passing route/block baseline; the accepted cookie-policy page and consent relationship are imported and rendered |
-| `page.conversion` | `pages` | Required | Layout and first-party form | Passing guard: draftable but publication is denied until the planned form exists |
+| `page.conversion` | `pages` | Required | Layout and bounded HubSpot form | Passing guard: draftable but publication is denied until the approved integration exists |
 | `page.interactive-market-matrix` | `pages` | Required | Layout and managed market relationships | Passing: publication requires exactly one managed `marketMatrix` component |
 | `page.content-index` | `pages` | Required | Layout plus generated listing | Passing: publication requires `articleListing`, which is forbidden on other page types |
 | `article.full` | `articles` | Required | Complete article layout | Passing: publication requires a path and non-empty allowed layout |
@@ -35,7 +36,7 @@ and the remaining 268 plan-only documents are still incomplete.
 | `venue.public-detail` | `venues` | Required | Detail layout and structured market data | Passing: `page` mode has route, preview, renderer, SEO, and minimum-detail validation |
 | `index.venue` | System claim; `route-indexes` config; `venues` query | Required virtual `/venue/` | Derived collection index | Passing: system claim and CMS configuration are implemented |
 | `index.market-coverage` | System claim; `route-indexes` config; `hubs` query | Required virtual `/market-coverage/` | Derived collection index | Passing: system claim and CMS configuration are implemented |
-| `redirect.temporary-contact` | `redirects` | Required `/request-a-demo/` source | Temporary journey bridge | Passing: imported `302` resolves to managed `/contact/`; reversible when a first-party demo form exists |
+| `redirect.temporary-contact` | `redirects` | Required `/request-a-demo/` source | Temporary journey bridge | Passing: imported `302` resolves to managed `/contact/`; reversible when an approved HubSpot-backed demo page exists |
 
 “Forbidden” means the record may be publicly readable as data for a managed
 component, but it cannot claim a standalone public path or appear as an
@@ -48,7 +49,7 @@ internal detail destination.
 | Front page using `default-new` | `page.homepage` |
 | General `default-new` pages | `page.standard`, `page.product`, `page.landing`, or `page.conversion`, selected by route purpose and content |
 | `article.blade.php` and cookie policy | `page.legal` |
-| Pages whose primary purpose is first-party enquiry/demo submission | `page.conversion`; remains draft-only until the first-party form exists |
+| Pages whose primary purpose is HubSpot-backed enquiry/demo submission | `page.conversion`; remains draft-only until the bounded integration exists |
 | Current `/request-a-demo/` source root | `redirect.temporary-contact` to managed `/contact/`; no HubSpot form or unused hero media is imported |
 | `market-matrix.blade.php` | `page.interactive-market-matrix` |
 | `articles-list.blade.php` and Learning Hub home | `page.content-index` with a constrained listing behavior |
@@ -139,7 +140,7 @@ The implemented publication hook enforces:
 - the homepage is the sole owner of `/`;
 - a full article has a non-empty allowed layout;
 - every content index uses only the listing behavior allowed for that index;
-- conversion pages cannot publish while their first-party form is absent;
+- conversion pages cannot publish while their bounded HubSpot form is absent;
 - interactive Market Matrix pages require exactly one managed matrix component;
 - a public venue has managed description or layout content;
 - a publishable Learning Hub detail has public access mode, playable

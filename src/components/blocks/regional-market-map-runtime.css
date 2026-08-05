@@ -1,0 +1,30 @@
+.trayport-regional-market-map__canvas {
+  height: var(--trayport-regional-map-height, 600px);
+  inset: 0;
+  min-height: 20rem;
+  position: absolute;
+  width: 100%;
+}
+
+.trayport-regional-market-map__canvas .mapboxgl-ctrl-logo {
+  transform: translate(0.25rem, -0.25rem) scale(0.9);
+}
+
+.trayport-regional-market-map__canvas .mapboxgl-popup-content {
+  background: #fff;
+  border-radius: 0.25rem;
+  box-shadow: 0 8px 24px rgb(0 31 63 / 18%);
+  color: #002d72;
+  max-width: 16rem;
+  padding: 0.5rem 0.625rem;
+}
+
+.trayport-regional-market-map__canvas .mapboxgl-popup-tip {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trayport-regional-market-map__canvas * {
+    transition-duration: 0.01ms !important;
+  }
+}

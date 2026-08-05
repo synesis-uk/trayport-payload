@@ -25,8 +25,8 @@ describe('production target plan', () => {
       routes: 296,
       payloadDocuments: 294,
       virtualIndexes: 2,
-      pocReadyDocuments: 26,
-      planOnlyDocuments: 268,
+      pocReadyDocuments: 27,
+      planOnlyDocuments: 267,
       systemReadyRoutes: 2,
       managedTaxonomies: 33,
       learningVideoCategories: 11,
@@ -40,8 +40,8 @@ describe('production target plan', () => {
         .map(({ legacyId }) => legacyId)
         .sort((left, right) => (left || 0) - (right || 0)),
     ).toEqual([
-      34, 1898, 1924, 1926, 2203, 2205, 2221, 2231, 2495, 3311, 3363, 4031, 4737, 4803, 5981, 5983,
-      7573, 7585, 7589, 7609, 8454, 9244, 9248, 9351, 10030, 11475,
+      34, 1898, 1924, 1926, 2203, 2205, 2221, 2231, 2495, 3311, 3363, 4031, 4737, 4803, 5920, 5981,
+      5983, 7573, 7585, 7589, 7609, 8454, 9244, 9248, 9351, 10030, 11475,
     ])
     expect(
       plan.routes
@@ -243,8 +243,8 @@ describe('production target plan', () => {
     expect(verification.status).toBe('failed')
     expect(verification.failures).toEqual(
       expect.arrayContaining([
-        'poc-ready-documents: expected 26, received 25',
-        'plan-only-documents: expected 268, received 269',
+        'poc-ready-documents: expected 27, received 26',
+        'plan-only-documents: expected 267, received 268',
         'poc-root:1924: expected 1, received 0',
       ]),
     )

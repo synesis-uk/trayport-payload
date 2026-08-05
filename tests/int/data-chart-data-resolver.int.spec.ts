@@ -118,6 +118,53 @@ describe('data chart managed-label resolver', () => {
     expect(harness.cacheTag).toHaveBeenCalledWith('content-dependency:hubs:71')
   })
 
+  it('resolves new stable-key series without consulting WordPress identifiers', async () => {
+    const stableResult: MarketDataResult = {
+      ...hubResult,
+      series: [
+        { key: 'hub-key:hub%3Auk-power', values: [91, 92] },
+        { key: 'hub-key:hub%3Agerman-power', values: [81, 82] },
+      ],
+    }
+    harness.loadMarketData.mockResolvedValue(stableResult)
+    harness.find.mockResolvedValue({
+      docs: [
+        { id: 70, marketDataKey: 'hub:german-power', title: 'German Power' },
+        { id: 71, marketDataKey: 'hub:uk-power', title: 'UK Power' },
+      ],
+    })
+
+    await expect(
+      loadDataChartMarketData({
+        ...query,
+        assetClassKey: 'asset-class:power',
+        includedHubKeys: ['hub:uk-power', 'hub:german-power'],
+      }),
+    ).resolves.toEqual({
+      ...stableResult,
+      series: [
+        { key: 'hub-key:hub%3Auk-power', label: 'UK Power', values: [91, 92] },
+        { key: 'hub-key:hub%3Agerman-power', label: 'German Power', values: [81, 82] },
+      ],
+    })
+
+    expect(harness.find).toHaveBeenCalledWith({
+      collection: 'hubs',
+      depth: 0,
+      draft: false,
+      limit: 2,
+      overrideAccess: false,
+      pagination: false,
+      select: { marketDataKey: true, title: true },
+      where: {
+        and: [
+          { _status: { equals: 'published' } },
+          { marketDataKey: { in: ['hub:uk-power', 'hub:german-power'] } },
+        ],
+      },
+    })
+  })
+
   it('does not query Payload for execution-type or empty data', async () => {
     const executionResult: MarketDataResult = {
       categories: ['2025 Q1'],

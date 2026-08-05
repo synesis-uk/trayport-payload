@@ -20,12 +20,17 @@ export type MarketDataResult = {
 }
 
 export type MarketDataQuery = {
-  assetClassLegacyID: number
+  /** Stable managed key. New chart configuration should always supply this. */
+  assetClassKey?: string | null
+  /** Temporary fallback for chart records authored before stable keys were introduced. */
+  assetClassLegacyID?: number | null
   dataType: MarketDataType
   displayInterval: MarketDataDisplayInterval
+  excludedHubKeys?: readonly string[] | null
   excludedHubLegacyIDs?: readonly number[] | null
   fromQuarter?: number | null
   fromYear?: number | null
+  includedHubKeys?: readonly string[] | null
   includedHubLegacyIDs?: readonly number[] | null
   limit?: number
   seriesDimension: MarketDataSeriesDimension

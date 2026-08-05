@@ -262,6 +262,68 @@ describe('market data loader', () => {
     expect(result.series.every(({ values }) => values.length === 4)).toBe(true)
   })
 
+  it('uses stable managed keys for new hub queries and preserves authored key order', async () => {
+    const includedHubKeys = ['hub:uk-power', 'hub:german-power']
+    marketHarness.query.mockResolvedValueOnce({
+      rows: [
+        { hub_key: 'hub:german-power', period_key: 202501, value: '78.835' },
+        { hub_key: 'hub:uk-power', period_key: 202501, value: '68.1' },
+      ],
+    })
+
+    const result = await loadMarketData({
+      assetClassKey: 'asset-class:power',
+      assetClassLegacyID: 21,
+      dataType: 'price',
+      displayInterval: 'month',
+      fromYear: 2025,
+      includedHubKeys,
+      includedHubLegacyIDs: [2513, 2495],
+      seriesDimension: 'hub',
+      toYear: 2025,
+    })
+
+    expect(result.series).toEqual([
+      { key: 'hub-key:hub%3Auk-power', values: [68.1] },
+      { key: 'hub-key:hub%3Agerman-power', values: [78.835] },
+    ])
+    expect(marketHarness.query.mock.calls[0]?.[1]).toEqual([
+      'asset-class:power',
+      8101,
+      8104,
+      includedHubKeys,
+      [],
+      40,
+    ])
+    expect(String(marketHarness.query.mock.calls[0]?.[0])).toMatch(
+      /asset_class_key = \$1[\s\S]*hub_key = ANY\(\$4::text\[\]\)/u,
+    )
+  })
+
+  it('temporarily falls back to legacy columns when a deployment has not added stable columns', async () => {
+    marketHarness.query.mockRejectedValueOnce({ code: '42703' }).mockResolvedValueOnce({
+      rows: [{ hub_legacy_id: 2513, period_key: 202501, value: 68.1 }],
+    })
+
+    const result = await loadMarketData({
+      assetClassKey: 'asset-class:power',
+      assetClassLegacyID: 21,
+      dataType: 'price',
+      displayInterval: 'month',
+      fromYear: 2025,
+      includedHubKeys: ['hub:uk-power'],
+      includedHubLegacyIDs: [2513],
+      seriesDimension: 'hub',
+      toYear: 2025,
+    })
+
+    expect(result.series).toEqual([{ key: 'hub:2513', values: [68.1] }])
+    expect(marketHarness.query).toHaveBeenCalledTimes(2)
+    expect(String(marketHarness.query.mock.calls[0]?.[0])).toContain('asset_class_key = $1')
+    expect(String(marketHarness.query.mock.calls[1]?.[0])).toContain('asset_class_legacy_id = $1')
+    expect(marketHarness.query.mock.calls[1]?.[1]).toEqual([21, 8101, 8104, [2513], [], 40])
+  })
+
   it('rejects invalid or unsupported query shapes before opening a database pool', async () => {
     await expect(
       loadMarketData({

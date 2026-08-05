@@ -137,9 +137,9 @@ describe.sequential('post-import acceptance', () => {
       marketRows: 1194,
       newsArticles: 31,
       offices: 4,
-      pages: 21,
+      pages: 22,
       protectedVideoExcluded: true,
-      roots: 26,
+      roots: 27,
       venueTypes: 3,
     })
     expect(transformed.ok).toBe(true)
@@ -156,17 +156,17 @@ describe.sequential('post-import acceptance', () => {
       learningVideos: 15,
       listingArticles: 69,
       offices: 4,
-      pages: 20,
+      pages: 21,
       protectedVideoExcluded: true,
       redirects: 2,
-      routableDocuments: 26,
+      routableDocuments: 27,
       marketMatrixAutoTraderConnections: 20,
       marketMatrixConnections: 655,
       marketMatrixDirectConnections: 417,
       marketMatrixDualConnections: 218,
       marketMatrixDuplicateMergeValidated: true,
       marketMatrixVenueRows: 64,
-      navigationFooterLiveFallbacks: 35,
+      navigationFooterLiveFallbacks: 34,
       venues: 66,
       venueWebsitesHTTPS: true,
     })
@@ -177,8 +177,8 @@ describe.sequential('post-import acceptance', () => {
     )
   })
 
-  it('loads the 20 pages and 71 articles with their agreed route policies', async () => {
-    const [pages, articles] = await Promise.all([
+  it('loads the 21 pages and 71 articles with their agreed route policies', async () => {
+    const [pages, articles, assetClasses] = await Promise.all([
       payload.find({
         collection: 'pages',
         depth: 0,
@@ -197,9 +197,17 @@ describe.sequential('post-import acceptance', () => {
           and: [wordpressWhere, { _status: { equals: 'published' } }],
         },
       }),
+      payload.find({
+        collection: 'asset-classes',
+        depth: 0,
+        limit: 100,
+        overrideAccess: true,
+        pagination: false,
+        where: wordpressWhere,
+      }),
     ])
 
-    expect(pages.docs).toHaveLength(20)
+    expect(pages.docs).toHaveLength(21)
     expect(articles.docs).toHaveLength(71)
     expect(
       articles.docs.filter(({ articleType, featured }) => articleType === 'insight' && featured),
@@ -223,6 +231,34 @@ describe.sequential('post-import acceptance', () => {
       title: 'Cookie and Privacy Policy',
     })
     expect(JSON.stringify(cookiePolicy.layout)).toContain('WHAT ARE COOKIES?')
+
+    const power = documentByLegacyID(assetClasses.docs, 21)
+    const gas = documentByLegacyID(assetClasses.docs, 22)
+    const marketsMapPage = documentByLegacyID(pages.docs, 5920)
+    expect(marketsMapPage).toMatchObject({
+      path: '/resources/markets-map/',
+      title: 'Markets Map',
+    })
+    const marketsMap = pageComponents(marketsMapPage).find(
+      (component): component is MarketCoverageComponent =>
+        component.blockType === 'marketCoverage' && component.mode === 'regionalConnectivity',
+    )
+    expect(marketsMap).toMatchObject({
+      dataDisplay: 'always',
+      height: 650,
+      mode: 'regionalConnectivity',
+      presentation: 'mapOnly',
+      showMarketData: true,
+      showSidebar: true,
+    })
+    expect(relationshipID(marketsMap!.defaultAssetClass!)).toBe(power.id)
+
+    const europe = documentByLegacyID(pages.docs, 5981)
+    const europeMap = pageComponents(europe).find(
+      (component): component is MarketCoverageComponent =>
+        component.blockType === 'marketCoverage' && component.mode === 'regionalConnectivity',
+    )
+    expect(relationshipID(europeMap!.defaultAssetClass!)).toBe(gas.id)
 
     const fullArticles = articles.docs.filter(({ contentMode }) => contentMode === 'full')
     const listingArticles = articles.docs.filter(({ contentMode }) => contentMode === 'listing')
@@ -257,7 +293,7 @@ describe.sequential('post-import acceptance', () => {
     const pages = await payload.find({
       collection: 'pages',
       depth: 0,
-      limit: 20,
+      limit: 100,
       overrideAccess: true,
       pagination: false,
       where: wordpressWhere,
@@ -616,7 +652,7 @@ describe.sequential('post-import acceptance', () => {
       payload.find({
         collection: 'pages',
         depth: 0,
-        limit: 20,
+        limit: 100,
         overrideAccess: true,
         pagination: false,
         where: wordpressWhere,
@@ -624,7 +660,7 @@ describe.sequential('post-import acceptance', () => {
       payload.find({
         collection: 'offices',
         depth: 0,
-        limit: 20,
+        limit: 100,
         overrideAccess: true,
         pagination: false,
         sort: 'displayOrder',
@@ -665,7 +701,7 @@ describe.sequential('post-import acceptance', () => {
     const pages = await payload.find({
       collection: 'pages',
       depth: 0,
-      limit: 20,
+      limit: 100,
       overrideAccess: true,
       pagination: false,
       where: wordpressWhere,
@@ -703,7 +739,7 @@ describe.sequential('post-import acceptance', () => {
       payload.find({
         collection: 'pages',
         depth: 0,
-        limit: 20,
+        limit: 100,
         overrideAccess: true,
         pagination: false,
         where: wordpressWhere,
@@ -756,7 +792,7 @@ describe.sequential('post-import acceptance', () => {
       payload.find({
         collection: 'pages',
         depth: 0,
-        limit: 20,
+        limit: 100,
         overrideAccess: true,
         pagination: false,
         where: wordpressWhere,
@@ -823,7 +859,7 @@ describe.sequential('post-import acceptance', () => {
       payload.find({
         collection: 'learning-videos',
         depth: 0,
-        limit: 20,
+        limit: 100,
         overrideAccess: true,
         pagination: false,
         where: wordpressWhere,

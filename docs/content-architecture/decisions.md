@@ -15,16 +15,21 @@
 | CA-009 | Generate listings from child collections | Accepted | Cards are not duplicated into page bodies; every linked child needs a complete owner |
 | CA-010 | Add routable venue and Learning Hub detail models for production | Accepted; runtime foundation implemented | Venue page rendering and learning-video/category collections exist; all 66 + 15 production documents and parity fields still require import/remediation |
 | CA-011 | Keep map-only hubs, relationship-only venues, and metadata-only articles non-routable | Accepted and enforced; gate passing | Publication hooks forbid paths and layouts, preventing accidental empty details |
-| CA-012 | Store market facts in application PostgreSQL; store only editorial chart configuration in Payload | Accepted and baseline passing | `app.market_volume_monthly` is outside CMS editing |
-| CA-013 | Replace HubSpot/form-builder architecture with a typed first-party form | Accepted target; implementation blocked | Forms need validation, consent, spam protection, delivery/storage, and tests |
-| CA-014 | Replace cookie shortcode semantics with a first-party consent component | Accepted target; implementation blocked | Generic shortcode execution remains excluded |
+| CA-012 | Store market facts in application PostgreSQL; store editorial chart configuration and controlled import records in Payload | Accepted; local implementation delivered | `app.market_volume_monthly` stays outside field-level CMS editing; stable managed keys/aliases and validated preview/commit history make ingestion operable |
+| CA-013 | Retain the live HubSpot form identifiers and reproduce active forms through one bounded Next.js embed integration | Accepted; external integration deferred | Unused WordPress form-builder/admin architecture remains excluded; real submissions wait for an approved test destination and consent flow |
+| CA-014 | Retain CookieYes and reproduce the live consent categories/behavior through its Next.js integration | Accepted; external integration deferred | Generic shortcode execution remains excluded; Trayport does not assume ownership of a new first-party consent platform |
 | CA-015 | Store media metadata in Payload and files in S3-compatible object storage | Accepted | WordPress attachment pages/hosts are not runtime dependencies |
 | CA-016 | Preserve useful legacy URLs through validated redirect records | Accepted target; review blocked | Duplicate, private, missing, chained, looped, or shadowing redirects cannot launch |
 | CA-017 | Keep read-only source identity and content hash for idempotent migration | Accepted and baseline passing | Payload-native content remains possible without provenance |
 | CA-018 | Generate, do not hand-author, the production route manifest | Accepted; evidence verified | The retained manifest and verification artifacts are generated from the local WordPress source |
 | CA-019 | Separate architecture milestone status from production readiness | Accepted | Architecture is complete; production remains blocked until all blocker gates pass |
-| CA-020 | Own WordPress page 4031 temporarily as a `302` from `/request-a-demo/` to managed `/contact/` | Accepted; implemented for the pilot | No HubSpot form, dead prompt, or unused hero media is imported; rollback removes the redirect only when a first-party conversion page can atomically claim the path |
-| CA-021 | Bridge not-yet-imported Navigation/Footer destinations to canonical `https://www.trayport.com/` URLs | Accepted; implemented for the pilot | The 26 roots and two virtual indexes stay internal; exactly 35 unique live fallback paths are validated (30 leaf destinations plus five clickable section roots), and each is individually reversible when its route passes migration/runtime acceptance |
+| CA-020 | Own WordPress page 4031 temporarily as a `302` from `/request-a-demo/` to managed `/contact/` | Accepted; implemented for the pilot | The inactive source form/prompt/media are not imported into this route; remove the bridge only when an approved HubSpot-backed conversion page can atomically claim the path |
+| CA-021 | Bridge not-yet-imported Navigation/Footer destinations to canonical `https://www.trayport.com/` URLs | Accepted; implemented for the pilot | The 27 roots and two virtual indexes stay internal; exactly 34 unique live fallback paths are validated (29 leaf destinations plus five clickable section roots), and each is individually reversible when its route passes migration/runtime acceptance |
+| CA-022 | Keep TIM customer identity separate from Payload editor authentication | Accepted; model delivered, integration deferred | Payload may store reconciliation/status metadata but never TIM credentials, tokens, sessions, or password material; TIM, protected documentation links, and auto-login are launch requirements |
+| CA-023 | Use Mapbox for full regional maps and a deterministic accessible fallback for the simple global connection schematic | Accepted; local implementation delivered | Payload owns bounded regions, geometry, points, relationships, appearance, and filters; deployment owns public provider tokens/styles |
+| CA-024 | Keep Venue relationships as the Market Matrix authority and provide safe CSV plus formatted Excel export | Accepted; local implementation delivered | Filtering/grouping/export derive from one Payload projection; exports neutralize spreadsheet formulas and preserve the current selection |
+| CA-025 | Deliver locally, then use a deliberately simple controlled AWS review stack, while keeping the release ECS-ready for Trayport production | Accepted | EC2/RDS/S3 is the first review target; immutable containers, a separate migrator, external PostgreSQL/S3, health checks, and runtime configuration remain portable to ECS |
+| CA-026 | Allow Administrators and Editors to publish while reserving users, roles, destructive actions, and migration controls for Administrators | Accepted; locally enforced | Editorial review does not depend on Administrator access; operational authority remains bounded |
 
 ## Architecture milestone completion
 
@@ -38,8 +43,9 @@ The architecture milestone is complete because:
 - collection/global/application-data ownership is assigned;
 - implemented and planned block catalogues are separated;
 - all 18 content-route runtime archetypes now have enforced route/discriminator
-  publication behavior, including deliberate publication denial for conversion
-  pages and the exactly-one component rule for Market Matrix pages;
+  publication behavior, including publication denial for conversion pages until
+  the bounded HubSpot integration exists and the exactly-one component rule for
+  Market Matrix pages;
 - editor tasks and role expectations are defined; and
 - production gates and known gaps are explicit and machine-validated.
 
@@ -61,7 +67,7 @@ of this documentation:
 | `archetype-discriminator-invariants` | Passing | Schema/publication hooks and target-plan validation enforce all 18 content-route policies, discriminators, allowed blocks, and derived-index rules; redirects use their own guarded collection workflow |
 | `article-detail-content-ownership` | **Blocked** | Every internal listed article owns a complete body or has an approved non-route destination |
 | `listing-detail-route-ownership` | **Blocked** | All 90 posts, 72 hubs, 66 venues, and 15 learning videos resolve to complete managed details |
-| `production-block-catalogue-implemented` | **Blocked** | Structural column plus form, checklist, lifecycle, and consent targets work end to end; Matrix, regional map/list consolidation, and office rendering are implemented for the accepted slice |
+| `production-block-catalogue-implemented` | **Blocked** | Structural columns, checklist, lifecycle, Matrix, regional maps, charts, and office rendering are implemented for the accepted local slice; HubSpot form and CookieYes consent targets must still work end to end |
 | `managed-internal-link-integrity` | **Blocked** | Internal links are managed/validated and route changes integrate redirects |
 | `editor-controls-have-runtime-effect` | **Blocked** | Every visible control has tested frontend behavior or is removed |
 | `editor-role-capability-enforcement` | Partial | Access tests cover all resources, versions, publish actions, deletion, roles, and provenance |
@@ -70,9 +76,13 @@ of this documentation:
 | `market-data-storage-boundary` | Passing baseline | Market facts load transactionally outside Payload |
 | `content-review-queue-cleared` | Partial warning | Missing media, alt fallbacks, stale links, exclusions, host rewrites, and SEO have recorded dispositions |
 
+CA-013, CA-014, and CA-022–CA-026 are reflected in the versioned
+machine-readable contract. Its HubSpot, CookieYes, TIM, map, data, and
+environment ownership now matches this decision record.
+
 Any non-passing blocker keeps `productionReadiness` set to `blocked`.
 
-There are currently exactly six non-passing blocker gates:
+The current v1 machine snapshot contains exactly six non-passing blocker gates:
 
 1. `article-detail-content-ownership` — blocked;
 2. `listing-detail-route-ownership` — blocked;
@@ -82,8 +92,9 @@ There are currently exactly six non-passing blocker gates:
 6. `editor-role-capability-enforcement` — partial.
 
 `content-review-queue-cleared` is also partial, but it is a warning rather than
-a blocker. The two newly passing gates do not change
-`productionReadiness: blocked`.
+a blocker. TIM launch acceptance from CA-022 is an additional required condition
+that the next contract revision must model. The two newly passing gates do not
+change `productionReadiness: blocked`.
 
 ## Gate evidence required for launch
 
@@ -104,7 +115,7 @@ a blocker. The two newly passing gates do not change
   venue route modes/details, and both virtual index routes/configuration;
 - the complete production population of those models and representative
   rendering for every archetype;
-- every planned block implemented from schema through renderer;
+- every in-scope block and external integration implemented from schema/configuration through renderer;
 - behavior tests for every editor control; and
 - representative frontend parity checks for each archetype and exceptional
   layout.
@@ -130,7 +141,8 @@ a blocker. The two newly passing gates do not change
 - required files present in production object storage;
 - meaningful alt/decorative decisions recorded;
 - SEO, canonical, sitemap, and social metadata reviewed;
-- first-party forms and consent behavior verified; and
+- HubSpot form and CookieYes consent behavior verified;
+- TIM sign-in/logout, protected documentation links, and auto-login behavior verified; and
 - Learning Hub access policies verified.
 
 ### Operational evidence
@@ -139,7 +151,8 @@ a blocker. The two newly passing gates do not change
   release step before the standalone web runtime;
 - backups and restore procedure cover Payload data, application market data,
   and object storage;
-- secrets, SMTP, object storage, and scheduled publishing are configured; and
+- secrets, SMTP, object storage, HubSpot, CookieYes, TIM, Mapbox, and scheduled
+  publishing are configured; and
 - post-publish revalidation, logs, and failure reporting are observable.
 
 ### Foundation rollback policy
@@ -199,13 +212,13 @@ make content-inventory
 The run writes `production-target-plan.json`,
 `production-target-plan.ndjson`, `target-plan-verification.json`, and
 `target-plan-summary.json` beneath `migration/work/inventory/<run-id>/`. The
-plan deterministically describes 296 routes: 294 Payload documents (26 marked
-pilot-ready and 268 plan-only) plus two system-ready virtual indexes. It is
+plan deterministically describes 296 routes: 294 Payload documents (27 marked
+pilot-ready and 267 plan-only) plus two system-ready virtual indexes. It is
 planning evidence, not a content load or remediation report.
 
 The retained scope evidence and the two route-foundation gates pass while
 `productionReadiness` remains blocked. The actual imported/rendered acceptance
-slice now covers 26 source roots (25 rendered content routes and one redirect);
+slice now covers 27 source roots (26 rendered content routes and one redirect);
 full article/listing ownership, importer
 transformations, planned renderers, managed links, role coverage, media review,
 and the other gates above are still incomplete.

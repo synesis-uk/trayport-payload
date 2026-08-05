@@ -442,6 +442,19 @@ export const MarketCoverageComponent: Block = {
   interfaceName: 'MarketCoverageComponent',
   fields: [
     {
+      name: 'mode',
+      type: 'select',
+      admin: {
+        description:
+          'Global connections is the lightweight schematic used on general pages. Regional connectivity is the full Mapbox market explorer with regions, countries, hubs, venues and optional market data.',
+      },
+      defaultValue: 'globalConnections',
+      options: [
+        { label: 'Global connections', value: 'globalConnections' },
+        { label: 'Regional connectivity', value: 'regionalConnectivity' },
+      ],
+    },
+    {
       name: 'presentation',
       type: 'select',
       defaultValue: 'summary',
@@ -489,7 +502,7 @@ export const MarketCoverageComponent: Block = {
           type: 'number',
           defaultValue: 300,
           min: 100,
-          max: 600,
+          max: 800,
           required: true,
           admin: {
             step: 50,
@@ -562,8 +575,7 @@ export const MarketCoverageComponent: Block = {
       name: 'assetClasses',
       type: 'relationship',
       admin: {
-        description: 'Retained for migration provenance; the active schematic uses regions only.',
-        hidden: true,
+        description: 'Optional managed subset. Leave empty to include every mapped asset class.',
       },
       relationTo: 'asset-classes',
       hasMany: true,
@@ -572,8 +584,8 @@ export const MarketCoverageComponent: Block = {
       name: 'venueTypes',
       type: 'relationship',
       admin: {
-        description: 'Retained for migration provenance; the active schematic uses regions only.',
-        hidden: true,
+        condition: (_data, siblingData) => siblingData?.mode === 'regionalConnectivity',
+        description: 'Optional venue-type subset for the connectivity sidebar.',
       },
       relationTo: 'venue-types',
       hasMany: true,
@@ -583,6 +595,102 @@ export const MarketCoverageComponent: Block = {
       type: 'relationship',
       relationTo: 'regions',
       hasMany: true,
+    },
+    {
+      name: 'includedHubs',
+      type: 'relationship',
+      admin: {
+        condition: (_data, siblingData) => siblingData?.mode === 'regionalConnectivity',
+        description: 'Optional curated hub allow-list. Leave empty to use the other map filters.',
+      },
+      hasMany: true,
+      relationTo: 'hubs',
+    },
+    {
+      name: 'defaultAssetClass',
+      type: 'relationship',
+      admin: {
+        description: 'Initial active class when class switching is enabled.',
+      },
+      relationTo: 'asset-classes',
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'showAssetClassFilter',
+          type: 'checkbox',
+          defaultValue: true,
+        },
+        {
+          name: 'autoplayAssetClasses',
+          type: 'checkbox',
+          admin: {
+            condition: (_data, siblingData) => siblingData?.mode === 'globalConnections',
+          },
+          defaultValue: false,
+          required: true,
+        },
+        {
+          name: 'autoplayDelay',
+          type: 'number',
+          admin: {
+            condition: (_data, siblingData) =>
+              siblingData?.mode === 'globalConnections' && siblingData?.autoplayAssetClasses,
+            description: 'Seconds between classes. Reduced-motion visitors never autoplay.',
+          },
+          defaultValue: 5,
+          max: 30,
+          min: 2,
+        },
+      ],
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'zoomTo',
+          type: 'select',
+          admin: {
+            condition: (_data, siblingData) => siblingData?.mode === 'regionalConnectivity',
+          },
+          defaultValue: 'markers',
+          options: [
+            { label: 'Visible markers', value: 'markers' },
+            { label: 'Selected region', value: 'region' },
+          ],
+        },
+        {
+          name: 'showSidebar',
+          type: 'checkbox',
+          admin: {
+            condition: (_data, siblingData) => siblingData?.mode === 'regionalConnectivity',
+          },
+          defaultValue: true,
+        },
+        {
+          name: 'showMarketData',
+          type: 'checkbox',
+          admin: {
+            condition: (_data, siblingData) => siblingData?.mode === 'regionalConnectivity',
+            description: 'Show public period and value controls backed by the market-data store.',
+          },
+          defaultValue: false,
+        },
+      ],
+    },
+    {
+      name: 'dataDisplay',
+      type: 'select',
+      admin: {
+        condition: (_data, siblingData) =>
+          siblingData?.mode === 'regionalConnectivity' && siblingData?.showMarketData,
+      },
+      defaultValue: 'always',
+      options: [
+        { label: 'Always on the map and in hub details', value: 'always' },
+        { label: 'On map hover; always in accessible details', value: 'hover' },
+      ],
     },
     blockActions,
   ],
@@ -693,7 +801,7 @@ export const DataChartComponent: Block = {
           'Select the managed asset class whose facts are read from the application market-data store.',
       },
       filterOptions: {
-        'legacySource.legacyId': {
+        marketDataKey: {
           exists: true,
         },
       },
@@ -707,7 +815,7 @@ export const DataChartComponent: Block = {
         description: 'Optional allow-list for hub-series charts. Leave empty to include all hubs.',
       },
       filterOptions: {
-        'legacySource.legacyId': {
+        marketDataKey: {
           exists: true,
         },
       },
@@ -721,7 +829,7 @@ export const DataChartComponent: Block = {
         description: 'Optional deny-list for hub-series charts.',
       },
       filterOptions: {
-        'legacySource.legacyId': {
+        marketDataKey: {
           exists: true,
         },
       },
@@ -901,6 +1009,115 @@ export const MarketMatrixComponent: Block = {
   ],
 }
 
+export const ChecklistComponent: Block = {
+  slug: 'checklist',
+  interfaceName: 'ChecklistComponent',
+  labels: {
+    singular: 'Checklist',
+    plural: 'Checklists',
+  },
+  fields: [
+    {
+      name: 'appearance',
+      type: 'select',
+      defaultValue: 'checks',
+      options: [
+        { label: 'Check marks', value: 'checks' },
+        { label: 'Numbered steps', value: 'numbers' },
+      ],
+      required: true,
+    },
+    {
+      name: 'items',
+      type: 'array',
+      admin: {
+        description: 'Keep each item concise. Longer explanatory content belongs in rich text.',
+      },
+      fields: [
+        {
+          name: 'title',
+          type: 'text',
+          maxLength: 120,
+        },
+        {
+          name: 'text',
+          type: 'textarea',
+          maxLength: 500,
+          required: true,
+        },
+      ],
+      maxRows: 24,
+      minRows: 1,
+      required: true,
+    },
+  ],
+}
+
+export const LifecycleComponent: Block = {
+  slug: 'lifecycle',
+  interfaceName: 'LifecycleComponent',
+  labels: {
+    singular: 'Lifecycle table',
+    plural: 'Lifecycle tables',
+  },
+  fields: [
+    {
+      name: 'caption',
+      type: 'text',
+      admin: {
+        description: 'Accessible name for the lifecycle tables.',
+      },
+      defaultValue: 'Product lifecycle schedule',
+      maxLength: 160,
+      required: true,
+    },
+    {
+      name: 'lifecycleItems',
+      type: 'relationship',
+      admin: {
+        description:
+          'Select and order the managed rows to show. Inactive or unpublished rows are excluded from the public page.',
+      },
+      hasMany: true,
+      maxRows: 100,
+      minRows: 1,
+      relationTo: 'lifecycle-items',
+      required: true,
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'upcomingHeading',
+          type: 'text',
+          admin: {
+            width: '50%',
+          },
+          defaultValue: 'Upcoming End-of-Life Details',
+          maxLength: 120,
+          required: true,
+        },
+        {
+          name: 'previousHeading',
+          type: 'text',
+          admin: {
+            width: '50%',
+          },
+          defaultValue: 'Previous Versions',
+          maxLength: 120,
+          required: true,
+        },
+      ],
+    },
+    {
+      name: 'showDescriptions',
+      type: 'checkbox',
+      defaultValue: false,
+      required: true,
+    },
+  ],
+}
+
 export const OfficeComponent: Block = {
   slug: 'office',
   interfaceName: 'OfficeComponent',
@@ -946,5 +1163,7 @@ export const sectionComponents = [
   EmbedComponent,
   DataChartComponent,
   MarketMatrixComponent,
+  ChecklistComponent,
+  LifecycleComponent,
   OfficeComponent,
 ]

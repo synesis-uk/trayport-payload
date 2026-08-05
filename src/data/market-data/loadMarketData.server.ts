@@ -3,6 +3,11 @@ import 'server-only'
 import { cacheLife, cacheTag } from 'next/cache'
 import { Pool } from 'pg'
 
+import {
+  MARKET_DATA_CACHE_LIFE,
+  MARKET_DATA_CACHE_REVALIDATE_SECONDS,
+  MARKET_DATA_CACHE_TAG,
+} from './constants'
 import type { MarketDataDisplayInterval, MarketDataQuery, MarketDataResult } from './types'
 
 export type {
@@ -14,13 +19,7 @@ export type {
   MarketDataType,
 } from './types'
 
-export const MARKET_DATA_CACHE_TAG = 'market-volume'
-export const MARKET_DATA_CACHE_REVALIDATE_SECONDS = 300
-export const MARKET_DATA_CACHE_LIFE = {
-  expire: 3600,
-  revalidate: MARKET_DATA_CACHE_REVALIDATE_SECONDS,
-  stale: MARKET_DATA_CACHE_REVALIDATE_SECONDS,
-} as const
+export { MARKET_DATA_CACHE_LIFE, MARKET_DATA_CACHE_REVALIDATE_SECONDS, MARKET_DATA_CACHE_TAG }
 export const MARKET_DATA_POOL_TIMEOUTS = {
   connectionTimeoutMillis: 3_000,
   query_timeout: 5_000,
@@ -29,6 +28,7 @@ export const MARKET_DATA_POOL_TIMEOUTS = {
 
 type MarketDataDatabaseRow = {
   exchange_traded?: number | string | null
+  hub_key?: string | null
   hub_legacy_id?: number | string | null
   otc_bilateral?: number | string | null
   otc_cleared?: number | string | null
@@ -38,16 +38,24 @@ type MarketDataDatabaseRow = {
 
 type NormalizedMarketDataQuery = Omit<
   MarketDataQuery,
+  | 'assetClassKey'
+  | 'assetClassLegacyID'
+  | 'excludedHubKeys'
   | 'excludedHubLegacyIDs'
   | 'fromQuarter'
   | 'fromYear'
+  | 'includedHubKeys'
   | 'includedHubLegacyIDs'
   | 'limit'
   | 'toQuarter'
   | 'toYear'
 > & {
+  assetClassKey: string
+  assetClassLegacyID: number | null
+  excludedHubKeys: string[]
   excludedHubLegacyIDs: number[]
   fromPeriod: number
+  includedHubKeys: string[]
   includedHubLegacyIDs: number[]
   limit: number
   toPeriod: number
@@ -110,6 +118,23 @@ const normalizedLegacyIDs = (
   return sort ? normalized.sort((left, right) => left - right) : normalized
 }
 
+const normalizedMarketDataKeys = (
+  values: readonly string[] | null | undefined,
+  sort = false,
+): string[] => {
+  const normalized = [
+    ...new Set(
+      (values || [])
+        .map((value) => (typeof value === 'string' ? value.trim().toLocaleLowerCase('en-GB') : ''))
+        .filter(Boolean),
+    ),
+  ]
+  return sort ? normalized.sort((left, right) => left.localeCompare(right)) : normalized
+}
+
+const normalizedMarketDataKey = (value: string | null | undefined): string =>
+  typeof value === 'string' ? value.trim().toLocaleLowerCase('en-GB') : ''
+
 const normalizedQuarter = (value: number | null | undefined, fallback: number): number =>
   Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 4 ? Number(value) : fallback
 
@@ -121,11 +146,17 @@ const normalizeMarketDataQuery = (query: MarketDataQuery): NormalizedMarketDataQ
   const toYear = normalizedYear(query.toYear)
 
   return {
-    assetClassLegacyID: Number(query.assetClassLegacyID),
+    assetClassKey: normalizedMarketDataKey(query.assetClassKey),
+    assetClassLegacyID:
+      Number.isInteger(Number(query.assetClassLegacyID)) && Number(query.assetClassLegacyID) > 0
+        ? Number(query.assetClassLegacyID)
+        : null,
     dataType: query.dataType,
     displayInterval: query.displayInterval,
+    excludedHubKeys: normalizedMarketDataKeys(query.excludedHubKeys, true),
     excludedHubLegacyIDs: normalizedLegacyIDs(query.excludedHubLegacyIDs, true),
     fromPeriod: fromYear ? fromYear * 4 + normalizedQuarter(query.fromQuarter, 1) : 0,
+    includedHubKeys: normalizedMarketDataKeys(query.includedHubKeys),
     includedHubLegacyIDs: normalizedLegacyIDs(query.includedHubLegacyIDs),
     limit: Math.min(Math.max(Number(query.limit) || 40, 1), 40),
     seriesDimension: query.seriesDimension,
@@ -145,8 +176,12 @@ const emptyMarketDataResult = (
   status,
 })
 
-const queryMarketData = async (
+const databaseErrorCode = (error: unknown): string =>
+  error && typeof error === 'object' && 'code' in error ? String(error.code) : 'unknown'
+
+const runMarketDataQuery = async (
   query: NormalizedMarketDataQuery,
+  stableKeys: boolean,
 ): Promise<MarketDataDatabaseRow[]> => {
   const pool = marketPool()
   if (!pool) {
@@ -157,28 +192,39 @@ const queryMarketData = async (
 
   const periodExpression = PERIOD_EXPRESSIONS[query.displayInterval]
   const metricPredicate = query.dataType === 'price' ? 'AND price IS NOT NULL' : ''
-  const parameters = [
-    query.assetClassLegacyID,
-    query.fromPeriod,
-    query.toPeriod,
-    query.includedHubLegacyIDs,
-    query.excludedHubLegacyIDs,
-    query.limit,
-  ]
+  const hubColumn = stableKeys ? 'hub_key' : 'hub_legacy_id'
+  const hubCast = stableKeys ? 'text' : 'int'
+  const parameters = stableKeys
+    ? [
+        query.assetClassKey,
+        query.fromPeriod,
+        query.toPeriod,
+        query.includedHubKeys,
+        query.excludedHubKeys,
+        query.limit,
+      ]
+    : [
+        query.assetClassLegacyID,
+        query.fromPeriod,
+        query.toPeriod,
+        query.includedHubLegacyIDs,
+        query.excludedHubLegacyIDs,
+        query.limit,
+      ]
   const filteredRows = `
       WITH filtered AS (
         SELECT
-          hub_legacy_id::int AS hub_legacy_id,
+          ${hubColumn}::${hubCast} AS ${hubColumn},
           ${periodExpression} AS period_key,
           otc_bilateral,
           otc_cleared,
           exchange_traded,
           price
         FROM app.market_volume_monthly
-        WHERE asset_class_legacy_id = $1
+        WHERE ${stableKeys ? 'asset_class_key' : 'asset_class_legacy_id'} = $1
           AND (year::int * 4 + ceil(month / 3.0)::int) BETWEEN $2 AND $3
-          AND (cardinality($4::int[]) = 0 OR hub_legacy_id = ANY($4::int[]))
-          AND (cardinality($5::int[]) = 0 OR NOT (hub_legacy_id = ANY($5::int[])))
+          AND (cardinality($4::${hubCast}[]) = 0 OR ${hubColumn} = ANY($4::${hubCast}[]))
+          AND (cardinality($5::${hubCast}[]) = 0 OR NOT (${hubColumn} = ANY($5::${hubCast}[])))
           ${metricPredicate}
       ),
       selected_periods AS (
@@ -223,23 +269,46 @@ const queryMarketData = async (
     `${filteredRows}
       SELECT
         filtered.period_key::int AS period_key,
-        filtered.hub_legacy_id::int AS hub_legacy_id,
+        filtered.${hubColumn}::${hubCast} AS ${hubColumn},
         ${valueExpression} AS value
       FROM filtered
       INNER JOIN selected_periods USING (period_key)
-      GROUP BY filtered.period_key, filtered.hub_legacy_id
-      ORDER BY filtered.period_key ASC, filtered.hub_legacy_id ASC
+      GROUP BY filtered.period_key, filtered.${hubColumn}
+      ORDER BY filtered.period_key ASC, filtered.${hubColumn} ASC
     `,
     parameters,
   )
   return result.rows
 }
 
+const queryMarketData = async (
+  query: NormalizedMarketDataQuery,
+): Promise<MarketDataDatabaseRow[]> => {
+  if (!query.assetClassKey) return runMarketDataQuery(query, false)
+  const needsLegacyHubFilterFallback = Boolean(
+    query.assetClassLegacyID &&
+    ((query.includedHubLegacyIDs.length && !query.includedHubKeys.length) ||
+      (query.excludedHubLegacyIDs.length && !query.excludedHubKeys.length)),
+  )
+  if (needsLegacyHubFilterFallback) return runMarketDataQuery(query, false)
+  try {
+    return await runMarketDataQuery(query, true)
+  } catch (error) {
+    // A bounded compatibility path while deployments and authored blocks move to stable keys.
+    // 42703 is PostgreSQL's undefined_column error from a pre-key schema.
+    if (databaseErrorCode(error) !== '42703' || !query.assetClassLegacyID) throw error
+    return runMarketDataQuery(query, false)
+  }
+}
+
 const getCachedMarketData = async (query: NormalizedMarketDataQuery) => {
   'use cache'
 
   cacheLife(MARKET_DATA_CACHE_LIFE)
-  cacheTag(MARKET_DATA_CACHE_TAG, `${MARKET_DATA_CACHE_TAG}:${query.assetClassLegacyID}`)
+  cacheTag(
+    MARKET_DATA_CACHE_TAG,
+    `${MARKET_DATA_CACHE_TAG}:asset:${query.assetClassKey || query.assetClassLegacyID}`,
+  )
   return queryMarketData(query)
 }
 
@@ -290,6 +359,41 @@ const marketDataResultFromRows = (
     }
   }
 
+  const stableHubRows = rows.some(
+    ({ hub_key }) => typeof hub_key === 'string' && Boolean(hub_key.trim()),
+  )
+  if (stableHubRows) {
+    const availableHubKeys = [
+      ...new Set(
+        rows.flatMap(({ hub_key }) =>
+          typeof hub_key === 'string' && hub_key.trim() ? [hub_key.trim()] : [],
+        ),
+      ),
+    ]
+    const hubKeys = query.includedHubKeys.length
+      ? query.includedHubKeys.filter((key) => availableHubKeys.includes(key))
+      : availableHubKeys.sort((left, right) => left.localeCompare(right))
+    const valuesByHubAndPeriod = new Map(
+      rows.map((row) => [`${row.hub_key}:${Number(row.period_key)}`, numericValue(row.value)]),
+    )
+
+    return {
+      categories,
+      dataType: query.dataType,
+      displayInterval: query.displayInterval,
+      series: hubKeys.map((hubKey) => ({
+        key: `hub-key:${encodeURIComponent(hubKey)}`,
+        values: periodKeys.map(
+          (key) =>
+            valuesByHubAndPeriod.get(`${hubKey}:${key}`) ??
+            (query.dataType === 'volume' ? 0 : null),
+        ),
+      })),
+      seriesDimension: query.seriesDimension,
+      status: hubKeys.length ? 'available' : 'empty',
+    }
+  }
+
   const availableHubLegacyIDs = [
     ...new Set(
       rows
@@ -327,8 +431,7 @@ const marketDataResultFromRows = (
 export const loadMarketData = async (input: MarketDataQuery): Promise<MarketDataResult> => {
   const query = normalizeMarketDataQuery(input)
   if (
-    !Number.isInteger(query.assetClassLegacyID) ||
-    query.assetClassLegacyID <= 0 ||
+    (!query.assetClassKey && !query.assetClassLegacyID) ||
     query.fromPeriod > query.toPeriod ||
     (query.seriesDimension === 'executionType' && query.dataType !== 'volume')
   ) {
@@ -338,9 +441,9 @@ export const loadMarketData = async (input: MarketDataQuery): Promise<MarketData
   try {
     return marketDataResultFromRows(query, await getCachedMarketData(query))
   } catch (error) {
-    const code =
-      error && typeof error === 'object' && 'code' in error ? String(error.code) : 'unknown'
+    const code = databaseErrorCode(error)
     console.warn('Market data query unavailable.', {
+      ...(query.assetClassKey ? { assetClassKey: query.assetClassKey } : {}),
       assetClassLegacyID: query.assetClassLegacyID,
       code,
       dataType: query.dataType,

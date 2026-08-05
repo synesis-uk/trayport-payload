@@ -32,6 +32,7 @@ export const normalizeEmbedComponent = (component: EmbedComponent): EmbedPresent
 
 export interface MarketCoverageSourceMarker {
   assetClasses: Array<{
+    color?: string
     displayOrder: number
     id: number
     slug: string
@@ -95,7 +96,7 @@ const groupedCoverageMarkers = (
       }
 
       groups.set(assetClass.id, {
-        color: connectionsMapMarkerColor(assetClass.slug),
+        color: assetClass.color || connectionsMapMarkerColor(assetClass.slug),
         displayOrder: assetClass.displayOrder,
         key: String(assetClass.id),
         points: [...(existing?.points || []), point],
@@ -113,7 +114,7 @@ const groupedCoverageMarkers = (
     .map(({ displayOrder: _displayOrder, ...group }) => group)
 }
 
-const regionCoordinates = (title: string) => {
+const legacyRegionCoordinates = (title: string) => {
   const normalized = title.toLowerCase()
 
   if (normalized.includes('north america')) return { latitude: 42, longitude: -101 }
@@ -129,9 +130,20 @@ export const normalizeMarketCoverageComponent = (
 ): MarketCoveragePresentationModel => {
   const regions = (component.regions || []).map((region, index) => {
     const title = typeof region === 'object' ? region.title : ''
+    const managedCentre =
+      region && typeof region === 'object'
+        ? (region as { map?: { centre?: { latitude?: unknown; longitude?: unknown } | null } }).map
+            ?.centre
+        : null
+    const managedLatitude = Number(managedCentre?.latitude)
+    const managedLongitude = Number(managedCentre?.longitude)
+    const coordinates =
+      Number.isFinite(managedLatitude) && Number.isFinite(managedLongitude)
+        ? { latitude: managedLatitude, longitude: managedLongitude }
+        : legacyRegionCoordinates(title)
 
     return {
-      coordinates: regionCoordinates(title),
+      coordinates,
       key: typeof region === 'object' ? String(region.id) : `region-${region}-${index}`,
       label: title || 'Global market',
       title,
@@ -160,6 +172,8 @@ export const normalizeMarketCoverageComponent = (
 
   return {
     actions: normalizeActions(component.actions),
+    autoplayAssetClasses: component.autoplayAssetClasses === true,
+    autoplayDelay: Math.min(Math.max(Number(component.autoplayDelay) || 5, 2), 30),
     background: slots.background,
     body: slots.body,
     hubCount: slots.hubCount,
@@ -168,6 +182,8 @@ export const normalizeMarketCoverageComponent = (
     lineOpacity: Math.min(Math.max(Number(component.lineOpacity) || 0.5, 0), 1),
     lineWidth: Math.max(lineWidth * 8, 1),
     mapHeight: Math.min(Math.max(Number(component.height) || 300, 100), 600),
+    mapMode:
+      component.mode === 'regionalConnectivity' ? 'regionalConnectivity' : 'globalConnections',
     mapStyle: component.style || 'dark',
     markerGroups: groupedCoverageMarkers(component, slots.markers),
     markerRadius: Math.min(Math.max(Number(component.markerSize) || 5, 3), 9),
@@ -176,6 +192,11 @@ export const normalizeMarketCoverageComponent = (
     regionAnchors,
     regions: regions.map(({ key, label }) => ({ key, label })),
     runtimeLineWidth: lineWidth,
+    defaultAssetClassKey:
+      component.defaultAssetClass && typeof component.defaultAssetClass === 'object'
+        ? String(component.defaultAssetClass.id)
+        : undefined,
+    showAssetClassFilter: component.showAssetClassFilter !== false,
     showLines: component.showLines !== false,
     title: component.title || 'Explore our connectivity',
   }

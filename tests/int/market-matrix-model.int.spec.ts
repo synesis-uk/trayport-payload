@@ -116,4 +116,41 @@ describe('managed market-matrix projection', () => {
     expect(mergeMarketMatrixConnection('d', 'a')).toBe('b')
     expect(mergeMarketMatrixConnection('b', 'd')).toBe('b')
   })
+
+  it('uses managed routes first and a venue website as the external fallback', () => {
+    const hubs = [
+      {
+        assetClasses: [{ id: 1, title: 'Power' }],
+        externalDestination: 'https://live.example.com/hubs/german-power',
+        id: 10,
+        title: 'German Power',
+      },
+    ]
+    const venueType = { id: 2, title: 'Exchange' }
+    const venues = [
+      {
+        id: 20,
+        marketConnections: [{ connectionType: 'd', hub: 10 }],
+        title: 'External venue',
+        venueTypes: [venueType],
+        website: 'https://venue.example.com',
+      },
+      {
+        id: 21,
+        marketConnections: [{ connectionType: 'd', hub: 10 }],
+        path: '/venue/managed/',
+        title: 'Managed venue',
+        venueTypes: [venueType],
+        website: 'https://venue.example.com/old',
+      },
+    ]
+
+    const index = buildMarketMatrixIndex(hubs, venues)
+
+    expect(index.hubs[0]?.destination).toBe('https://live.example.com/hubs/german-power')
+    expect(index.venues.map(({ destination }) => destination)).toEqual([
+      'https://venue.example.com',
+      '/venue/managed/',
+    ])
+  })
 })

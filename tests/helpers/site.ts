@@ -109,6 +109,12 @@ export const representativeRoutes = [
     title: /Trayport Market Matrix \| Commodity Market Overview/i,
   },
   {
+    heading: 'Explore Trayport’s Markets Map',
+    legacyId: 5920,
+    path: '/resources/markets-map/',
+    title: /Markets Map \| Global Coverage \| Trayport/i,
+  },
+  {
     heading: 'Legal',
     legacyId: 4737,
     path: '/legal/',

@@ -70,8 +70,9 @@ The `dataChart` block is a bounded editorial query over imported WordPress confi
 application-owned PostgreSQL facts. Payload stores the title, accessible summary, presentation,
 optional range, one managed Asset Class, and optional managed Hub filters. It never stores or lets
 editors change the monthly facts in `app.market_volume_monthly`. The runtime derives every query key
-from the related records' imported `legacySource.legacyId`; the hidden numeric Asset Class key is
-migration provenance and an older-draft fallback only.
+from the related records' stable normalized `marketDataKey`; managed aliases resolve approved
+source labels during import. Numeric legacy IDs are migration provenance and an older-draft
+compatibility path only.
 
 Exactly three presentation shapes are supported:
 
@@ -105,32 +106,34 @@ Presentation state is explicit: `available` renders Highcharts and, when enabled
 Unsupported configurations do not query market data, and publication guards prevent editors from
 creating new ones.
 
-### Home connections-map contract
+The `market-data-imports` collection gives Administrators a bounded validate/preview/commit
+workflow. It resolves Asset Class and Hub keys, titles, and aliases; rejects malformed,
+ambiguous, or duplicate facts; records coverage and history; and commits metric-preserving upserts
+transactionally. It operates application data without turning raw facts into editable Payload
+fields.
 
-The Home `marketCoverage` block owns a bounded, application-derived map model. Payload stores the
-selected Asset Classes and Regions plus height, marker size, line visibility, colour, width, and
-opacity; editors cannot enter provider tokens, style URLs, arbitrary geometry, or JavaScript. The
-server projection resolves managed Hub coordinates and classifications, then groups the accepted
-source data into 33 Power and 22 Natural Gas points. Each group forms a complete graph, reproducing
-the reference's 528 plus 231, or 759, connection segments.
+### Market-map contract
 
-The deterministic managed-media/SVG figure is always server-rendered and remains the no-provider,
-loading, and pre-ready-error fallback. Only the dark Home `mapOnly` presentation can receive runtime
-configuration; selecting the bounded light presentation truthfully retains the light server
-fallback until an approved light provider style exists. The small client boundary waits until the
-figure is within 300 px of the viewport,
-then dynamically loads pinned `mapbox-gl` `3.11.1` and its CSS with SSR disabled for that runtime
-chunk. The map matches the observed reference defaults: center `[0, 0]`, zoom `1`, non-pannable
-presentation, 50 px fit padding, 500 ms fit duration, cyan 0.2 px/0.5-opacity lines, 3 px orange
-Power and yellow Natural Gas markers, marker labels, and visible Mapbox logo/attribution. Readiness
-is exposed only after the post-fit idle event; failure before that point leaves the fallback visible.
+The `marketCoverage` block owns two bounded application-derived models. `globalConnections`
+resolves managed Hub coordinates and classifications, then reproduces the accepted 33 Power and 22
+Natural Gas locations and their 759 same-class connection segments. `regionalConnectivity` uses
+managed Region boundaries/centers/points of interest, Hub country/type/classification data,
+explicit route geometry, Venue/type hierarchy, Asset Class appearance, filters, and optional
+period market summaries to reproduce the live regional map interactions.
 
-`MAPBOX_PUBLIC_TOKEN` must be a browser-safe `pk` token and `MAPBOX_STYLE_URL` must be a valid
-Mapbox style URI or `https://api.mapbox.com` style URL. Both are server-read runtime environment
-values and both must validate before configuration is serialized to the bounded client island. A
-missing or invalid value loads no Mapbox resources. Production activation additionally requires an
-origin-restricted token, approved use or a Trayport-owned clone of the reference style, and recorded
-Mapbox licence/attribution approval.
+The global schematic always server-renders its deterministic managed-media/SVG fallback. Mapbox is
+required for the full regional view, but its client/runtime/CSS stay behind the owning block and an
+accessible fallback/list remains available during loading or provider failure. Regional controls
+cover region/reset, boundary selection/fit, Asset Class selection, country/Hub/route/point-of-
+interest selection, Venue links grouped by type, and the configured market-data periods. Reduced
+motion disables nonessential animation; provider logo and attribution remain visible.
+
+`MAPBOX_PUBLIC_TOKEN` must be a browser-safe `pk` token;
+`MAPBOX_STYLE_DARK_URL` and `MAPBOX_STYLE_LIGHT_URL` must be valid Mapbox style URIs or
+`https://api.mapbox.com` style URLs. These are server-read runtime values and must validate before
+configuration reaches a bounded client island. Missing or invalid configuration loads no provider
+resources. Production activation additionally requires an origin-restricted token, approved use
+or Trayport-owned clones of the reference styles, and recorded Mapbox licence/attribution approval.
 
 The application sends a conservative response-header baseline, but deliberately does not enforce a
 Content Security Policy yet. `script-src 'self'` on its own would block Next.js inline bootstrap
@@ -200,9 +203,9 @@ build graph; production E2E remains responsible for content-selected chunks and 
 - Slow listing, market-index, and market-data reads suspend at the owning block, not the entire
   page. Market data returns distinct `available`, `empty`, and `unavailable` states so an outage is
   observable and never presented as a valid empty dataset.
-- Mapbox is an optional viewport-lazy Home-only runtime. It is absent from the initial public route
-  artifacts and from non-Home requests; the server-rendered map remains usable when configuration
-  or the provider is unavailable.
+- Mapbox is a route-/block-owned viewport-lazy runtime for maps that require it. It is absent from
+  the initial public shell and routes without regional or provider-backed map blocks; the global
+  schematic and accessible regional data view remain usable when configuration/provider fails.
 - The proxy and market-data PostgreSQL pools bound connection, statement, and query waits at three,
   four, and five seconds respectively. Proxy failures propagate as infrastructure failures instead
   of becoming false 404s; chart blocks retain their explicit unavailable presentation.
@@ -247,8 +250,8 @@ build graph; production E2E remains responsible for content-selected chunks and 
   or icon-name fields.
 - CMS-selectable icons come from the typed application registry and importer mapping.
 - Data Charts require a managed Asset Class relationship. Published charts resolve the
-  application-data key from that related record's imported `legacySource.legacyId`; the
-  hidden legacy-number field exists only for migration provenance and older-draft
+  application-data key from that related record's stable `marketDataKey`; managed aliases
+  exist for import resolution, while hidden legacy numbers remain provenance and older-draft
   compatibility. Editors choose only volume or price, execution-type or Hub series, and
   month, quarter, or year grouping. Optional managed Hub allow/deny lists must be disjoint;
   execution-type charts cannot use them. Optional from/to ranges require complete

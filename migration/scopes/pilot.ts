@@ -88,6 +88,17 @@ export const pilotScope = {
       authoritativeField: 'sections_new',
     },
     {
+      legacyId: 5920,
+      postType: 'page',
+      path: '/resources/markets-map/',
+      purpose: 'Interactive regional markets map',
+      archetype: 'page.standard',
+      targetOwner: 'pages',
+      sourceTitle: 'Markets Map',
+      sourceTemplate: 'layouts/default-new.blade.php',
+      authoritativeField: 'sections_new',
+    },
+    {
       legacyId: 4737,
       postType: 'page',
       path: '/legal/',

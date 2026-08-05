@@ -2,7 +2,12 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { sourceRecordSchema, type SourcePost, type SourceRecord } from '../contracts/v1'
+import {
+  sourceLifecycleReusableSchema,
+  sourceRecordSchema,
+  type SourcePost,
+  type SourceRecord,
+} from '../contracts/v1'
 import {
   acceptedRunMarkerName,
   atomicWriteText,
@@ -20,6 +25,13 @@ type AcceptanceReport = {
   ok: true
   runId: string
 }
+
+const pilotRootCount = pilotScope.roots.length
+const pilotSourcePageCount = pilotScope.roots.filter(({ postType }) => postType === 'page').length
+const pilotTargetPageCount = pilotScope.roots.filter(
+  ({ targetOwner }) => targetOwner === 'pages',
+).length
+const expectedNavigationFooterLiveFallbacks = 34
 
 const countBy = <T>(values: T[], key: (value: T) => string): Record<string, number> => {
   const counts: Record<string, number> = {}
@@ -121,6 +133,7 @@ const targetForReferenceKind: Record<LegacyReference['$legacyRef'], TargetCollec
   hub: 'hubs',
   venue: 'venues',
   'learning-video': 'learning-videos',
+  'lifecycle-item': 'lifecycle-items',
   office: 'offices',
   'article-category': 'article-categories',
   'learning-video-category': 'learning-video-categories',
@@ -394,6 +407,10 @@ export const validateSource = (
   const mapHubs = records.filter(
     (record): record is Extract<SourceRecord, { entity: 'map-hub' }> => record.entity === 'map-hub',
   )
+  const mapRegions = records.filter(
+    (record): record is Extract<SourceRecord, { entity: 'map-region' }> =>
+      record.entity === 'map-region',
+  )
   const marketRows = records.filter(
     (record): record is Extract<SourceRecord, { entity: 'market-volume' }> =>
       record.entity === 'market-volume',
@@ -424,8 +441,8 @@ export const validateSource = (
   )
 
   const roots = posts.filter(({ scopeRole }) => scopeRole === 'root')
-  assert.equal(roots.length, 26)
-  assert.equal(new Set(roots.map(({ legacyId }) => legacyId)).size, 26)
+  assert.equal(roots.length, pilotRootCount)
+  assert.equal(new Set(roots.map(({ legacyId }) => legacyId)).size, pilotRootCount)
   for (const expectedRoot of pilotScope.roots) {
     const root = roots.find(({ legacyId }) => legacyId === expectedRoot.legacyId)
     assert(root, `Missing agreed root ${expectedRoot.legacyId}`)
@@ -448,6 +465,7 @@ export const validateSource = (
     2231: 1,
     2221: 6,
     4737: 6,
+    5920: 2,
     5981: 8,
     5983: 8,
     7585: 3,
@@ -466,7 +484,7 @@ export const validateSource = (
       `Unexpected sections_new count for ${legacyIdText}`,
     )
   }
-  assert.equal(Object.keys(pageSectionCounts).length, 18)
+  assert.equal(Object.keys(pageSectionCounts).length, 19)
   const sourceLayoutNames = (post: SourcePost, field: 'sections' | 'sections_new'): string[] =>
     arrayValue(post.acf[field]).map((section) => String(objectValue(section).acf_fc_layout || ''))
   const expandedPageLayouts: Record<
@@ -508,6 +526,7 @@ export const validateSource = (
         'buttons',
       ],
     },
+    5920: { field: 'sections_new', layouts: ['columns', 'single'] },
     5981: {
       field: 'sections_new',
       layouts: [
@@ -605,8 +624,8 @@ export const validateSource = (
   }
 
   const pages = posts.filter(({ postType }) => postType === 'page')
-  assert.equal(pages.length, 21)
-  assert.equal(pages.filter(({ scopeRole }) => scopeRole === 'root').length, 21)
+  assert.equal(pages.length, 22)
+  assert.equal(pages.filter(({ scopeRole }) => scopeRole === 'root').length, 22)
 
   const articles = posts.filter(({ postType }) => postType === 'post')
   assert.equal(articles.length, 71)
@@ -756,6 +775,11 @@ export const validateSource = (
   )
 
   assert.equal(mapHubs.length, 72)
+  assert.equal(mapRegions.length, 3)
+  assert(mapRegions.every(({ boundary, centre }) => boundary && centre))
+  assert(mapRegions.some(({ pointsOfInterest }) => pointsOfInterest.length > 0))
+  assert(mapHubs.some(({ connections: hubConnections }) => hubConnections.length > 0))
+  assert(mapHubs.some(({ countryCode }) => countryCode !== null))
   assert.equal(
     mapHubs.reduce((total, hub) => total + hub.markers.length, 0),
     62,
@@ -817,6 +841,14 @@ export const validateSource = (
 
   const offices = reusables.filter(({ postType }) => postType === 'office')
   assert.deepEqual(sortedNumbers(offices.map(({ legacyId }) => legacyId)), [4052, 4055, 4056, 4057])
+  const lifecycleItems = reusables.filter(({ postType }) => postType === 'lifecycle')
+  if (lifecycleItems.length) {
+    assert.deepEqual(
+      sortedNumbers(lifecycleItems.map(({ legacyId }) => legacyId)),
+      [4026, 4208, 4209, 4210, 4211, 4212, 4213, 4214, 10337, 10485, 10489, 11241],
+    )
+    lifecycleItems.forEach((record) => sourceLifecycleReusableSchema.parse(record))
+  }
   const jouleFunctionalityVideo = reusables.find(
     ({ legacyId, postType }) => legacyId === 7665 && postType === 'videos',
   )
@@ -917,8 +949,8 @@ export const validateSource = (
     ok: true,
     runId,
     checks: {
-      roots: 26,
-      pages: 21,
+      roots: pilotRootCount,
+      pages: pilotSourcePageCount,
       articles: 71,
       insightsArticles: 39,
       newsArticles: 31,
@@ -927,6 +959,7 @@ export const validateSource = (
       learningVideos: 15,
       learningListingVideos: 14,
       offices: 4,
+      lifecycleItems: lifecycleItems.length,
       articleCategories: 3,
       learningVideoCategories: 11,
       assetClasses: 12,
@@ -974,13 +1007,18 @@ export const validateTransformed = (
   const sourceMedia = sourceRecords.filter(
     (record): record is Extract<SourceRecord, { entity: 'media' }> => record.entity === 'media',
   )
+  const sourceLifecycleItems = sourceRecords.filter(
+    (record): record is Extract<SourceRecord, { entity: 'reusable' }> =>
+      record.entity === 'reusable' && record.postType === 'lifecycle',
+  )
   const counts = countBy(targets, ({ target }) => target)
   assert.deepEqual(counts, {
-    pages: 20,
+    pages: pilotTargetPageCount,
     articles: 71,
     hubs: 72,
     venues: 66,
     'learning-videos': 15,
+    ...(sourceLifecycleItems.length ? { 'lifecycle-items': sourceLifecycleItems.length } : {}),
     offices: 4,
     'article-categories': 3,
     'learning-video-categories': 11,
@@ -1022,6 +1060,7 @@ export const validateTransformed = (
   assert.equal(layoutCount('pages', 1924), 9)
   assert.equal(layoutCount('pages', 7589), 2)
   assert.equal(layoutCount('pages', 2231), 2)
+  assert.equal(layoutCount('pages', 5920), 2)
   assert.equal(layoutCount('pages', 4803), 21)
   assert.equal(layoutCount('pages', 7573), 21)
   assert.equal(layoutCount('pages', 34), 2)
@@ -1055,6 +1094,57 @@ export const validateTransformed = (
       venueTypes: [],
     },
   ])
+
+  const marketsMapPage = targets.find(
+    ({ legacy, target }) => target === 'pages' && legacy.legacyId === 5920,
+  )
+  assert(marketsMapPage)
+  const marketsMapComponents = nestedComponents(marketsMapPage).filter(
+    ({ blockType, mode }) => blockType === 'marketCoverage' && mode === 'regionalConnectivity',
+  )
+  assert.equal(marketsMapComponents.length, 1)
+  const marketsMap = marketsMapComponents[0]
+  assert(marketsMap)
+  assert.equal(marketsMap.presentation, 'mapOnly')
+  assert.equal(marketsMap.height, 650)
+  assert.equal(marketsMap.showLines, true)
+  assert.equal(marketsMap.lineColor, '#009cde')
+  assert.equal(marketsMap.showSidebar, true)
+  assert.equal(marketsMap.showMarketData, true)
+  assert.equal(marketsMap.dataDisplay, 'always')
+  assert.equal(referenceID(marketsMap.defaultAssetClass, 'asset-class'), 21)
+  assert.deepEqual(
+    arrayValue(marketsMap.assetClasses).map((value) => referenceID(value, 'asset-class')),
+    [108, 22, 21],
+  )
+  assert.deepEqual(
+    arrayValue(marketsMap.regions).map((value) => referenceID(value, 'region')),
+    [31, 29, 30],
+  )
+  assert.deepEqual(
+    arrayValue(marketsMap.venueTypes).map((value) => referenceID(value, 'venue-type')),
+    [41, 43, 42],
+  )
+
+  for (const [pageLegacyID, regionLegacyID] of [
+    [5981, 29],
+    [5983, 31],
+    [2221, 30],
+  ] as const) {
+    const regionPage = targets.find(
+      ({ legacy, target }) => target === 'pages' && legacy.legacyId === pageLegacyID,
+    )
+    assert(regionPage)
+    const regionalMap = nestedComponents(regionPage).find(
+      ({ blockType, mode }) => blockType === 'marketCoverage' && mode === 'regionalConnectivity',
+    )
+    assert(regionalMap)
+    assert.equal(referenceID(regionalMap.defaultAssetClass, 'asset-class'), 22)
+    assert.deepEqual(
+      arrayValue(regionalMap.regions).map((value) => referenceID(value, 'region')),
+      [regionLegacyID],
+    )
+  }
 
   const contactPage = targets.find(
     ({ legacy, target }) => target === 'pages' && legacy.legacyId === 34,
@@ -1398,6 +1488,16 @@ export const validateTransformed = (
     [4052, 4055, 4056, 4057],
   )
 
+  const lifecycleItems = targets.filter(({ target }) => target === 'lifecycle-items')
+  assert.equal(lifecycleItems.length, sourceLifecycleItems.length)
+  for (const lifecycleItem of lifecycleItems) {
+    assert.equal(lifecycleItem.data._status, 'published')
+    assert.equal(lifecycleItem.data.active, true)
+    assert.equal(typeof lifecycleItem.data.productLabel, 'string')
+    assert.equal(typeof lifecycleItem.data.serviceName, 'string')
+    assert.match(String(lifecycleItem.data.endOfLifeDate), /^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/)
+  }
+
   const venues = targets.filter(({ target }) => target === 'venues')
   const venueWebsites = venues.flatMap(({ data }) =>
     typeof data.website === 'string' ? [data.website] : [],
@@ -1540,6 +1640,7 @@ export const validateTransformed = (
     4803: ['pageType', 'legal'],
     5981: ['pageType', 'standard'],
     5983: ['pageType', 'standard'],
+    5920: ['pageType', 'standard'],
     7573: ['pageType', 'legal'],
     7585: ['pageType', 'legal'],
     7589: ['pageType', 'legal'],
@@ -1580,7 +1681,7 @@ export const validateTransformed = (
       .filter(({ targetOwner }) => targetOwner !== 'redirects')
       .map(({ path }) => path)
       .sort(),
-    'Only the 25 agreed content documents may own canonical content paths.',
+    'Only the agreed content documents may own canonical content paths.',
   )
   assert.equal(new Set(routablePaths).size, routablePaths.length)
 
@@ -1676,7 +1777,7 @@ export const validateTransformed = (
     assert.equal(parsed.hostname, 'www.trayport.com')
     navigationFooterLiveFallbacks.add(parsed.pathname)
   }
-  assert.equal(navigationFooterLiveFallbacks.size, 35)
+  assert.equal(navigationFooterLiveFallbacks.size, expectedNavigationFooterLiveFallbacks)
   assert.equal(
     Array.isArray(navigation.data.primaryItems) ? navigation.data.primaryItems.length : 0,
     5,
@@ -1739,7 +1840,7 @@ export const validateTransformed = (
       targetRecords: targets.length,
       legacyReferences: targetGraph.legacyReferences,
       uniqueTargetIdentities: targetGraph.uniqueTargetIdentities,
-      pages: 20,
+      pages: pilotTargetPageCount,
       articles: 71,
       fullArticles: 2,
       listingArticles: 69,
@@ -1749,6 +1850,7 @@ export const validateTransformed = (
       learningVideos: 15,
       learningListingVideos: 14,
       offices: 4,
+      lifecycleItems: lifecycleItems.length,
       articleCategories: 3,
       learningVideoCategories: 11,
       media: sourceMedia.length,
@@ -1766,7 +1868,7 @@ export const validateTransformed = (
       germanHeaderMediaBridge:
         sourceMedia.find(({ legacyId }) => legacyId === 9727)?.availability === 'unavailable',
       dataCharts: dataChartCount,
-      routableDocuments: 26,
+      routableDocuments: pilotRootCount,
       deferredHubSpotForms: 5,
       protectedVideoExcluded: true,
       redirects: 2,

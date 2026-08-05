@@ -36,6 +36,15 @@ export const VenueTypes: CollectionConfig = {
       type: 'textarea',
     },
     {
+      name: 'parentVenueType',
+      type: 'relationship',
+      admin: {
+        description: 'Optional parent used to group venues in regional-map sidebars.',
+        position: 'sidebar',
+      },
+      relationTo: 'venue-types',
+    },
+    {
       name: 'displayOrder',
       type: 'number',
       admin: {
@@ -45,6 +54,13 @@ export const VenueTypes: CollectionConfig = {
       defaultValue: 0,
       index: true,
       min: 0,
+    },
+    {
+      name: 'mapLabel',
+      type: 'text',
+      admin: {
+        description: 'Optional shorter label for map filters and connection summaries.',
+      },
     },
     trayportSlugField(),
     createLegacySourceField(),

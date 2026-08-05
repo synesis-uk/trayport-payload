@@ -3,9 +3,12 @@
 ## Purpose
 
 This repository proves the replacement path for the currently used Trayport
-WordPress site. It currently closes 26 audited source roots: 25 rendered content
+WordPress site. It currently closes 27 audited source roots: 26 rendered content
 routes and one temporary managed redirect. It does not reproduce every dormant
-WordPress content type or administration screen.
+WordPress content type or administration screen. The functional/editorial
+baseline is the live public site and its equivalent local WordPress deployment;
+the [delivery-slice plan](delivery-slices.md) records what the current local
+implementation adds and what remains before launch.
 
 ## Runtime
 
@@ -22,10 +25,10 @@ WordPress content type or administration screen.
   the standalone application.
 - Mailpit captures development email. Production supplies a normal SMTP
   endpoint.
-- The Home connections map keeps a deterministic server-rendered media/SVG fallback. When an
-  approved public Mapbox token and style are configured, a viewport-lazy client island renders the
-  reference 55-location, 759-connection topology without adding Mapbox to other routes or the
-  initial public shell.
+- The simple global connections map keeps a deterministic server-rendered
+  media/SVG fallback. Full regional connectivity maps use a route-owned,
+  viewport-lazy Mapbox island with managed region geometry, points of interest,
+  Hubs, routes, filters, and a corresponding accessible data view.
 
 ## Content boundary
 
@@ -44,6 +47,10 @@ Payload collections:
 - `learning-video-categories`: the managed Learning Hub filter taxonomy.
 - `media`: normalized WordPress attachments and accessibility review metadata.
 - Taxonomies for article categories, asset classes, venue types, and regions.
+- `customer-identities`: non-authenticating TIM reconciliation/status metadata,
+  separate from CMS users.
+- `market-data-imports`: controlled administrator validation/preview/commit
+  records for application market facts.
 - `route-registry`: a protected, hook-managed table of content, redirect, and
   virtual claims. CMS/API clients cannot write it directly.
 
@@ -59,25 +66,36 @@ Payload globals:
 Application PostgreSQL:
 
 - `app.market_volume_monthly`: normalized monthly market facts. Payload blocks
-  store only editorial chart configuration.
+  store editorial chart configuration; Payload import records operate bounded,
+  audited, transactional ingestion without exposing raw facts as CMS fields.
 
 Application-owned map runtime:
 
-- Payload stores bounded map presentation controls and relationships; it does not store provider
-  credentials or arbitrary style URLs.
-- Server projections resolve Hub coordinates and their Asset Class/Region relationships. The Home
-  runtime groups 33 Power and 22 Natural Gas locations and derives the 759 same-class pairwise
-  lines in application code.
-- `MAPBOX_PUBLIC_TOKEN` and `MAPBOX_STYLE_URL` are runtime deployment configuration. Missing or
-  invalid values leave the accessible server-rendered fallback active.
+- Payload stores bounded map presentation controls, managed region GeoJSON and
+  points of interest, Hub/country/type metadata, explicit routes, Venue/type
+  hierarchy, Asset Class appearance, and stable market-data identities. It does
+  not store provider credentials or arbitrary style URLs.
+- The global runtime derives the accepted 55-location, 759-connection schematic
+  from managed relationships. Regional maps preserve live region/asset/country/
+  Hub/route interactions and optional period summaries.
+- `MAPBOX_PUBLIC_TOKEN`, `MAPBOX_STYLE_DARK_URL`, and
+  `MAPBOX_STYLE_LIGHT_URL` are runtime deployment configuration. Missing or
+  invalid values leave the accessible fallback/data view active.
 
 Deliberately excluded from the production pilot:
 
-- HubSpot and form-builder architecture.
+- Unused generic WordPress form-builder and HubSpot administration structures.
+  Active HubSpot form identifiers remain in launch scope through a bounded
+  Next.js embed integration.
 - Commodities Report pages.
 - The unused WordPress banner system and development theme switches.
 - WordPress users, shortcodes as a generic content type, and dormant admin
   structures.
+
+CookieYes remains the launch consent provider, and TIM remains the launch
+customer-authentication authority. Both external integrations are deferred from
+the current local slice; neither is replaced by Payload users or arbitrary
+shortcode execution.
 
 ## Migration flow
 
@@ -107,9 +125,9 @@ Git. Source WordPress data is never changed by the importer.
 also emits `production-target-plan.json`, its NDJSON form, a verification
 report, and a summary under `migration/work/inventory/<run-id>/`. The plan
 deterministically accounts for 296 routes, but it is planning evidence only.
-The importer acceptance slice covers 26 source roots: 25 rendered content routes
+The importer acceptance slice covers 27 source roots: 26 rendered content routes
 and `/request-a-demo/` as a reversible `302` to the managed Contact page. The
-other 268 plan-only production documents have not been loaded or
+other 267 plan-only production documents have not been loaded or
 content-remediated. Navigation and footer destinations outside this slice and
 the two virtual indexes remain explicit HTTPS live-site fallbacks until their
 routes are migrated.
@@ -135,8 +153,8 @@ Publication hooks
 enforce discriminators, route-required/route-forbidden modes, root ownership,
 top-level block allowlists, minimum content, learning-video media, venue detail
 content, and content-index listing behavior. Conversion pages remain
-unpublishable until a first-party form exists; interactive Market Matrix pages
-must contain exactly one managed `marketMatrix` component.
+unpublishable until the bounded HubSpot integration exists; interactive Market
+Matrix pages must contain exactly one managed `marketMatrix` component.
 
 The Next.js catch-all is registry-first; collection precedence is no longer a
 route ownership mechanism. It renders pages, full articles, public hubs,
@@ -178,7 +196,27 @@ path-bound token issued by the authenticated preview endpoint.
 This first slice prioritizes safe cache ownership; response headers and route
 timings are measured separately before any CDN-wide HTML-cache policy is added.
 
+## Environment progression
+
+Feature development and acceptance stay local until the core product is signed
+off. The first controlled AWS review environment uses the simplest supportable
+shape—one EC2 application host/container, RDS PostgreSQL, and S3 media—while
+retaining the same immutable runner/migrator images and externalized runtime
+configuration.
+
+Trayport production is an ECS target. The application therefore remains
+stateless, keeps schema migration in a separate one-off process, exposes
+liveness/readiness probes, and treats PostgreSQL, object storage, SMTP, secrets,
+HubSpot, CookieYes, TIM, Mapbox, and public origins as deployment dependencies.
+Full ECS service, ALB, task, logging, backup, scaling, and operational ownership
+design follows product acceptance rather than blocking the first review build.
+
 ## Publication workflow
+
+The Payload login, favicon/icon, logo, navigation surfaces, and dashboard intro
+use the Trayport brand and explain the local editorial areas without changing
+Payload's supported admin behavior. This is an owned presentation layer rather
+than a fork of the CMS.
 
 Administrators and editors can create and update content. Only administrators
 manage users, roles, destructive collection actions, and migration metadata.

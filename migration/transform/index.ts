@@ -21,6 +21,7 @@ import {
   sourceURL,
 } from './helpers'
 import { htmlToLexical, htmlToMultilinePlainText, htmlToPlainText } from './lexical'
+import { mapLifecycleReusable } from './lifecycle'
 import {
   mapArticleLayout,
   mapPageLayout,
@@ -58,6 +59,59 @@ const pageTypeByArchetype = {
   'page.interactive-market-matrix': 'interactive',
   'page.content-index': 'index',
 } as const
+
+const managedMapColors = new Set([
+  '#1f2a44',
+  '#002d72',
+  '#0057b8',
+  '#009cde',
+  '#00c1d5',
+  '#32b77b',
+  '#ff671f',
+  '#f7ea48',
+])
+
+const legacyMarketHubAliasesByTitle: Record<string, string[]> = {
+  'cegh vtp (austrian)': ['Austria VTP'],
+  'czech gas': ['CZ'],
+  'gtf (danish)': ['Denmark ETF', 'GTF'],
+  'nbp (uk)': ['NBP'],
+  'peg (french)': ['France PEG', 'PEG'],
+  'psv (italian)': ['PSV'],
+  'pvb (spanish)': ['PVB'],
+  'the (german)': ['THE'],
+  'ttf (dutch)': ['TTF'],
+  'ztp (belgian)': ['ZEE', 'ZTP'],
+}
+
+const marketDataAliasesForHub = (
+  legacyId: number,
+  title: string,
+  additional: string[] = [],
+): Array<{ value: string }> =>
+  [
+    ...new Set(
+      [
+        `wordpress-hub:${legacyId}`,
+        title,
+        ...additional,
+        ...(legacyMarketHubAliasesByTitle[title.trim().toLocaleLowerCase('en-GB')] || []),
+      ]
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  ].map((value) => ({ value }))
+
+const mapColorFromTerm = (acf: Record<string, unknown>, slug: string): string => {
+  const source = asObject(acf.color)
+  const raw = asString(
+    asString(source.type) === 'shades' ? source.shade : source.color || source.shade || acf.color,
+  ).toLowerCase()
+  if (managedMapColors.has(raw)) return raw
+  if (slug === 'gas') return '#f7ea48'
+  if (slug === 'power') return '#ff671f'
+  return '#00c1d5'
+}
 
 const resolveRunId = (requested?: string): string => {
   if (requested) return requested
@@ -481,13 +535,24 @@ const mapPost = (
         },
       })) || []
     const firstMarker = markers[0]
+    const mapConnections =
+      mapHub?.connections.map((connection) => ({
+        hub: legacyRef('hub', connection.hubLegacyId),
+        route: connection.route,
+        showLineMarker: connection.showLineMarker,
+        lineMarkerLabel: connection.lineMarkerLabel,
+      })) || []
     const data = {
       title: post.title,
       slug: normalizeTrayportSlug(post.slug),
       path: post.path || `/market-coverage/${post.slug}/`,
       contentMode: 'page',
       code: asString(post.acf.code),
-      marketDataKey: `wordpress-hub:${post.legacyId}`,
+      marketDataKey: `hub:${normalizeTrayportSlug(post.slug)}`,
+      marketDataAliases: marketDataAliasesForHub(post.legacyId, post.title, [
+        asString(post.acf.code),
+      ]),
+      hubType: mapHub?.hubType || 'vhub',
       assetClasses: assetClass ? [assetClass] : [],
       venueTypes: [
         ...new Set(
@@ -500,11 +565,16 @@ const mapPost = (
       heroMedia: mediaToken(post.acf.image),
       layout: [],
       showOnMap: mapHub?.showOnMap ?? true,
+      countryCode: mapHub?.countryCode || null,
+      connectedCountryCodes: mapHub?.connectedCountryCodes.map((code) => ({ code })) || [],
+      relatedHubs:
+        mapHub?.connections.map(({ hubLegacyId }) => legacyRef('hub', hubLegacyId)) || [],
       map: {
         locationLabel: firstMarker?.label || post.title,
         centre: firstMarker?.location,
         zoom: 6,
         markers,
+        connections: mapConnections,
       },
       connections,
       meta: seoFrom(post),
@@ -925,22 +995,34 @@ const mapHubTarget = (hub: Extract<SourceRecord, { entity: 'map-hub' }>): Target
     },
   }))
   const firstMarker = markers[0]
+  const connections = hub.connections.map((connection) => ({
+    hub: legacyRef('hub', connection.hubLegacyId),
+    route: connection.route,
+    showLineMarker: connection.showLineMarker,
+    lineMarkerLabel: connection.lineMarkerLabel,
+  }))
   const data = {
     title: hub.title,
     slug: normalizeTrayportSlug(hub.slug),
     contentMode: 'map-only',
     externalDestination: hub.path ? liveSourceURL(hub.path) : null,
-    marketDataKey: `wordpress-hub:${hub.legacyId}`,
+    marketDataKey: `hub:${normalizeTrayportSlug(hub.slug)}`,
+    marketDataAliases: marketDataAliasesForHub(hub.legacyId, hub.title),
+    hubType: hub.hubType,
     assetClasses: assetClass ? [assetClass] : [],
     venueTypes: [],
     regions: region ? [region] : [],
     layout: [],
     showOnMap: hub.showOnMap,
+    countryCode: hub.countryCode,
+    connectedCountryCodes: hub.connectedCountryCodes.map((code) => ({ code })),
+    relatedHubs: hub.connections.map(({ hubLegacyId }) => legacyRef('hub', hubLegacyId)),
     map: {
       locationLabel: firstMarker?.label || hub.title,
       centre: firstMarker?.location,
       zoom: 6,
       markers,
+      connections,
     },
     connections: [],
     _status: 'published',
@@ -1004,6 +1086,14 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
           record.entity === 'map-hub',
       )
       .map((record) => [record.legacyId, record]),
+  )
+  const mapRegions = new Map(
+    records
+      .filter(
+        (record): record is Extract<SourceRecord, { entity: 'map-region' }> =>
+          record.entity === 'map-region',
+      )
+      .map((record) => [record.regionLegacyId, record]),
   )
   const managedLinks: ManagedLinkLookup = new Map(
     records
@@ -1082,6 +1172,11 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
       continue
     }
 
+    if (record.entity === 'reusable' && record.postType === 'lifecycle') {
+      targets.push(mapLifecycleReusable(record))
+      continue
+    }
+
     if (record.entity === 'map-hub') {
       if (record.legacyId !== 2495) {
         targets.push(mapHubTarget(record))
@@ -1136,14 +1231,58 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
           (coverage.ignoredTaxonomies[record.taxonomy] || 0) + 1
         continue
       }
+      const slug = normalizeTrayportSlug(record.slug)
+      const mapRegion = record.taxonomy === 'region' ? mapRegions.get(record.legacyId) : undefined
       const data = {
         title: record.name,
-        slug: normalizeTrayportSlug(record.slug),
+        slug,
         description: record.description,
         ...(target === 'regions'
           ? {}
           : { displayOrder: Number(asString(record.acf.display_order)) || 0 }),
-        ...(target === 'regions' ? { code: asString(record.acf.code) } : {}),
+        ...(target === 'regions'
+          ? {
+              code: asString(record.acf.code),
+              map: {
+                label: mapRegion?.label || record.name,
+                centre: mapRegion?.centre || undefined,
+                zoom: 4,
+                boundary: mapRegion?.boundary || null,
+                pointsOfInterest:
+                  mapRegion?.pointsOfInterest.map((point) => ({
+                    label: point.label || mapRegion.title,
+                    popupText: point.popupText,
+                    location: {
+                      latitude: point.latitude,
+                      longitude: point.longitude,
+                    },
+                  })) || [],
+              },
+            }
+          : {}),
+        ...(target === 'asset-classes'
+          ? {
+              marketDataKey: `asset-class:${slug}`,
+              marketDataAliases: [
+                { value: `wordpress-asset-class:${record.legacyId}` },
+                { value: record.name },
+                { value: slug },
+              ],
+              mapAppearance: {
+                color: mapColorFromTerm(record.acf as Record<string, unknown>, slug),
+                volumeLabel: asString(record.acf.volume_label),
+                priceLabel: asString(record.acf.price_label),
+                currency: asString(record.acf.currency),
+              },
+            }
+          : {}),
+        ...(target === 'venue-types'
+          ? {
+              parentVenueType:
+                record.parentId > 0 ? legacyRef('venue-type', record.parentId) : null,
+              mapLabel: asString(record.acf.map_label) || record.name,
+            }
+          : {}),
       }
       targets.push(
         finalizeTarget({

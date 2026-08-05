@@ -10,6 +10,10 @@ import { publishedAtField } from '@/fields/publishedAt'
 import { confirmPathRedirectField } from '@/fields/routeControls'
 import { seoField } from '@/fields/seo'
 import { trayportSlugField } from '@/fields/slug'
+import {
+  normalizeVenueMarketConnections,
+  validateVenueMarketConnections,
+} from '@/fields/venueMarketConnections'
 import { validateRoutableDocument } from '@/routing/archetypes'
 import { releaseRoutableRoute, syncRoutableRoute } from '@/routing/registry'
 import {
@@ -166,6 +170,10 @@ export const Venues: CollectionConfig = {
           'Markets available through this venue. Non-routable hubs retain a reviewed live-site fallback.',
         initCollapsed: true,
       },
+      hooks: {
+        beforeValidate: [({ value }) => normalizeVenueMarketConnections(value)],
+      },
+      validate: validateVenueMarketConnections,
       fields: [
         {
           name: 'hub',

@@ -91,6 +91,14 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
       },
     ],
     [
+      5920,
+      {
+        authoritativeField: 'sections_new',
+        path: '/resources/markets-map/',
+        template: 'layouts/default-new.blade.php',
+      },
+    ],
+    [
       4737,
       {
         authoritativeField: 'sections_new',
@@ -197,7 +205,7 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
     ...Array.from(
       { length: 37 },
       (_, index) =>
-        [2231, 4737, 7589, 7585, 4803, 7573, 5983, 2221, 11475, 5981][index] || 3007 + index,
+        [2231, 5920, 4737, 7589, 7585, 4803, 7573, 5983, 2221, 11475, 5981][index] || 3007 + index,
     ),
     2203,
   ]

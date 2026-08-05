@@ -1,0 +1,9 @@
+export const MARKET_DATA_CACHE_TAG = 'market-volume'
+
+export const MARKET_DATA_CACHE_REVALIDATE_SECONDS = 300
+
+export const MARKET_DATA_CACHE_LIFE = {
+  expire: 3600,
+  revalidate: MARKET_DATA_CACHE_REVALIDATE_SECONDS,
+  stale: MARKET_DATA_CACHE_REVALIDATE_SECONDS,
+} as const

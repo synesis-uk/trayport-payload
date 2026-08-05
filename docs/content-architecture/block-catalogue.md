@@ -46,14 +46,16 @@ types and their dispositions, with zero unknown taxonomies.
 | `faq` | Structured questions and answers | `faqs` |
 | `entityList` | People, clients, venues, or general entities | `people`, `clients` |
 | `timeline` | Ordered labelled milestones | `timeline` |
+| `checklist` | Structured accessible checklist with bounded marker style | `checklist` |
+| `lifecycle` | Ordered lifecycle stages with managed supporting content | `lifecycle` |
 | `dataTable` | Accessible caption, headers, rows, and cells | `table` |
 | `gallery` | Ordered managed media and captions | `gallery` |
 | `divider` | Semantic line or spacing break | `divider` |
-| `marketCoverage` | Editorial market view backed by managed regions/hubs/venues | `connections`, `markets-map` map-only presentation |
+| `marketCoverage` | Global connection schematic or full regional connectivity view backed by managed regions/hubs/venues | `connections`, `markets-map` |
 | `embed` | Validated external embed with poster | compatible legacy video/embed semantics |
 | `dataChart` | Bounded volume/price chart query related to managed imported Asset Class and Hub records, backed by application PostgreSQL | `charts-new` |
 | `office` | Structured managed office relationship with address, contact, and map behavior | `office` |
-| `marketMatrix` | Filtered, accessible connectivity matrix with CSV export | Market Matrix page behavior backed by managed hub, venue, taxonomy, and region records |
+| `marketMatrix` | Filtered, accessible connectivity matrix with CSV and formatted Excel export | Market Matrix page behavior backed by managed hub, venue, taxonomy, and region records |
 
 The current contract tests prove that every implemented block has a frontend
 renderer and that the current importer emits only configured implemented block
@@ -65,10 +67,10 @@ rules:
   videos are limited to `trayportHero` and `contentSection`;
 - article listing metadata, map-only hubs, and relationship-only venues cannot
   own layout blocks; and
-- conversion pages remain draft-only until the planned first-party form exists;
+- conversion pages remain draft-only until the bounded HubSpot form integration exists;
   interactive Market Matrix pages require exactly one managed matrix component; and
-- publishing a Data Chart requires an Asset Class whose imported legacy ID is a valid
-  application-data key. The supported shapes are execution-type volume stacked columns,
+- publishing a Data Chart requires an Asset Class with a stable managed
+  market-data key. The supported shapes are execution-type volume stacked columns,
   Hub volume columns, and Hub price lines. Execution-type charts cannot filter Hubs;
   included/excluded Hub relationship sets on Hub charts must be disjoint. Optional
   from/to bounds require complete year-and-quarter pairs, and a supplied start cannot
@@ -102,24 +104,21 @@ explicit surface/wrapper treatment, reading width, top/bottom spacing, column ga
 column layout defaults. The importer does not emit the obsolete generic `theme` or
 `spacing` fields.
 
-These passing route/block invariants do not prove that the planned production
-catalogue is implemented.
+These passing route/block invariants do not prove that the deferred external
+integrations or full production population/review are complete.
 
-## Planned production targets
+## Deferred external-integration targets
 
 | Target | Kind | Source | Required production behavior |
 | --- | --- | --- | --- |
-| `contentSection.columns` | Structure | nested `column` | Normalize column spans and child components without a presentational wrapper block |
-| `form` | Section component | `form` | First-party fields, validation, consent, spam controls, submission storage/delivery, and accessible status behavior |
-| `checklist` | Section component | `checklist` | Structured accessible list with controlled style |
-| `lifecycle` | Section component | `lifecycle` | Ordered lifecycle stages and managed supporting content |
-| `cookiePreferences` | Consent integration | `[wcc_category_list]` | First-party consent-category view; no generic shortcode execution |
+| `hubspotForm` | Section component | `form` | Retained approved HubSpot form identifier, bounded embed lifecycle, consent, validation/error/success, and accessible status behavior |
+| `cookiePreferences` | Consent integration | `[wcc_category_list]` | CookieYes category/preferences view that clones live behavior; no generic shortcode execution |
 
-Each planned block is incomplete until its Payload schema, importer mapping,
-frontend renderer, accessibility behavior, and tests all exist. The `form`
-target must support both page and article sources without reinstating HubSpot.
-The publication guard deliberately prevents conversion pages from going live
-while `form` is absent.
+Each deferred integration is incomplete until its Payload schema/configuration,
+importer mapping, frontend renderer, provider lifecycle, accessibility behavior,
+and tests all exist. The HubSpot target must support the active page and article
+source cases through one bounded implementation. The publication guard prevents
+conversion pages from going live while that integration is absent.
 
 ## Approved composed-page observations
 
@@ -153,12 +152,12 @@ FAQ is included and Commodities Report is excluded.
 | `divider` | 27 | `divider` |
 | `connections` | 12 | `marketCoverage` |
 | `charts-new` | 7 | `dataChart` plus application PostgreSQL facts; six active instances are imported by the accepted navigation slice |
-| `form` | 8 | planned `form` |
-| `checklist` | 2 | planned `checklist` |
-| `lifecycle` | 1 | planned `lifecycle` |
+| `form` | 8 | deferred bounded `hubspotForm` using retained source identifier |
+| `checklist` | 2 | implemented `checklist` |
+| `lifecycle` | 1 | implemented `lifecycle` |
 | `market-matrix` | 1 | implemented `marketMatrix` behavior on the accepted route |
 | `office` | 12 | implemented `office`; full production transformer/remediation coverage remains open |
-| `markets-map` | 5 | consolidated to implemented `marketCoverage(presentation=mapOnly)` |
+| `markets-map` | 5 | implemented `marketCoverage(mode=regionalConnectivity)` with managed map data and Mapbox runtime |
 | `regions` | 3 | consolidated to linked `featureList` items |
 | `icon` | 3 | Omit source wrapper; target component selects decorative icon |
 
@@ -179,7 +178,7 @@ remain unchanged.
 | Four article-list pages | One `hero` each plus a generated post query | `page.content-index`, hero, constrained listing |
 | Learning Hub home | `hero`, `single`, one nested `features`, plus 15 generated video links | Content index plus `learning-videos` query |
 | Market matrix | One `columns` with nested `column`, `header`, and `paragraph`, plus generated matrix | Interactive page plus `marketMatrix` |
-| Cookie consent | Two `columns` rows; three nested `column`, `header`, and `paragraph` layouts; `[wcc_category_list]` | Legal page plus `cookiePreferences` |
+| Cookie consent | Two `columns` rows; three nested `column`, `header`, and `paragraph` layouts; `[wcc_category_list]` | Legal page plus deferred CookieYes-backed `cookiePreferences` |
 | Two legal article pages | Legacy `sections` body | Legal page using article-style reading sections |
 
 The two legal pages contain these authoritative legacy `sections` layouts:
@@ -224,7 +223,7 @@ Article top-level layouts normalize to reading-width `contentSection` blocks:
 - `index-point` → anchored `heading`;
 - `header` → `heading`;
 - `table` → `dataTable`; and
-- `form` → planned first-party `form`.
+- `form` → deferred bounded `hubspotForm` using its retained source identifier.
 
 ## Structured record observations
 
@@ -310,10 +309,11 @@ Production block implementation passes only when:
   transform.
 
 The contract and retained inventory pass disposition totality for the observed
-source, and the 18 content-route runtime archetypes pass their current allowlist/publication
-invariants. The remaining planned production targets still block
-`production-block-catalogue-implemented`; runtime rejection of unsupported
-publication is a safe invariant, not an implementation of the missing block.
+source, and the 18 content-route runtime archetypes pass their current
+allowlist/publication invariants. The remaining HubSpot and CookieYes targets
+still block `production-block-catalogue-implemented`; runtime rejection of
+unsupported publication is a safe invariant, not an implementation of the
+missing external integration.
 
 The production inventory command also emits a deterministic 296-route target
 plan:
@@ -323,6 +323,6 @@ make content-inventory
 ```
 
 That plan records where these block transforms will be needed, but it is
-planning evidence only. The current acceptance slice covers 26 source roots—25
-rendered content routes and one temporary managed redirect—and the other 268
+planning evidence only. The current acceptance slice covers 27 source roots—26
+rendered content routes and one temporary managed redirect—and the other 267
 plan-only production bodies have not been transformed or content-remediated.

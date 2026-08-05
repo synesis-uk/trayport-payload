@@ -64,6 +64,9 @@ const titledRelationshipSelect = {
 
 const orderedRelationshipSelect = {
   displayOrder: true,
+  mapAppearance: {
+    color: true,
+  },
   slug: true,
   title: true,
 } as const
@@ -110,6 +113,7 @@ export interface MarketCoverageHubViewModel {
 export interface MarketCoverageMarkerViewModel {
   assetClasses: Array<{
     displayOrder: number
+    color?: string
     id: number
     slug: string
     title: string
@@ -222,6 +226,9 @@ const queryMarketCoverageIndex = async (
                   ? [
                       {
                         displayOrder: assetClass.displayOrder || 0,
+                        ...(assetClass.mapAppearance?.color
+                          ? { color: assetClass.mapAppearance.color }
+                          : {}),
                         id: assetClass.id,
                         slug: assetClass.slug,
                         title: assetClass.title,

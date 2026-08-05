@@ -26,6 +26,20 @@ export type ManagedLinkLookup = Map<
 
 // WordPress `map-all` is the standard dark connection-map background used by the live site.
 const LEGACY_MAP_ALL_BACKGROUND_MEDIA_ID = 6101
+const LEGACY_ASSET_CLASS_ID_BY_SLUG: Record<string, number> = {
+  bulk: 108,
+  climate: 109,
+  coal: 90,
+  emissions: 114,
+  envrionmentals: 25,
+  freight: 88,
+  gas: 22,
+  iron_ore: 27,
+  oil: 26,
+  power: 21,
+  renewables: 89,
+  weather: 192,
+}
 const CONNECTION_MAP_LINE_COLORS = new Set([
   '#1f2a44',
   '#002d72',
@@ -389,6 +403,10 @@ const marketCoverageFrom = (
   component: Record<string, NormalizedValue>,
   presentation: 'mapOnly' | 'summary',
 ): TargetComponent => {
+  const mode =
+    asString(component.acf_fc_layout) === 'markets-map'
+      ? 'regionalConnectivity'
+      : 'globalConnections'
   const style = asString(component.style) === 'light' ? 'light' : 'dark'
   const assetClasses = asArray(component.asset_classes)
     .map((term) => legacyRef('asset-class', term))
@@ -412,14 +430,50 @@ const marketCoverageFrom = (
       ? true
       : asBoolean(rawShowLines)
   const height = asObject(component.height)
+  const includedHubs = asArray(component.connections)
+    .map((hub) => legacyRef('hub', hub))
+    .filter(Boolean)
+  const explicitDefaultAssetClassID =
+    LEGACY_ASSET_CLASS_ID_BY_SLUG[asString(component.default_class_slug).trim().toLowerCase()]
+  const preferredDefaultAssetClassIDs = explicitDefaultAssetClassID
+    ? [explicitDefaultAssetClassID]
+    : mode === 'regionalConnectivity' && regions.length === 1
+      ? [LEGACY_ASSET_CLASS_ID_BY_SLUG.gas, LEGACY_ASSET_CLASS_ID_BY_SLUG.power]
+      : [LEGACY_ASSET_CLASS_ID_BY_SLUG.power, LEGACY_ASSET_CLASS_ID_BY_SLUG.gas]
+  const selectedAssetClassIDs = new Set(
+    assetClasses.map((value) => Number(asObject(value).legacyId)).filter(Number.isInteger),
+  )
+  const preferredDefaultAssetClassID = preferredDefaultAssetClassIDs.find(
+    (legacyId) =>
+      explicitDefaultAssetClassID || !assetClasses.length || selectedAssetClassIDs.has(legacyId),
+  )
+  const defaultAssetClass = preferredDefaultAssetClassID
+    ? legacyRef('asset-class', preferredDefaultAssetClassID)
+    : assetClasses[0] || null
+  const rawShowSidebar = component.show_sidebar
+  const showSidebar =
+    rawShowSidebar === undefined || rawShowSidebar === null || rawShowSidebar === ''
+      ? true
+      : asBoolean(rawShowSidebar)
+  const rawShowToggle = component.show_toggle
+  const showAssetClassFilter =
+    rawShowToggle === undefined || rawShowToggle === null || rawShowToggle === ''
+      ? true
+      : asBoolean(rawShowToggle)
 
   return {
     blockType: 'marketCoverage',
+    mode,
     presentation,
     title: 'Explore our connectivity',
     style,
     backgroundMedia: style === 'dark' ? mediaToken(LEGACY_MAP_ALL_BACKGROUND_MEDIA_ID) : null,
-    height: boundedNumber(height.fixed_height || component.height, 300, 100, 600),
+    height: boundedNumber(
+      height.fixed_height || component.height,
+      mode === 'regionalConnectivity' ? 600 : 300,
+      100,
+      800,
+    ),
     markerSize: boundedNumber(component.marker_size, 5, 2, 8),
     showLines,
     lineColor,
@@ -428,6 +482,18 @@ const marketCoverageFrom = (
     assetClasses,
     venueTypes,
     regions,
+    includedHubs,
+    defaultAssetClass,
+    showAssetClassFilter,
+    autoplayAssetClasses: mode === 'globalConnections' && asBoolean(component.slides),
+    autoplayDelay: boundedNumber(component.delay, 5, 2, 30),
+    zoomTo: asString(component.zoom_to) === 'region' ? 'region' : 'markers',
+    showSidebar,
+    showMarketData:
+      mode === 'regionalConnectivity' && asString(component.commsrep_data) === 'latest',
+    dataDisplay: ['hover', 'toggle'].includes(asString(component.data_display))
+      ? 'hover'
+      : 'always',
     actions: [],
   }
 }
@@ -506,6 +572,46 @@ const featureItems = (
       }
     })
     .filter(Boolean) as Record<string, unknown>[]
+}
+
+const lifecycleReferencesFrom = (
+  categoryValue: unknown,
+  reusables: ReusableLookup,
+): LegacyReference[] => {
+  const category = asObject(categoryValue)
+  const mode = asString(category.type) || 'all'
+  const lifecycleRecords = [...reusables.values()].filter(
+    ({ postType }) => postType === 'lifecycle',
+  )
+  let selected: SourceReusable[] = []
+
+  if (mode === 'specific') {
+    const byLegacyID = new Map(lifecycleRecords.map((record) => [record.legacyId, record]))
+    selected = asArray(category.specific).flatMap((value) => {
+      const legacyID = referenceId(value, 'post')
+      const record = legacyID ? byLegacyID.get(legacyID) : undefined
+      return record ? [record] : []
+    })
+  } else if (mode === 'single') {
+    const productLegacyID = referenceId(category.single, 'post')
+    selected = productLegacyID
+      ? lifecycleRecords.filter(({ data }) => referenceId(data.product, 'post') === productLegacyID)
+      : []
+  } else {
+    selected = lifecycleRecords
+  }
+
+  const seen = new Set<number>()
+  const ordered =
+    mode === 'specific' ? selected : selected.sort((left, right) => left.legacyId - right.legacyId)
+  return ordered
+    .flatMap((record) => {
+      if (seen.has(record.legacyId)) return []
+      seen.add(record.legacyId)
+      const reference = legacyRef('lifecycle-item', record.legacyId)
+      return reference ? [reference] : []
+    })
+    .slice(0, 100)
 }
 
 const mapComponent = (
@@ -746,6 +852,46 @@ const mapComponent = (
         })
         .filter(Boolean) as Record<string, unknown>[]
       return items.length ? [{ blockType: 'gallery', items }] : []
+    }
+    case 'checklist': {
+      const items = asArray(component.items)
+        .slice(0, 24)
+        .flatMap((candidate) => {
+          const item = asObject(candidate)
+          const text = htmlToPlainText(item.item)
+          if (!text) return []
+          const title = htmlToPlainText(item.header)
+          return [
+            {
+              ...(title ? { title } : {}),
+              text,
+            },
+          ]
+        })
+      return items.length
+        ? [
+            {
+              appearance: 'checks',
+              blockType: 'checklist',
+              items,
+            },
+          ]
+        : []
+    }
+    case 'lifecycle': {
+      const lifecycleItems = lifecycleReferencesFrom(component.category, reusables)
+      return lifecycleItems.length
+        ? [
+            {
+              blockType: 'lifecycle',
+              caption: 'Product lifecycle schedule',
+              lifecycleItems,
+              previousHeading: 'Previous Versions',
+              showDescriptions: false,
+              upcomingHeading: 'Upcoming End-of-Life Details',
+            },
+          ]
+        : []
     }
     case 'divider':
       return [{ blockType: 'divider', style: 'line' }]

@@ -296,16 +296,22 @@ const MarketVolumeChartRuntime = ({
                   ? categories[this.x]
                   : String(this.x ?? '')
               const suffix = unit ? ` ${escapeTooltipText(unit)}` : ''
-              const total = points.reduce((sum, point) => {
-                const value = Number(point.y)
-                return Number.isFinite(value) ? sum + value : sum
-              }, 0)
-              let html = `<b>${escapeTooltipText(category)}: ${total.toFixed(0)}${suffix}</b><br/>`
+              const decimals = dataType === 'price' ? 2 : 0
+              let html: string
+              if (dataType === 'price') {
+                html = `<b>${escapeTooltipText(category)}</b><br/>`
+              } else {
+                const total = points.reduce((sum, point) => {
+                  const value = Number(point.y)
+                  return Number.isFinite(value) ? sum + value : sum
+                }, 0)
+                html = `<b>${escapeTooltipText(category)}: ${total.toFixed(decimals)}${suffix}</b><br/>`
+              }
 
               for (const point of points) {
                 const value = Number(point.y)
                 if (!Number.isFinite(value)) continue
-                html += `${escapeTooltipText(point.series.name)}: ${value.toFixed(0)}${suffix}<br/>`
+                html += `${escapeTooltipText(point.series.name)}: ${value.toFixed(decimals)}${suffix}<br/>`
               }
 
               return html
@@ -339,7 +345,7 @@ const MarketVolumeChartRuntime = ({
               enabled: showAxes,
               formatter(this: { value: number | string }) {
                 const value = Number(this.value)
-                return `${Number.isFinite(value) ? value.toFixed(0) : this.value}${unit ? ` ${unit}` : ''}`
+                return `${Number.isFinite(value) ? value.toFixed(dataType === 'price' ? 2 : 0) : this.value}${unit ? ` ${unit}` : ''}`
               },
               style: {
                 color: foreground,

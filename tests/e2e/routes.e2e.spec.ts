@@ -20,6 +20,7 @@ const pagePresentations = {
   '/regions/north-america/': { className: 'trayport-page--standard', type: 'standard' },
   '/resources/faqs/': { className: 'trayport-page--standard', type: 'standard' },
   '/resources/market-matrix/': { className: 'trayport-page--interactive', type: 'interactive' },
+  '/resources/markets-map/': { className: 'trayport-page--standard', type: 'standard' },
   '/terms-of-use-disclaimer/': { className: 'trayport-page--legal', type: 'legal' },
 } as const
 

@@ -47,9 +47,15 @@ const mapboxStyleURL = (value: string | undefined): string | null => {
  * Map provider configuration is intentionally application-owned. A missing or
  * invalid value returns the deterministic server-rendered map fallback.
  */
-export const getConnectionsMapRuntimeConfig = (): ConnectionsMapRuntimeConfig | null => {
+export const getConnectionsMapRuntimeConfig = (
+  style: 'dark' | 'light' = 'dark',
+): ConnectionsMapRuntimeConfig | null => {
   const accessToken = publicMapboxToken(process.env.MAPBOX_PUBLIC_TOKEN)
-  const styleURL = mapboxStyleURL(process.env.MAPBOX_STYLE_URL)
+  const styleURL = mapboxStyleURL(
+    style === 'light'
+      ? process.env.MAPBOX_STYLE_LIGHT_URL || process.env.MAPBOX_STYLE_URL
+      : process.env.MAPBOX_STYLE_DARK_URL || process.env.MAPBOX_STYLE_URL,
+  )
 
   return accessToken && styleURL
     ? {

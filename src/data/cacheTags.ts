@@ -21,6 +21,7 @@ export const cacheDependencyCollections = [
   'hubs',
   'learning-video-categories',
   'learning-videos',
+  'lifecycle-items',
   'media',
   'offices',
   'pages',

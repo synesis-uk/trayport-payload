@@ -79,6 +79,8 @@ export const loadMarketData = async (
       create temporary table import_market_volume_monthly (
         asset_class_legacy_id integer not null,
         hub_legacy_id integer not null,
+        asset_class_key text not null,
+        hub_key text not null,
         year smallint not null,
         month smallint not null,
         otc_bilateral numeric,
@@ -108,6 +110,8 @@ export const loadMarketData = async (
         insert into import_market_volume_monthly (
           asset_class_legacy_id,
           hub_legacy_id,
+          asset_class_key,
+          hub_key,
           year,
           month,
           otc_bilateral,
@@ -120,6 +124,8 @@ export const loadMarketData = async (
         select
           asset_class_legacy_id,
           hub_legacy_id,
+          asset_class.market_data_key,
+          hub.market_data_key,
           year,
           month,
           otc_bilateral,
@@ -140,8 +146,25 @@ export const loadMarketData = async (
           source_post_legacy_id integer,
           source_fingerprint text
         )
+        inner join asset_classes asset_class
+          on asset_class.legacy_source_source = 'wordpress'
+          and asset_class.legacy_source_legacy_id = source.asset_class_legacy_id
+          and asset_class.market_data_key is not null
+        inner join hubs hub
+          on hub.legacy_source_source = 'wordpress'
+          and hub.legacy_source_legacy_id = source.hub_legacy_id
+          and hub.market_data_key is not null
       `,
       [JSON.stringify(jsonRows)],
+    )
+
+    const resolvedRows = await client.query<{ count: string }>(
+      'select count(*)::text as count from import_market_volume_monthly',
+    )
+    assert.equal(
+      Number(resolvedRows.rows[0].count),
+      rows.length,
+      'Every legacy market row must resolve to stable managed Asset Class and Hub keys',
     )
 
     const comparison = await client.query<{
@@ -158,6 +181,8 @@ export const loadMarketData = async (
               target.otc_cleared,
               target.exchange_traded,
               target.price,
+              target.asset_class_key,
+              target.hub_key,
               target.source_post_legacy_id,
               target.source_fingerprint
             ) is not distinct from (
@@ -165,6 +190,8 @@ export const loadMarketData = async (
               source.otc_cleared,
               source.exchange_traded,
               source.price,
+              source.asset_class_key,
+              source.hub_key,
               source.source_post_legacy_id,
               source.source_fingerprint
             )
@@ -176,6 +203,8 @@ export const loadMarketData = async (
               target.otc_cleared,
               target.exchange_traded,
               target.price,
+              target.asset_class_key,
+              target.hub_key,
               target.source_post_legacy_id,
               target.source_fingerprint
             ) is distinct from (
@@ -183,6 +212,8 @@ export const loadMarketData = async (
               source.otc_cleared,
               source.exchange_traded,
               source.price,
+              source.asset_class_key,
+              source.hub_key,
               source.source_post_legacy_id,
               source.source_fingerprint
             )
@@ -231,6 +262,8 @@ export const loadMarketData = async (
       insert into app.market_volume_monthly (
         asset_class_legacy_id,
         hub_legacy_id,
+        asset_class_key,
+        hub_key,
         year,
         month,
         otc_bilateral,
@@ -243,6 +276,8 @@ export const loadMarketData = async (
       select
         asset_class_legacy_id,
         hub_legacy_id,
+        asset_class_key,
+        hub_key,
         year,
         month,
         otc_bilateral,
@@ -258,6 +293,8 @@ export const loadMarketData = async (
         otc_cleared = excluded.otc_cleared,
         exchange_traded = excluded.exchange_traded,
         price = excluded.price,
+        asset_class_key = excluded.asset_class_key,
+        hub_key = excluded.hub_key,
         source_post_legacy_id = excluded.source_post_legacy_id,
         source_fingerprint = excluded.source_fingerprint,
         imported_at = now()
@@ -266,6 +303,8 @@ export const loadMarketData = async (
         app.market_volume_monthly.otc_cleared,
         app.market_volume_monthly.exchange_traded,
         app.market_volume_monthly.price,
+        app.market_volume_monthly.asset_class_key,
+        app.market_volume_monthly.hub_key,
         app.market_volume_monthly.source_post_legacy_id,
         app.market_volume_monthly.source_fingerprint
       ) is distinct from (
@@ -273,6 +312,8 @@ export const loadMarketData = async (
         excluded.otc_cleared,
         excluded.exchange_traded,
         excluded.price,
+        excluded.asset_class_key,
+        excluded.hub_key,
         excluded.source_post_legacy_id,
         excluded.source_fingerprint
       )

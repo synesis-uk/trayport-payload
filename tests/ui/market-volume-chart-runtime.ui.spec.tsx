@@ -279,11 +279,15 @@ describe('market-data chart runtime', () => {
         y: item.data[0],
       }))
       const tooltipSuffix = dataType === 'price' ? '' : ' TWh'
+      const decimals = dataType === 'price' ? 2 : 0
       const tooltipTotal = tooltipPoints.reduce((sum, point) => sum + Number(point.y || 0), 0)
       const expectedTooltip = [
-        `<b>${categories[0]}: ${tooltipTotal.toFixed(0)}${tooltipSuffix}</b><br/>`,
+        dataType === 'price'
+          ? `<b>${categories[0]}</b><br/>`
+          : `<b>${categories[0]}: ${tooltipTotal.toFixed(0)}${tooltipSuffix}</b><br/>`,
         ...tooltipPoints.map(
-          (point) => `${point.series.name}: ${Number(point.y).toFixed(0)}${tooltipSuffix}<br/>`,
+          (point) =>
+            `${point.series.name}: ${Number(point.y).toFixed(decimals)}${tooltipSuffix}<br/>`,
         ),
       ].join('')
       expect(options.tooltip.formatter.call({ points: tooltipPoints, x: 0 })).toBe(expectedTooltip)
@@ -306,7 +310,7 @@ describe('market-data chart runtime', () => {
       }
 
       expect(options.yAxis.labels.formatter.call({ value: 35_000 })).toBe(
-        dataType === 'price' ? '35000' : '35000 TWh',
+        dataType === 'price' ? '35000.00' : '35000 TWh',
       )
 
       expect(screen.getByRole('region', { name: `${title} interactive chart` })).toBeTruthy()

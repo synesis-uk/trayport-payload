@@ -730,6 +730,29 @@ function tp_export_curated_reusables(array &$mediaIds, array &$termIds): void
     }
 }
 
+/** Export only published lifecycle records and the fields used by the managed table. */
+function tp_export_lifecycle_reusables(array &$mediaIds, array &$termIds): void
+{
+    $lifecycleIds = get_posts([
+        'post_type' => 'lifecycle',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'orderby' => 'ID',
+        'order' => 'ASC',
+        'fields' => 'ids',
+        'no_found_rows' => true,
+    ]);
+
+    foreach ($lifecycleIds as $lifecycleId) {
+        tp_export_reusable(
+            (int) $lifecycleId,
+            ['product', 'name', 'duration', 'eol_version', 'eol_date', 'eoa_date', 'description'],
+            $mediaIds,
+            $termIds
+        );
+    }
+}
+
 function tp_normalized_marker_rows($value): array
 {
     $rows = is_array($value) ? $value : [];
@@ -760,6 +783,90 @@ function tp_normalized_marker_rows($value): array
     });
 
     return $markers;
+}
+
+function tp_normalized_map_coordinates($value): ?array
+{
+    if (!is_array($value)) {
+        return null;
+    }
+    $latitude = isset($value['lat']) && is_numeric($value['lat']) ? (float) $value['lat'] : null;
+    $longitude = isset($value['lng']) && is_numeric($value['lng']) ? (float) $value['lng'] : null;
+    if ($latitude === null || $longitude === null || $latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
+        return null;
+    }
+    return ['latitude' => $latitude, 'longitude' => $longitude];
+}
+
+function tp_normalized_geojson($value)
+{
+    if (is_string($value)) {
+        $decoded = json_decode($value, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return null;
+        }
+        $value = $decoded;
+    }
+    if (!is_array($value)) {
+        return null;
+    }
+    $type = (string) ($value['type'] ?? '');
+    if (!in_array($type, ['FeatureCollection', 'Feature', 'Point', 'LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'], true)) {
+        return null;
+    }
+    return $value;
+}
+
+function tp_export_map_regions(array &$termIds): void
+{
+    $regionIds = get_posts([
+        'post_type' => 'region',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'fields' => 'ids',
+        'orderby' => 'ID',
+        'order' => 'ASC',
+        'no_found_rows' => true,
+    ]);
+
+    foreach ($regionIds as $regionId) {
+        $fields = function_exists('get_fields') ? (get_fields($regionId) ?: []) : [];
+        $regionLegacyId = tp_reference_id($fields['region_taxonomy'] ?? null);
+        if ($regionLegacyId <= 0) {
+            throw new RuntimeException("Map region {$regionId} has no managed region taxonomy.");
+        }
+        $termIds['region:' . $regionLegacyId] = ['id' => $regionLegacyId, 'taxonomy' => 'region'];
+        $points = [];
+        foreach (is_array($fields['marker_locations'] ?? null) ? $fields['marker_locations'] : [] as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $location = tp_normalized_map_coordinates($row['latlng'] ?? null);
+            if (!$location) {
+                continue;
+            }
+            $points[] = [
+                'label' => (string) ($row['name'] ?? $row['title'] ?? ''),
+                'popupText' => wp_strip_all_tags((string) ($row['popup_text'] ?? '')),
+                'latitude' => $location['latitude'],
+                'longitude' => $location['longitude'],
+            ];
+        }
+        $redirect = $fields['page_redirect'] ?? null;
+        $redirectId = tp_reference_id(is_array($redirect) ? ($redirect[0] ?? null) : $redirect);
+
+        tp_emit([
+            'entity' => 'map-region',
+            'legacyId' => (int) $regionId,
+            'title' => html_entity_decode(get_the_title($regionId), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+            'regionLegacyId' => $regionLegacyId,
+            'label' => (string) ($fields['map_label'] ?? $fields['abbreviation'] ?? ''),
+            'centre' => tp_normalized_map_coordinates($fields['latlng'] ?? null),
+            'boundary' => tp_normalized_geojson($fields['geojson'] ?? null),
+            'pointsOfInterest' => $points,
+            'destinationPath' => $redirectId > 0 ? tp_relative_path_for_post($redirectId) : null,
+        ]);
+    }
 }
 
 function tp_export_map_hubs(array &$termIds): void
@@ -799,6 +906,39 @@ function tp_export_map_hubs(array &$termIds): void
         if (!$post instanceof WP_Post) {
             continue;
         }
+        $fields = function_exists('get_fields') ? (get_fields($hubId) ?: []) : [];
+        $location = is_array($fields['location'] ?? null) ? $fields['location'] : [];
+        $countryCode = strtoupper((string) ($location['code'] ?? ''));
+        if (!preg_match('/^[A-Z]{3}$/', $countryCode)) {
+            $countryCode = null;
+        }
+        $connectedCountryCodes = [];
+        foreach (is_array($fields['connected_locations'] ?? null) ? $fields['connected_locations'] : [] as $connectedLocation) {
+            $code = strtoupper((string) (is_array($connectedLocation) ? ($connectedLocation['code'] ?? '') : ''));
+            if (preg_match('/^[A-Z]{3}$/', $code)) {
+                $connectedCountryCodes[$code] = true;
+            }
+        }
+        $connections = [];
+        foreach (is_array($fields['connected_hubs'] ?? null) ? $fields['connected_hubs'] : [] as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $connectedHubId = tp_reference_id($row['hub'] ?? null);
+            if ($connectedHubId <= 0 || $connectedHubId === (int) $hubId) {
+                continue;
+            }
+            $connections[] = [
+                'hubLegacyId' => $connectedHubId,
+                'route' => tp_normalized_geojson($row['line'] ?? null),
+                'showLineMarker' => in_array($row['line_marker'] ?? false, [true, 1, '1'], true),
+                'lineMarkerLabel' => html_entity_decode(get_the_title($connectedHubId), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+            ];
+        }
+        $hubType = (string) ($fields['venue_type'] ?? 'vhub');
+        if (!in_array($hubType, ['vhub', 'phub', 'ohub', 'rhub'], true)) {
+            $hubType = 'vhub';
+        }
 
         tp_emit([
             'entity' => 'map-hub',
@@ -808,14 +948,18 @@ function tp_export_map_hubs(array &$termIds): void
             'path' => tp_relative_path_for_post($hubId),
             'assetClassLegacyId' => $classId,
             'regionLegacyId' => $regionId,
+            'countryCode' => $countryCode,
+            'connectedCountryCodes' => array_keys($connectedCountryCodes),
+            'hubType' => $hubType,
             'showOnMap' => in_array(
                 function_exists('get_field') ? get_field('show_on_map', $hubId) : true,
                 [true, 1, '1'],
                 true
             ),
             'markers' => tp_normalized_marker_rows(
-                function_exists('get_field') ? get_field('marker_locations', $hubId) : []
+                $fields['marker_locations'] ?? []
             ),
+            'connections' => $connections,
         ]);
     }
 }
@@ -1183,6 +1327,8 @@ tp_emit([
 ]);
 
 tp_export_curated_reusables($mediaIds, $termIds);
+tp_export_lifecycle_reusables($mediaIds, $termIds);
+tp_export_map_regions($termIds);
 tp_export_map_hubs($termIds);
 tp_export_market_volume_rows();
 

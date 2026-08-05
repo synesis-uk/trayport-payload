@@ -201,25 +201,25 @@ exact footprint is later preferred.
 | VP-032 | Exact | Reproduce the Home reference map from the 55 managed locations as 759 same-Asset-Class connections with the observed Mapbox version, style hook, fit, marker colours, line paint, labels, logo, and attribution. Keep the deterministic managed-media/SVG view as the no-config, loading, and provider-failure fallback, and load Mapbox only near the Home map viewport. | Typed Hub/Asset Class/Region projection, `connectionsMapData`, `DynamicConnectionsMap.client`, pinned `mapbox-gl` `3.11.1`, and validated runtime configuration | Leave either runtime setting blank to use the existing fallback, or remove the isolated client/runtime modules and package; Payload content, imported coordinates, and fallback rendering remain unchanged. |
 | VP-033 | Exact | Finish the measured Home and Joule source geometry: render the hero polygon once at its intrinsic artwork width, restore normal-case section badges and source stat/card/media/grid recipes, keep product carousel controls overlaid at the reference insets, omit reusable-video admin labels from public captions, and apply the FAQ typography correction only on desktop. | `parity-home.css`, `parity-joule.css`, reusable-video transform, accepted run `visual-final-parity-20260804-1835`, and route-scoped contracts | Remove the isolated rules and reimport with the former caption mapping; shared component APIs, source media, and prior immutable runs remain intact. |
 | VP-034 | Improvement | Keep Home content actions at 44 px and retain native chart-data disclosures even though the reference uses smaller actions and no disclosure rows. These account for explicit, measured residual height rather than hidden parity drift. | Shared action minimum height, imported `dataChart.showDataTable`, strict visual evidence, and FE-093 | Remove the scoped action minimum or set the disclosure control false to reproduce the source footprint; link destinations, chart rendering, and PostgreSQL facts are unchanged. |
+| VP-035 | Exact plus bounded improvements | Reproduce every active live regional-map interaction—region/reset, boundary fit, Asset Class, country, Hub, explicit route, points of interest, Venue links grouped by type, and configured data periods—while retaining an accessible list/fallback, reduced-motion behavior, and Payload-managed geometry/data. | `marketCoverage(mode=regionalConnectivity)`, managed Region/Hub/Venue/Asset Class projections, `DynamicRegionalMarketMap.client`, and `RegionalMarketMapRuntime.client` | Switch the affected block back to the global schematic or remove the regional runtime while preserving managed data; this is not acceptable launch parity for routes whose live baseline uses the full regional map. |
 
 ### Map activation gate
 
-VP-008 remains the durable fallback, while VP-032 pulls the exact Home runtime into scope. The
-reference German Power, EEX, and virtual index routes do not render this general Mapbox map, so the
-runtime is deliberately restricted to the Home `mapOnly` block. The code and imported topology are
-complete, but exact provider-rendered visual acceptance remains open until deployment supplies an
-approved origin-restricted public token, approves use of the Synesis reference style or a
-Trayport-owned clone, and records Mapbox licence/attribution approval. No secret token may be used:
-the configured token is browser-visible by design, and invalid or incomplete configuration must
-retain the fallback and issue zero Mapbox requests.
+VP-008 remains the durable global-schematic fallback, VP-032 records exact Home topology, and
+VP-035 adds the active regional-map behavior. Mapbox stays behind the blocks that require it rather
+than the public shell. Exact provider-rendered acceptance remains open until deployment supplies an
+approved origin-restricted public token, approves the dark/light Synesis reference styles or
+Trayport-owned clones, and records Mapbox licence/attribution approval. No secret token may be used:
+the configured token is browser-visible by design, and invalid/incomplete configuration must retain
+the fallback/data view and issue no provider request.
 
 ### Highcharts deployment gate
 
-Highcharts is pinned for deterministic visual behavior, but the application must not be
-deployed with it until the project owner has verified that this site and deployment model
-are covered by the appropriate Highcharts commercial licence and the evidence is recorded
-in the release checklist. The accessible data table remains the reversible non-chart
-fallback if that gate cannot be cleared.
+Highcharts is pinned for deterministic local development and visual behavior. A commercial licence
+does not block this local slice, but the application must not launch with it until the project owner
+has verified that the site/deployment model is covered and recorded the evidence in the release
+checklist. The accessible data table remains the reversible non-chart fallback if that gate cannot
+be cleared.
 
 ## Performance decisions and checks
 
@@ -227,9 +227,10 @@ fallback if that gate cannot be cleared.
   host.
 - Highcharts is requested from the same-origin traced runtime endpoint only on pages that render
   `dataChart`.
-- The Home connection graphic always server-renders managed media/SVG and loads Mapbox only within
-  300 px of the viewport when both approved runtime values are present. Other routes and the
-  initial public shell do not include or request the map SDK.
+- The global connection graphic always server-renders managed media/SVG; regional maps preserve an
+  accessible data view and load Mapbox only from their owning lazy boundary when approved runtime
+  values are present. Routes without provider-backed map blocks and the initial public shell do not
+  include or request the map SDK.
 - Static content sections, hub details, and venue details remain server-rendered; client
   code is reserved for navigation, search/filter interactions, and charts.
 - Hero/background media must retain intrinsic dimensions and responsive image sizing to

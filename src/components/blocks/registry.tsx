@@ -19,6 +19,7 @@ import {
   TrayportHeroBlockAdapter,
 } from './adapters'
 import { ContentSectionBlockAdapter } from './layoutAdapters'
+import { ChecklistComponentAdapter, LifecycleComponentAdapter } from './checklistLifecycleAdapters'
 import {
   ArticleListingBlockAdapter,
   LearningVideoListingBlockAdapter,
@@ -54,6 +55,8 @@ export const trayportSectionComponentAdapterRegistry = {
   embed: EmbedComponentAdapter,
   dataChart: DataChartComponentAdapter,
   marketMatrix: MarketMatrixComponentAdapter,
+  checklist: ChecklistComponentAdapter,
+  lifecycle: LifecycleComponentAdapter,
   office: OfficeComponentAdapter,
 } satisfies TrayportSectionComponentAdapterRegistry
 
@@ -145,6 +148,10 @@ const renderTrayportSectionComponent = (
           <MarketMatrixComponentAdapter block={component} draft={draft} index={index} />
         </Suspense>
       )
+    case 'checklist':
+      return <ChecklistComponentAdapter block={component} index={index} key={key} />
+    case 'lifecycle':
+      return <LifecycleComponentAdapter block={component} index={index} key={key} />
     case 'office':
       return <OfficeComponentAdapter block={component} index={index} key={key} />
   }

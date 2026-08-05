@@ -103,9 +103,68 @@ describe('WordPress connection-map transform', () => {
   })
 
   it('preserves default enabled lines for map-only source layouts', () => {
-    expect(transformedCoverage({ show_lines: '' }, 'markets-map')).toMatchObject({
+    expect(
+      transformedCoverage({ data_display: 'toggle', show_lines: '' }, 'markets-map'),
+    ).toMatchObject({
+      dataDisplay: 'hover',
+      defaultAssetClass: { $legacyRef: 'asset-class', legacyId: 21 },
       presentation: 'mapOnly',
       showLines: true,
+    })
+  })
+
+  it('defaults a single-region market map to the live Natural Gas view', () => {
+    expect(
+      transformedCoverage(
+        {
+          regions: [term(29, 'region')],
+        },
+        'markets-map',
+      ),
+    ).toMatchObject({
+      defaultAssetClass: { $legacyRef: 'asset-class', legacyId: 22 },
+    })
+  })
+
+  it('preserves an explicit regional-map default asset class', () => {
+    expect(
+      transformedCoverage(
+        {
+          asset_classes: [term(22, 'asset-class'), term(90, 'asset-class')],
+          default_class_slug: 'coal',
+        },
+        'markets-map',
+      ),
+    ).toMatchObject({
+      defaultAssetClass: { $legacyRef: 'asset-class', legacyId: 90 },
+    })
+  })
+
+  it('retains the live explicit default when an empty class selection means all classes', () => {
+    expect(
+      transformedCoverage(
+        {
+          asset_classes: [],
+          default_class_slug: 'power',
+        },
+        'markets-map',
+      ),
+    ).toMatchObject({
+      assetClasses: [],
+      defaultAssetClass: { $legacyRef: 'asset-class', legacyId: 21 },
+    })
+  })
+
+  it('falls back to the first configured regional-map asset class when gas and power are absent', () => {
+    expect(
+      transformedCoverage(
+        {
+          asset_classes: [term(90, 'asset-class')],
+        },
+        'markets-map',
+      ),
+    ).toMatchObject({
+      defaultAssetClass: { $legacyRef: 'asset-class', legacyId: 90 },
     })
   })
 })

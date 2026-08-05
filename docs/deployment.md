@@ -1,19 +1,27 @@
-# First production deployment contract
+# Review and production deployment contract
 
-This contract deliberately favors a predictable first release over zero-downtime
-rollouts. Until Next.js uses a shared cache handler and Payload revalidation tags
-are coordinated between processes, production runs exactly one combined
-Next.js/Payload web process.
+Feature delivery remains local until core product acceptance. The first
+controlled AWS review environment is intentionally simple: one EC2-hosted
+application container, RDS PostgreSQL, S3 media, managed DNS/TLS, and securely
+supplied runtime configuration. It uses the same runner/migrator images as the
+production design; high availability, autoscaling, and a full infrastructure
+platform are not prerequisites for product review.
+
+Trayport production targets ECS. This contract deliberately favors a predictable
+first ECS release over zero-downtime rollouts. Until Next.js uses a shared cache
+handler and Payload revalidation tags are coordinated between tasks, production
+runs exactly one combined Next.js/Payload web task.
 
 ## Locked topology
 
-- Run one web container with one Node.js process (`replicas: 1`).
-- Use a replacement/stop-first strategy (`Recreate` in Kubernetes). Stop the old
-  web container before applying migrations or starting the replacement.
+- Run one web container with one Node.js process (ECS desired count `1`).
+- Use a replacement/stop-first strategy. Scale/stop the old ECS service task
+  before applying migrations or starting the replacement revision.
 - Do not use rolling, blue/green, canary, overlapping, or horizontally scaled web
   replicas in this first release.
-- Run schema migrations in the dedicated `migrator` image before the replacement
-  web container starts. The web process never applies schema changes.
+- Run schema migrations as a one-off ECS task using the dedicated `migrator`
+  image before the replacement web task starts. The web process never applies
+  schema changes.
 
 This constraint can be revisited only after a durable shared Next.js cache handler
 and cross-process tag invalidation have integration and deployment-failure tests.
@@ -81,29 +89,46 @@ media-storage, SMTP, preview, and cron configuration must be supplied to the
 migrator/web containers as applicable. Neither health endpoint returns config,
 database identifiers, migration names, or errors.
 
-## Home connections-map activation
+## Market-map activation
 
-The release may run safely without Mapbox: omit either value below and the Home route keeps its
-deterministic managed-media/SVG fallback and makes no provider requests.
+The release remains usable without Mapbox: the simple global schematic keeps
+its deterministic managed-media/SVG fallback and regional maps keep an
+accessible data view. Full regional-map visual/interaction acceptance requires
+all applicable values below.
 
 ```dotenv
 MAPBOX_PUBLIC_TOKEN=pk.<origin-restricted-public-token>
-MAPBOX_STYLE_URL=mapbox://styles/<approved-owner>/<approved-style>
+MAPBOX_STYLE_DARK_URL=mapbox://styles/<approved-owner>/<approved-dark-style>
+MAPBOX_STYLE_LIGHT_URL=mapbox://styles/<approved-owner>/<approved-light-style>
 ```
 
 These are runtime web-container values, not Docker build arguments. The token is intentionally
 browser-visible and must be a least-privilege public (`pk`) token restricted to the deployed site
 origins; never supply a secret (`sk`) token. Before enabling both values, record approval for
-Mapbox licensing and attribution and either approved use of the reference Synesis style or the
-identity of a Trayport-owned clone. The runtime keeps the Mapbox logo and attribution control
-enabled. The configured style applies only to the reference dark Home `mapOnly` presentation; a
-light CMS selection retains its server-rendered light fallback rather than silently using the dark
-provider style.
+Mapbox licensing and attribution and either approved use of the reference Synesis styles or the
+identity of Trayport-owned clones. The runtime keeps the Mapbox logo and attribution control
+enabled. Do not silently substitute the dark style for an approved light presentation.
 
 Release smoke evidence must show that Home renders 33 Power and 22 Natural Gas accessible marker
 entries, activates only as the map approaches the viewport, and reaches its ready state after the
-post-fit idle event. A non-Home route such as `/venue/eex/` must make zero Mapbox requests. If the
-provider errors before readiness, the fallback must remain visible.
+post-fit idle event. Each regional route must exercise region/reset, Asset Class, Hub/route/point,
+sidebar-link, and configured period behavior against its accessible data view. A route without a
+provider-backed map must make zero Mapbox requests. If the provider errors before readiness, the
+fallback/data view must remain visible.
+
+## External-service launch configuration
+
+HubSpot, CookieYes, and TIM are launch dependencies, but are not required for
+the local slices. Supply provider identifiers/origins/secrets through bounded
+runtime configuration; do not store TIM credentials/tokens or provider secrets
+in Payload content. Before launch, verify:
+
+- HubSpot embed loading, consent, error/success behavior, and a real submission
+  against an approved test destination;
+- CookieYes category parity, preference persistence, policy links, and script
+  blocking/activation; and
+- TIM sign-in/logout, expiry/revocation, unavailable-provider behavior,
+  protected documentation links, and the current auto-login outcome.
 
 ## Health probes
 
@@ -111,34 +136,13 @@ The image-level Docker healthcheck calls `GET /api/health/live/` with a two-seco
 client timeout. It proves that the Node.js HTTP process can respond and does not
 depend on PostgreSQL.
 
-Orchestrators must use separate probes:
-
-```yaml
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  template:
-    spec:
-      containers:
-        - name: web
-          livenessProbe:
-            httpGet:
-              path: /api/health/live/
-              port: 3000
-            initialDelaySeconds: 20
-            periodSeconds: 30
-            timeoutSeconds: 3
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /api/health/ready/
-              port: 3000
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
-```
+In ECS, configure the container health check against `/api/health/live/` and
+the ALB target-group health check against `/api/health/ready/`. Use a 20-second
+initial liveness grace, 30-second interval, three-second timeout, and three
+failures; use a five-second readiness grace, 10-second interval, three-second
+timeout, and three failures. The simple EC2 review environment should preserve
+the same distinction even if its process supervisor and load balancer express
+the probes differently.
 
 `/api/health/live/` returns 200 while the process is responsive.
 `/api/health/ready/` returns 200 only when PostgreSQL responds within the bounded

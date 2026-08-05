@@ -165,6 +165,32 @@ export const sourceReusableSchema = baseRecordSchema.extend({
   data: z.record(z.string(), normalizedValueSchema),
 })
 
+const sourceLifecycleProductSchema = z.union([
+  referenceSchema.refine((value) => value.$ref === 'post', {
+    message: 'Lifecycle product must reference a WordPress post.',
+  }),
+  z.literal(false),
+  z.null(),
+])
+
+const sourceOptionalLifecycleTextSchema = z.union([z.string(), z.literal(false), z.null()])
+
+/** Bounded contract for the only reusable lifecycle fields the migration consumes. */
+export const sourceLifecycleReusableSchema = sourceReusableSchema.extend({
+  postType: z.literal('lifecycle'),
+  data: z
+    .object({
+      product: sourceLifecycleProductSchema,
+      name: z.string(),
+      duration: sourceOptionalLifecycleTextSchema,
+      eol_version: sourceOptionalLifecycleTextSchema,
+      eol_date: z.string().regex(/^\d{8}$/),
+      eoa_date: z.union([z.literal(''), z.string().regex(/^\d{8}$/), z.literal(false), z.null()]),
+      description: sourceOptionalLifecycleTextSchema,
+    })
+    .strict(),
+})
+
 export const sourceMapHubSchema = baseRecordSchema.extend({
   entity: z.literal('map-hub'),
   legacyId: z.number().int().positive(),
@@ -173,6 +199,13 @@ export const sourceMapHubSchema = baseRecordSchema.extend({
   path: z.string().nullable(),
   assetClassLegacyId: z.number().int().positive(),
   regionLegacyId: z.number().int().positive(),
+  countryCode: z
+    .string()
+    .regex(/^[A-Z]{3}$/)
+    .nullable()
+    .default(null),
+  connectedCountryCodes: z.array(z.string().regex(/^[A-Z]{3}$/)).default([]),
+  hubType: z.enum(['vhub', 'phub', 'ohub', 'rhub']).default('vhub'),
   showOnMap: z.boolean(),
   markers: z.array(
     z.object({
@@ -181,6 +214,40 @@ export const sourceMapHubSchema = baseRecordSchema.extend({
       longitude: z.number().min(-180).max(180),
     }),
   ),
+  connections: z
+    .array(
+      z.object({
+        hubLegacyId: z.number().int().positive(),
+        route: normalizedValueSchema.nullable(),
+        showLineMarker: z.boolean(),
+        lineMarkerLabel: z.string(),
+      }),
+    )
+    .default([]),
+})
+
+export const sourceMapRegionSchema = baseRecordSchema.extend({
+  entity: z.literal('map-region'),
+  legacyId: z.number().int().positive(),
+  title: z.string(),
+  regionLegacyId: z.number().int().positive(),
+  label: z.string(),
+  centre: z
+    .object({
+      latitude: z.number().min(-90).max(90),
+      longitude: z.number().min(-180).max(180),
+    })
+    .nullable(),
+  boundary: normalizedValueSchema.nullable(),
+  pointsOfInterest: z.array(
+    z.object({
+      label: z.string(),
+      popupText: z.string(),
+      latitude: z.number().min(-90).max(90),
+      longitude: z.number().min(-180).max(180),
+    }),
+  ),
+  destinationPath: z.string().nullable(),
 })
 
 export const sourceMarketVolumeSchema = baseRecordSchema.extend({
@@ -215,6 +282,7 @@ export const sourceRecordSchema = z.discriminatedUnion('entity', [
   sourceOptionsSchema,
   sourceReusableSchema,
   sourceMapHubSchema,
+  sourceMapRegionSchema,
   sourceMarketVolumeSchema,
   sourceWarningSchema,
 ])
@@ -224,5 +292,7 @@ export type SourcePost = z.infer<typeof sourcePostSchema>
 export type SourceMedia = z.infer<typeof sourceMediaSchema>
 export type SourceTerm = z.infer<typeof sourceTermSchema>
 export type SourceReusable = z.infer<typeof sourceReusableSchema>
+export type SourceLifecycleReusable = z.infer<typeof sourceLifecycleReusableSchema>
 export type SourceMapHub = z.infer<typeof sourceMapHubSchema>
+export type SourceMapRegion = z.infer<typeof sourceMapRegionSchema>
 export type SourceMarketVolume = z.infer<typeof sourceMarketVolumeSchema>

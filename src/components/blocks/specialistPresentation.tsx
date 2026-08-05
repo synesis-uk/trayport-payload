@@ -61,6 +61,8 @@ export interface CoveragePoint {
 
 export interface MarketCoveragePresentationModel {
   actions: ActionPresentationModel[]
+  autoplayAssetClasses: boolean
+  autoplayDelay: number
   background?: ReactNode
   body?: ReactNode
   hubCount: number
@@ -68,6 +70,7 @@ export interface MarketCoveragePresentationModel {
   lineColor: string
   lineOpacity: number
   lineWidth: number
+  mapMode: 'globalConnections' | 'regionalConnectivity'
   mapHeight: number
   mapStyle: 'dark' | 'light'
   markerGroups: ConnectionsMapGroup[]
@@ -77,6 +80,8 @@ export interface MarketCoveragePresentationModel {
   regionAnchors: CoveragePoint[]
   regions: Array<{ key: string; label: string }>
   runtimeLineWidth: number
+  defaultAssetClassKey?: string
+  showAssetClassFilter: boolean
   showLines: boolean
   title: string
 }
@@ -169,12 +174,16 @@ export function MarketCoveragePresentation({
       </svg>
       {mapRuntime && model.markerGroups.length ? (
         <DynamicConnectionsMap
+          autoplay={model.autoplayAssetClasses}
+          autoplayDelay={model.autoplayDelay}
+          defaultGroupKey={model.defaultAssetClassKey}
           groups={model.markerGroups}
           lineColor={model.lineColor}
           lineOpacity={model.lineOpacity}
           lineWidth={model.runtimeLineWidth}
           markerRadius={model.markerRadius}
           runtime={mapRuntime}
+          showGroupFilter={model.showAssetClassFilter}
           showLines={model.showLines}
         />
       ) : null}

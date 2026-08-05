@@ -24,13 +24,28 @@
         "id": "market-volume-facts",
         "owner": "application-postgres",
         "description": "Normalized market-volume time series queried by the frontend; Payload owns presentation configuration only."
+      },
+      {
+        "id": "hubspot-forms",
+        "owner": "hubspot",
+        "description": "Live form identifiers are retained in Payload and rendered by a bounded Next.js HubSpot integration; production submissions require approved consent and destination configuration."
+      },
+      {
+        "id": "cookieyes-consent",
+        "owner": "cookieyes",
+        "description": "CookieYes remains the consent authority; Next.js reproduces the live categories and preference behavior."
+      },
+      {
+        "id": "tim-customer-authentication",
+        "owner": "tim",
+        "description": "TIM owns launch customer authentication, protected documentation links, and auto-login; Payload stores non-authenticating reconciliation metadata only."
       }
     ],
     "excluded": [
       {
-        "id": "hubspot",
+        "id": "unused-wordpress-form-builder",
         "disposition": "omit",
-        "reason": "The integration is not in use and is outside the agreed production scope."
+        "reason": "Unused generic WordPress form-builder and HubSpot administration structures are omitted; active HubSpot form identifiers remain in scope."
       },
       {
         "id": "commodities-report",
@@ -193,7 +208,9 @@
         "embed",
         "dataChart",
         "office",
-        "marketMatrix"
+        "marketMatrix",
+        "checklist",
+        "lifecycle"
       ]
     },
     "planned": [
@@ -212,10 +229,10 @@
         "description": "Normalize a nested legacy column into contentSection.columns rather than introducing a presentational renderer block."
       },
       {
-        "id": "first-party-form",
+        "id": "hubspot-form",
         "kind": "block",
         "placement": "section-component",
-        "targetBlockType": "form",
+        "targetBlockType": "hubspotForm",
         "sourceLayouts": [
           {
             "scope": "component",
@@ -227,35 +244,7 @@
           }
         ],
         "implementationStatus": "planned",
-        "description": "First-party form definition and submission behavior for conversion pages and article forms; no HubSpot dependency."
-      },
-      {
-        "id": "checklist",
-        "kind": "block",
-        "placement": "section-component",
-        "targetBlockType": "checklist",
-        "sourceLayouts": [
-          {
-            "scope": "component",
-            "source": "checklist"
-          }
-        ],
-        "implementationStatus": "planned",
-        "description": "Structured checklist items with controlled visual treatment."
-      },
-      {
-        "id": "lifecycle",
-        "kind": "block",
-        "placement": "section-component",
-        "targetBlockType": "lifecycle",
-        "sourceLayouts": [
-          {
-            "scope": "component",
-            "source": "lifecycle"
-          }
-        ],
-        "implementationStatus": "planned",
-        "description": "Structured lifecycle stages and their managed supporting content."
+        "description": "Retain approved HubSpot form identifiers and reproduce active page and article forms through one bounded Next.js embed lifecycle."
       },
       {
         "id": "cookie-preferences",
@@ -269,7 +258,7 @@
           }
         ],
         "implementationStatus": "planned",
-        "description": "Replace [wcc_category_list] with a first-party consent-category view backed by the target consent implementation."
+        "description": "Replace [wcc_category_list] with the CookieYes category and preference view that reproduces the live consent behavior."
       }
     ]
   },
@@ -387,11 +376,11 @@
         "value": "conversion"
       },
       "routePolicy": "required",
-      "contentOwner": "layout-and-first-party-form",
+      "contentOwner": "layout-and-hubspot-form",
       "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
       "editorCapabilities": [
         "compose-layout",
-        "configure-first-party-form",
+        "configure-hubspot-form",
         "manage-seo",
         "preview",
         "draft",
@@ -703,9 +692,9 @@
       "scope": "article-top-level",
       "source": "form",
       "disposition": "consolidate",
-      "targets": ["contentSection", "form"],
+      "targets": ["contentSection", "hubspotForm"],
       "observedCount": 16,
-      "reason": "Wrap article forms in a reading-width content section and map them to the same first-party form semantics used by conversion pages."
+      "reason": "Wrap article forms in a reading-width content section and retain their approved HubSpot identifier for the shared bounded embed."
     },
     {
       "scope": "article-top-level",
@@ -875,8 +864,8 @@
       "scope": "component",
       "source": "form",
       "disposition": "map",
-      "targets": ["form"],
-      "reason": "Map page and article forms to first-party form semantics; HubSpot is not retained."
+      "targets": ["hubspotForm"],
+      "reason": "Retain approved HubSpot identifiers for page and article forms; omit only unused generic WordPress form-builder behavior."
     },
     {
       "scope": "component",
@@ -932,7 +921,7 @@
       "source": "wcc_category_list",
       "disposition": "map",
       "targets": ["cookiePreferences"],
-      "reason": "Replace [wcc_category_list] with a first-party consent-category component; arbitrary shortcode execution remains excluded."
+      "reason": "Replace [wcc_category_list] with CookieYes-backed category and preference behavior; arbitrary shortcode execution remains excluded."
     },
     {
       "scope": "taxonomy",
@@ -1460,14 +1449,14 @@
       "severity": "blocker",
       "status": "blocked",
       "enforcement": "contract-only",
-      "assertion": "Structural column handling and the form, checklist, lifecycle, and cookie-preferences targets have Payload schemas, importer mappings, renderers, and behavior tests.",
+      "assertion": "Structural columns, checklist, and lifecycle are implemented; the retained HubSpot form and CookieYes preference targets still require schemas, importer mappings, renderers, and behavior tests.",
       "evidence": [
         "migration/mappings/content-architecture.v1.json",
         "migration/transform/blocks.ts",
         "src/blocks/Trayport/components.ts",
         "src/components/Trayport/BlockRenderer.tsx"
       ],
-      "remediation": "Implement each planned catalogue entry end to end. Form handling must be first-party and support both page and article source layouts; [wcc_category_list] must become explicit consent-category behavior rather than generic shortcode execution."
+      "remediation": "Implement the retained HubSpot form identifiers through one bounded page/article embed lifecycle and reproduce [wcc_category_list] through CookieYes preference behavior rather than generic shortcode execution."
     },
     {
       "id": "managed-internal-link-integrity",

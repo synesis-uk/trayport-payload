@@ -19,6 +19,7 @@ const harness = vi.hoisted(() => ({
   loadDataChartMarketData: vi.fn(),
   loadMarketCoverageIndex: vi.fn(),
   loadMarketMatrixIndex: vi.fn(),
+  loadRegionalMarketMapIndex: vi.fn(),
 }))
 
 vi.mock('@/config/connectionsMap.server', () => ({
@@ -31,6 +32,10 @@ vi.mock('@/data/contentIndexes.server', () => ({
 
 vi.mock('@/data/marketMatrix.server', () => ({
   loadMarketMatrixIndex: harness.loadMarketMatrixIndex,
+}))
+
+vi.mock('@/data/regionalMarketMap.server', () => ({
+  loadRegionalMarketMapIndex: harness.loadRegionalMarketMapIndex,
 }))
 
 vi.mock('@/components/RichText', () => ({
@@ -80,6 +85,7 @@ const chartBlock = {
     displayOrder: 1,
     id: 7,
     legacySource: { legacyId: 17, source: 'wordpress' },
+    marketDataKey: 'natural-gas',
     slug: 'natural-gas',
     title: 'Natural Gas',
     updatedAt: '2026-08-04T00:00:00.000Z',
@@ -112,6 +118,7 @@ beforeEach(() => {
   harness.loadDataChartMarketData.mockReset()
   harness.loadMarketCoverageIndex.mockReset()
   harness.loadMarketMatrixIndex.mockReset()
+  harness.loadRegionalMarketMapIndex.mockReset()
 })
 
 describe('typed server block adapters', () => {
@@ -129,7 +136,16 @@ describe('typed server block adapters', () => {
       ],
       hubCount: 1,
       hubs: [],
-      markers: [],
+      markers: [
+        {
+          assetClasses: [{ displayOrder: 1, id: 21, slug: 'power', title: 'Power' }],
+          hubId: 1,
+          label: 'European Hub',
+          latitude: 50.1,
+          longitude: 8.6,
+          regions: [],
+        },
+      ],
     })
 
     const element = await MarketCoverageComponentAdapter({
@@ -174,18 +190,34 @@ describe('typed server block adapters', () => {
     }
   })
 
-  it('enables the application-owned runtime only for the Home dark map-only presentation', async () => {
-    const runtime = {
+  it('enables the global runtime for mapped light, dark, summary, and map-only variants', async () => {
+    const darkRuntime = {
       accessToken: 'pk.valid-example',
       provider: 'mapbox' as const,
-      styleURL: 'mapbox://styles/example/reference',
+      styleURL: 'mapbox://styles/example/dark',
     }
-    harness.getConnectionsMapRuntimeConfig.mockReturnValue(runtime)
+    const lightRuntime = {
+      accessToken: 'pk.valid-example',
+      provider: 'mapbox' as const,
+      styleURL: 'mapbox://styles/example/light',
+    }
+    harness.getConnectionsMapRuntimeConfig.mockImplementation((style) =>
+      style === 'light' ? lightRuntime : darkRuntime,
+    )
     harness.loadMarketCoverageIndex.mockResolvedValue({
       allMarkers: [],
-      hubCount: 0,
+      hubCount: 1,
       hubs: [],
-      markers: [],
+      markers: [
+        {
+          assetClasses: [{ displayOrder: 1, id: 21, slug: 'power', title: 'Power' }],
+          hubId: 1,
+          label: 'European Hub',
+          latitude: 50.1,
+          longitude: 8.6,
+          regions: [],
+        },
+      ],
     })
 
     const darkMap = await MarketCoverageComponentAdapter({
@@ -203,22 +235,113 @@ describe('typed server block adapters', () => {
       draft: false,
       index: 2,
     })
+    harness.loadMarketCoverageIndex.mockResolvedValue({
+      allMarkers: [],
+      hubCount: 0,
+      hubs: [],
+      markers: [],
+    })
+    const markerlessMap = await MarketCoverageComponentAdapter({
+      block: { ...coverageBlock, presentation: 'mapOnly', style: 'dark' },
+      draft: false,
+      index: 3,
+    })
 
     expect(isValidElement<{ mapRuntime?: unknown }>(darkMap)).toBe(true)
     expect(isValidElement<{ mapRuntime?: unknown }>(lightMap)).toBe(true)
     expect(isValidElement<{ mapRuntime?: unknown }>(darkSummary)).toBe(true)
+    expect(isValidElement<{ mapRuntime?: unknown }>(markerlessMap)).toBe(true)
     if (
       !isValidElement<{ mapRuntime?: unknown }>(darkMap) ||
       !isValidElement<{ mapRuntime?: unknown }>(lightMap) ||
-      !isValidElement<{ mapRuntime?: unknown }>(darkSummary)
+      !isValidElement<{ mapRuntime?: unknown }>(darkSummary) ||
+      !isValidElement<{ mapRuntime?: unknown }>(markerlessMap)
     ) {
       return
     }
 
-    expect(darkMap.props.mapRuntime).toEqual(runtime)
-    expect(lightMap.props.mapRuntime).toBeNull()
-    expect(darkSummary.props.mapRuntime).toBeNull()
-    expect(harness.getConnectionsMapRuntimeConfig).toHaveBeenCalledOnce()
+    expect(darkMap.props.mapRuntime).toEqual(darkRuntime)
+    expect(lightMap.props.mapRuntime).toEqual(lightRuntime)
+    expect(darkSummary.props.mapRuntime).toEqual(darkRuntime)
+    expect(markerlessMap.props.mapRuntime).toBeNull()
+    expect(harness.getConnectionsMapRuntimeConfig.mock.calls).toEqual([
+      ['dark'],
+      ['light'],
+      ['dark'],
+    ])
+  })
+
+  it('loads the regional projection and selects the configured regional Mapbox style', async () => {
+    const runtime = {
+      accessToken: 'pk.valid-example',
+      provider: 'mapbox' as const,
+      styleURL: 'mapbox://styles/example/light',
+    }
+    const regionalIndex = {
+      assetClasses: [],
+      connections: [],
+      hubs: [],
+      regions: [],
+      venueTypes: [],
+      venues: [],
+    }
+    harness.getConnectionsMapRuntimeConfig.mockReturnValue(runtime)
+    harness.loadRegionalMarketMapIndex.mockResolvedValue(regionalIndex)
+
+    const element = await MarketCoverageComponentAdapter({
+      block: {
+        ...coverageBlock,
+        mode: 'regionalConnectivity',
+        showAssetClassFilter: true,
+        showMarketData: true,
+        showSidebar: true,
+        style: 'light',
+        zoomTo: 'region',
+      },
+      draft: true,
+      index: 0,
+    })
+
+    expect(harness.loadRegionalMarketMapIndex).toHaveBeenCalledWith({ draft: true })
+    expect(harness.loadMarketCoverageIndex).not.toHaveBeenCalled()
+    expect(harness.getConnectionsMapRuntimeConfig).toHaveBeenCalledWith('light')
+    expect(
+      isValidElement<{
+        actions: unknown[]
+        background: unknown
+        model: { index: unknown; mapStyle: string }
+        presentation: string
+        runtime: unknown
+      }>(element),
+    ).toBe(true)
+    if (
+      !isValidElement<{
+        actions: unknown[]
+        background: unknown
+        model: { index: unknown; mapStyle: string }
+        presentation: string
+        runtime: unknown
+      }>(element)
+    ) {
+      return
+    }
+    expect(element.props.runtime).toEqual(runtime)
+    expect(element.props.actions).toEqual([])
+    expect(isValidElement(element.props.background)).toBe(true)
+    expect(element.props.presentation).toBe('summary')
+    expect(element.props.model).toMatchObject({
+      index: regionalIndex,
+      lineColor: '#009cde',
+      lineOpacity: 0.5,
+      lineWidth: 4,
+      mapStyle: 'light',
+      markerRadius: 5,
+      showAssetClassFilter: true,
+      showLines: true,
+      showMarketData: true,
+      showSidebar: true,
+      zoomTo: 'region',
+    })
   })
 
   it('queries bounded application data before scaling the chart presentation model', async () => {
@@ -245,12 +368,15 @@ describe('typed server block adapters', () => {
     })
 
     expect(harness.loadDataChartMarketData).toHaveBeenCalledWith({
+      assetClassKey: 'natural-gas',
       assetClassLegacyID: 17,
       dataType: 'volume',
       displayInterval: 'quarter',
+      excludedHubKeys: [],
       excludedHubLegacyIDs: [],
       fromQuarter: 2,
       fromYear: 2024,
+      includedHubKeys: [],
       includedHubLegacyIDs: [],
       limit: 40,
       seriesDimension: 'executionType',
@@ -301,10 +427,11 @@ describe('typed server block adapters', () => {
       seriesDimension: 'hub',
       status: 'available',
     })
-    const hydratedHub = (id: number, legacyID: number, title: string) =>
+    const hydratedHub = (id: number, legacyID: number, marketDataKey: string, title: string) =>
       ({
         id,
         legacySource: { legacyId: legacyID, source: 'wordpress' },
+        marketDataKey,
         title,
       }) as NonNullable<DataChartComponent['includedHubs']>[number]
 
@@ -312,8 +439,11 @@ describe('typed server block adapters', () => {
       block: {
         ...chartBlock,
         chartType: 'column',
-        excludedHubs: [hydratedHub(83, 2496, 'Greek Power')],
-        includedHubs: [hydratedHub(81, 3315, 'PEG (French)'), hydratedHub(82, 2488, 'NBP (UK)')],
+        excludedHubs: [hydratedHub(83, 2496, 'greek-power', 'Greek Power')],
+        includedHubs: [
+          hydratedHub(81, 3315, 'france-peg', 'PEG (French)'),
+          hydratedHub(82, 2488, 'nbp', 'NBP (UK)'),
+        ],
         seriesDimension: 'hub',
       },
       index: 0,
@@ -321,7 +451,9 @@ describe('typed server block adapters', () => {
 
     expect(harness.loadDataChartMarketData).toHaveBeenCalledWith(
       expect.objectContaining({
+        excludedHubKeys: ['greek-power'],
         excludedHubLegacyIDs: [2496],
+        includedHubKeys: ['france-peg', 'nbp'],
         includedHubLegacyIDs: [3315, 2488],
         seriesDimension: 'hub',
       }),

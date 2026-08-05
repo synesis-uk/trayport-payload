@@ -7,16 +7,18 @@ approved production target, source evidence, editor tasks, and launch gates.
 
 The content-architecture milestone is complete. The routable-content foundation
 is also implemented: a transaction-backed shared route registry and all 18
-content-route runtime discriminator/publication invariants now pass their gates. Production
-readiness remains `blocked` because six blocker gates are still non-passing:
-complete article bodies, complete listing-linked route owners, the planned
-production block catalogue, managed internal links, editor-control runtime
-parity, and full editor-role capability enforcement.
+content-route runtime discriminator/publication invariants now pass their gates.
+Production readiness remains `blocked` because complete article bodies,
+complete listing-linked route owners, managed internal links, external-service
+acceptance, editor-control runtime parity, and full editor-role capability
+enforcement are not yet complete. The current local delivery does include the
+Payload/admin, market-map, Market Matrix, and chart/market-data slices described
+in the [delivery plan](../delivery-slices.md).
 
 This status does not widen the delivered content slice. The current importer and
-frontend acceptance cover 26 immutable source roots: 25 rendered content routes
+frontend acceptance cover 27 immutable source roots: 26 rendered content routes
 and the temporary `/request-a-demo/` redirect to Contact. The verified 296-route
-inventory and deterministic target plan describe the remaining 268 plan-only
+inventory and deterministic target plan describe the remaining 267 plan-only
 documents;
 they do not mean those documents have been imported, rendered, or reviewed.
 
@@ -26,6 +28,7 @@ they do not mean those documents have been imported, rendered, or reviewed.
 - [Block catalogue and observed layout coverage](block-catalogue.md)
 - [Editorial workflows](editorial-workflows.md)
 - [Architecture decisions and readiness gates](decisions.md)
+- [Delivery slices and remaining plan](../delivery-slices.md)
 - [Thin visual and interaction direction](../design-direction.md)
 - [Retained inventory summary](inventory-summary.json)
 - [Inventory verification](verification.json)

@@ -30,7 +30,7 @@ type FieldNode = {
   options?: Array<string | { label: string; value: string }>
   relationTo?: string
   required?: boolean
-  tabs?: Array<{ fields?: FieldNode[] }>
+  tabs?: Array<{ fields?: FieldNode[]; label?: string }>
 }
 
 const findField = (fields: FieldNode[], name: string): FieldNode | undefined => {
@@ -96,15 +96,55 @@ describe('bounded editor controls', () => {
     }
   })
 
-  it('retains inactive migrated map and embed values without presenting no-op controls', () => {
-    expectHidden(MarketCoverageComponent.fields, 'assetClasses')
-    expectHidden(MarketCoverageComponent.fields, 'venueTypes')
+  it('populates the stable and compatibility identifiers required by nested chart filters', () => {
+    expect(Hubs.defaultPopulate).toMatchObject({
+      legacySource: { legacyId: true },
+      marketDataKey: true,
+    })
+  })
+
+  it('exposes implemented managed map controls while retaining the inactive embed value', () => {
+    const fields = MarketCoverageComponent.fields as FieldNode[]
+
+    expect(optionValues(findField(fields, 'mode'))).toEqual([
+      'globalConnections',
+      'regionalConnectivity',
+    ])
+    expect(findField(fields, 'assetClasses')).toMatchObject({
+      hasMany: true,
+      relationTo: 'asset-classes',
+    })
+    expect(findField(fields, 'venueTypes')).toMatchObject({
+      hasMany: true,
+      relationTo: 'venue-types',
+    })
+    expect(findField(fields, 'regions')).toMatchObject({
+      hasMany: true,
+      relationTo: 'regions',
+    })
+    expect(findField(fields, 'includedHubs')).toMatchObject({
+      hasMany: true,
+      relationTo: 'hubs',
+    })
+    for (const fieldName of [
+      'assetClasses',
+      'venueTypes',
+      'regions',
+      'includedHubs',
+      'showAssetClassFilter',
+    ]) {
+      expect(findField(fields, fieldName)?.admin?.hidden).not.toBe(true)
+    }
     expectHidden(EmbedComponent.fields, 'poster')
   })
 
   it('keeps the legacy hub inverse hidden, read-only, and API-write protected', () => {
-    const connections = findField(Hubs.fields as FieldNode[], 'connections')
+    const venueConnectionsTab = (Hubs.fields as FieldNode[])
+      .flatMap((field) => field.tabs || [])
+      .find(({ label }) => label === 'Venue connections')
+    const connections = venueConnectionsTab?.fields?.find(({ name }) => name === 'connections')
 
+    expect(venueConnectionsTab).toBeDefined()
     expect(connections?.admin).toMatchObject({ hidden: true, readOnly: true })
     expect(connections?.access?.create?.({} as never)).toBe(false)
     expect(connections?.access?.update?.({} as never)).toBe(false)

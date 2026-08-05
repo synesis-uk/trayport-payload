@@ -72,6 +72,8 @@ export interface Config {
     hubs: Hub;
     venues: Venue;
     'learning-videos': LearningVideo;
+    'market-data-imports': MarketDataImport;
+    'lifecycle-items': LifecycleItem;
     offices: Office;
     media: Media;
     'article-categories': ArticleCategory;
@@ -79,6 +81,7 @@ export interface Config {
     'asset-classes': AssetClass;
     'venue-types': VenueType;
     regions: Region;
+    'customer-identities': CustomerIdentity;
     users: User;
     'route-registry': RouteRegistry;
     redirects: Redirect;
@@ -100,6 +103,8 @@ export interface Config {
     hubs: HubsSelect<false> | HubsSelect<true>;
     venues: VenuesSelect<false> | VenuesSelect<true>;
     'learning-videos': LearningVideosSelect<false> | LearningVideosSelect<true>;
+    'market-data-imports': MarketDataImportsSelect<false> | MarketDataImportsSelect<true>;
+    'lifecycle-items': LifecycleItemsSelect<false> | LifecycleItemsSelect<true>;
     offices: OfficesSelect<false> | OfficesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'article-categories': ArticleCategoriesSelect<false> | ArticleCategoriesSelect<true>;
@@ -107,6 +112,7 @@ export interface Config {
     'asset-classes': AssetClassesSelect<false> | AssetClassesSelect<true>;
     'venue-types': VenueTypesSelect<false> | VenueTypesSelect<true>;
     regions: RegionsSelect<false> | RegionsSelect<true>;
+    'customer-identities': CustomerIdentitiesSelect<false> | CustomerIdentitiesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     'route-registry': RouteRegistrySelect<false> | RouteRegistrySelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
@@ -616,6 +622,8 @@ export interface ContentSectionBlock {
       | EmbedComponent
       | DataChartComponent
       | MarketMatrixComponent
+      | ChecklistComponent
+      | LifecycleComponent
       | OfficeComponent
     )[];
     id?: string | null;
@@ -730,15 +738,38 @@ export interface Hub {
   heroMedia?: (number | null) | Media;
   layout?: (TrayportHeroBlock | ContentSectionBlock | ArticleListingBlock | LearningVideoListingBlock)[] | null;
   code?: string | null;
+  hubType?: ('vhub' | 'phub' | 'ohub' | 'rhub') | null;
   /**
-   * Stable key for future market-data queries. The market data itself is stored outside Payload.
+   * Immutable key used by chart imports and application data. Administrators can manage aliases when a source uses another name.
    */
   marketDataKey?: string | null;
+  /**
+   * Optional source labels accepted by the market-data validator. Matching is case-insensitive and ambiguous aliases are rejected.
+   */
+  marketDataAliases?:
+    | {
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
   assetClasses?: (number | AssetClass)[] | null;
   venueTypes?: (number | VenueType)[] | null;
   regions?: (number | Region)[] | null;
   relatedHubs?: (number | Hub)[] | null;
   showOnMap?: boolean | null;
+  /**
+   * ISO 3166-1 alpha-3 country code used by the Mapbox boundary layer.
+   */
+  countryCode?: string | null;
+  /**
+   * Additional countries served by this hub.
+   */
+  connectedCountryCodes?:
+    | {
+        code: string;
+        id?: string | null;
+      }[]
+    | null;
   map?: {
     locationLabel?: string | null;
     centre?: {
@@ -753,6 +784,29 @@ export interface Hub {
             latitude: number;
             longitude: number;
           };
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Explicit hub-to-hub routes. A route is optional; the renderer draws a direct connection when it is omitted.
+     */
+    connections?:
+      | {
+          hub: number | Hub;
+          /**
+           * Optional LineString, MultiLineString or FeatureCollection GeoJSON.
+           */
+          route?:
+            | {
+                [k: string]: unknown;
+              }
+            | unknown[]
+            | string
+            | number
+            | boolean
+            | null;
+          showLineMarker?: boolean | null;
+          lineMarkerLabel?: string | null;
           id?: string | null;
         }[]
       | null;
@@ -885,6 +939,31 @@ export interface AssetClass {
   title: string;
   description?: string | null;
   displayOrder?: number | null;
+  /**
+   * Labels and colour used consistently by the regional and connections maps.
+   */
+  mapAppearance?: {
+    color?: ('#1f2a44' | '#002d72' | '#0057b8' | '#009cde' | '#00c1d5' | '#32b77b' | '#ff671f' | '#f7ea48') | null;
+    /**
+     * Public label for aggregated volume values, for example TWh.
+     */
+    volumeLabel?: string | null;
+    priceLabel?: string | null;
+    currency?: string | null;
+  };
+  /**
+   * Immutable key used by chart imports and application data. Administrators can manage aliases when a source uses another name.
+   */
+  marketDataKey?: string | null;
+  /**
+   * Optional source labels accepted by the market-data validator. Matching is case-insensitive and ambiguous aliases are rejected.
+   */
+  marketDataAliases?:
+    | {
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
   slug: string;
   legacySource?: {
     key?: string | null;
@@ -905,7 +984,15 @@ export interface VenueType {
   id: number;
   title: string;
   description?: string | null;
+  /**
+   * Optional parent used to group venues in regional-map sidebars.
+   */
+  parentVenueType?: (number | null) | VenueType;
   displayOrder?: number | null;
+  /**
+   * Optional shorter label for map filters and connection summaries.
+   */
+  mapLabel?: string | null;
   slug: string;
   legacySource?: {
     key?: string | null;
@@ -928,11 +1015,41 @@ export interface Region {
   code?: string | null;
   description?: string | null;
   map?: {
+    /**
+     * Optional short label displayed on the regional map.
+     */
+    label?: string | null;
     centre?: {
       latitude?: number | null;
       longitude?: number | null;
     };
     zoom?: number | null;
+    /**
+     * Managed GeoJSON Polygon or MultiPolygon used for region selection and fit bounds.
+     */
+    boundary?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    /**
+     * Named locations displayed independently of market hubs.
+     */
+    pointsOfInterest?:
+      | {
+          label: string;
+          popupText?: string | null;
+          location: {
+            latitude: number;
+            longitude: number;
+          };
+          id?: string | null;
+        }[]
+      | null;
   };
   slug: string;
   legacySource?: {
@@ -1456,6 +1573,10 @@ export interface DividerComponent {
  */
 export interface MarketCoverageComponent {
   /**
+   * Global connections is the lightweight schematic used on general pages. Regional connectivity is the full Mapbox market explorer with regions, countries, hubs, venues and optional market data.
+   */
+  mode?: ('globalConnections' | 'regionalConnectivity') | null;
+  /**
    * Map only is intended for a map beside an existing managed introduction. Map with summary includes this block’s own title, body, regions and actions.
    */
   presentation: 'mapOnly' | 'summary';
@@ -1487,14 +1608,35 @@ export interface MarketCoverageComponent {
   lineWidth: number;
   lineOpacity: number;
   /**
-   * Retained for migration provenance; the active schematic uses regions only.
+   * Optional managed subset. Leave empty to include every mapped asset class.
    */
   assetClasses?: (number | AssetClass)[] | null;
   /**
-   * Retained for migration provenance; the active schematic uses regions only.
+   * Optional venue-type subset for the connectivity sidebar.
    */
   venueTypes?: (number | VenueType)[] | null;
   regions?: (number | Region)[] | null;
+  /**
+   * Optional curated hub allow-list. Leave empty to use the other map filters.
+   */
+  includedHubs?: (number | Hub)[] | null;
+  /**
+   * Initial active class when class switching is enabled.
+   */
+  defaultAssetClass?: (number | null) | AssetClass;
+  showAssetClassFilter?: boolean | null;
+  autoplayAssetClasses?: boolean | null;
+  /**
+   * Seconds between classes. Reduced-motion visitors never autoplay.
+   */
+  autoplayDelay?: number | null;
+  zoomTo?: ('markers' | 'region') | null;
+  showSidebar?: boolean | null;
+  /**
+   * Show public period and value controls backed by the market-data store.
+   */
+  showMarketData?: boolean | null;
+  dataDisplay?: ('always' | 'hover') | null;
   actions?:
     | {
         label: string;
@@ -1645,6 +1787,99 @@ export interface MarketMatrixComponent {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ChecklistComponent".
+ */
+export interface ChecklistComponent {
+  appearance: 'checks' | 'numbers';
+  /**
+   * Keep each item concise. Longer explanatory content belongs in rich text.
+   */
+  items: {
+    title?: string | null;
+    text: string;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'checklist';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LifecycleComponent".
+ */
+export interface LifecycleComponent {
+  /**
+   * Accessible name for the lifecycle tables.
+   */
+  caption: string;
+  /**
+   * Select and order the managed rows to show. Inactive or unpublished rows are excluded from the public page.
+   */
+  lifecycleItems: (number | LifecycleItem)[];
+  upcomingHeading: string;
+  previousHeading: string;
+  showDescriptions: boolean;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'lifecycle';
+}
+/**
+ * Managed product and service lifecycle rows. Pages select these records through a Lifecycle component.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lifecycle-items".
+ */
+export interface LifecycleItem {
+  id: number;
+  title: string;
+  /**
+   * Heading used to group related lifecycle rows.
+   */
+  productLabel: string;
+  /**
+   * Product or service name shown in the table row.
+   */
+  serviceName: string;
+  duration?: string | null;
+  endOfLifeVersion?: string | null;
+  endOfLifeDate: string;
+  endOfAccessDate?: string | null;
+  /**
+   * Optional supporting detail shown when the page component enables it.
+   */
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Inactive rows are hidden from public reads without deleting their history.
+   */
+  active: boolean;
+  legacySource?: {
+    key?: string | null;
+    source?: string | null;
+    legacyId?: number | null;
+    originalUrl?: string | null;
+    modifiedGmt?: string | null;
+    contentHash?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "OfficeComponent".
  */
 export interface OfficeComponent {
@@ -1710,6 +1945,76 @@ export interface ArticleCategory {
   createdAt: string;
 }
 /**
+ * Private CSV history. Create an upload, POST /api/market-data-imports/:id/validate, review GET /:id/preview, then explicitly POST /:id/commit.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "market-data-imports".
+ */
+export interface MarketDataImport {
+  id: number;
+  importType: 'volume' | 'price';
+  /**
+   * Required for volume files. Price files may select a fallback or declare asset-class blocks in the CSV.
+   */
+  assetClass?: (number | null) | AssetClass;
+  /**
+   * Accept only a missing-hub coverage error. Unresolved aliases, duplicate values, and malformed data can never be forced.
+   */
+  forceMissingHubs?: boolean | null;
+  /**
+   * Audit reason recorded with a forced missing-hub import.
+   */
+  forceReason?: string | null;
+  status: 'uploaded' | 'validating' | 'invalid' | 'validated' | 'importing' | 'imported' | 'failed';
+  fileHash?: string | null;
+  parserVersion?: string | null;
+  stagingFingerprint?: string | null;
+  validation?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  preview?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  result?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  failureCode?: string | null;
+  failureMessage?: string | null;
+  validatedAt?: string | null;
+  validatedBy?: (number | null) | User;
+  importedAt?: string | null;
+  importedBy?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
@@ -1735,6 +2040,73 @@ export interface User {
     | null;
   password?: string | null;
   collection: 'users';
+}
+/**
+ * Provider-neutral customer identity references for future external-service integration. These records are not CMS login accounts.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customer-identities".
+ */
+export interface CustomerIdentity {
+  id: number;
+  /**
+   * Stable lowercase provider key, for example “tim”. This identifies the source system, not a login method.
+   */
+  provider: string;
+  /**
+   * Immutable subject identifier supplied by the provider. Do not enter passwords, access tokens, or other credentials.
+   */
+  externalSubject: string;
+  /**
+   * System-managed unique key derived from the provider and external subject.
+   */
+  identityKey: string;
+  status: 'pending' | 'active' | 'suspended' | 'disabled';
+  email?: string | null;
+  /**
+   * Human-readable name used by editors; it is not an authentication claim.
+   */
+  displayName?: string | null;
+  /**
+   * Provider-neutral reference to the customer organisation.
+   */
+  customer?: {
+    reference?: string | null;
+    name?: string | null;
+  };
+  /**
+   * Provider-neutral reference to the customer account or tenancy.
+   */
+  account?: {
+    reference?: string | null;
+    name?: string | null;
+  };
+  /**
+   * A concise list of product or content grants. Keep provider payloads and credentials outside Payload.
+   */
+  entitlements?:
+    | {
+        key: string;
+        label?: string | null;
+        status: 'granted' | 'revoked' | 'expired';
+        startsAt?: string | null;
+        expiresAt?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Operational state for a future synchronisation adapter. No provider secrets are stored here.
+   */
+  sync: {
+    state: 'never' | 'success' | 'warning' | 'error';
+    lastAttemptAt?: string | null;
+    lastSuccessAt?: string | null;
+    sourceUpdatedAt?: string | null;
+    revision?: string | null;
+    message?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1950,6 +2322,14 @@ export interface PayloadLockedDocument {
         value: number | LearningVideo;
       } | null)
     | ({
+        relationTo: 'market-data-imports';
+        value: number | MarketDataImport;
+      } | null)
+    | ({
+        relationTo: 'lifecycle-items';
+        value: number | LifecycleItem;
+      } | null)
+    | ({
         relationTo: 'offices';
         value: number | Office;
       } | null)
@@ -1976,6 +2356,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'regions';
         value: number | Region;
+      } | null)
+    | ({
+        relationTo: 'customer-identities';
+        value: number | CustomerIdentity;
       } | null)
     | ({
         relationTo: 'users';
@@ -2173,6 +2557,8 @@ export interface ContentSectionBlockSelect<T extends boolean = true> {
               embed?: T | EmbedComponentSelect<T>;
               dataChart?: T | DataChartComponentSelect<T>;
               marketMatrix?: T | MarketMatrixComponentSelect<T>;
+              checklist?: T | ChecklistComponentSelect<T>;
+              lifecycle?: T | LifecycleComponentSelect<T>;
               office?: T | OfficeComponentSelect<T>;
             };
         id?: T;
@@ -2406,6 +2792,7 @@ export interface DividerComponentSelect<T extends boolean = true> {
  * via the `definition` "MarketCoverageComponent_select".
  */
 export interface MarketCoverageComponentSelect<T extends boolean = true> {
+  mode?: T;
   presentation?: T;
   title?: T;
   body?: T;
@@ -2420,6 +2807,15 @@ export interface MarketCoverageComponentSelect<T extends boolean = true> {
   assetClasses?: T;
   venueTypes?: T;
   regions?: T;
+  includedHubs?: T;
+  defaultAssetClass?: T;
+  showAssetClassFilter?: T;
+  autoplayAssetClasses?: T;
+  autoplayDelay?: T;
+  zoomTo?: T;
+  showSidebar?: T;
+  showMarketData?: T;
+  dataDisplay?: T;
   actions?:
     | T
     | {
@@ -2492,6 +2888,35 @@ export interface MarketMatrixComponentSelect<T extends boolean = true> {
   defaultView?: T;
   showFilters?: T;
   showDownload?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ChecklistComponent_select".
+ */
+export interface ChecklistComponentSelect<T extends boolean = true> {
+  appearance?: T;
+  items?:
+    | T
+    | {
+        title?: T;
+        text?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LifecycleComponent_select".
+ */
+export interface LifecycleComponentSelect<T extends boolean = true> {
+  caption?: T;
+  lifecycleItems?: T;
+  upcomingHeading?: T;
+  previousHeading?: T;
+  showDescriptions?: T;
   id?: T;
   blockName?: T;
 }
@@ -2606,12 +3031,26 @@ export interface HubsSelect<T extends boolean = true> {
         learningVideoListing?: T | LearningVideoListingBlockSelect<T>;
       };
   code?: T;
+  hubType?: T;
   marketDataKey?: T;
+  marketDataAliases?:
+    | T
+    | {
+        value?: T;
+        id?: T;
+      };
   assetClasses?: T;
   venueTypes?: T;
   regions?: T;
   relatedHubs?: T;
   showOnMap?: T;
+  countryCode?: T;
+  connectedCountryCodes?:
+    | T
+    | {
+        code?: T;
+        id?: T;
+      };
   map?:
     | T
     | {
@@ -2633,6 +3072,15 @@ export interface HubsSelect<T extends boolean = true> {
                     latitude?: T;
                     longitude?: T;
                   };
+              id?: T;
+            };
+        connections?:
+          | T
+          | {
+              hub?: T;
+              route?: T;
+              showLineMarker?: T;
+              lineMarkerLabel?: T;
               id?: T;
             };
       };
@@ -2792,6 +3240,68 @@ export interface LearningVideosSelect<T extends boolean = true> {
   path?: T;
   confirmPathRedirect?: T;
   publishedAt?: T;
+  legacySource?:
+    | T
+    | {
+        key?: T;
+        source?: T;
+        legacyId?: T;
+        originalUrl?: T;
+        modifiedGmt?: T;
+        contentHash?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "market-data-imports_select".
+ */
+export interface MarketDataImportsSelect<T extends boolean = true> {
+  importType?: T;
+  assetClass?: T;
+  forceMissingHubs?: T;
+  forceReason?: T;
+  status?: T;
+  fileHash?: T;
+  parserVersion?: T;
+  stagingFingerprint?: T;
+  validation?: T;
+  preview?: T;
+  result?: T;
+  failureCode?: T;
+  failureMessage?: T;
+  validatedAt?: T;
+  validatedBy?: T;
+  importedAt?: T;
+  importedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lifecycle-items_select".
+ */
+export interface LifecycleItemsSelect<T extends boolean = true> {
+  title?: T;
+  productLabel?: T;
+  serviceName?: T;
+  duration?: T;
+  endOfLifeVersion?: T;
+  endOfLifeDate?: T;
+  endOfAccessDate?: T;
+  description?: T;
+  active?: T;
   legacySource?:
     | T
     | {
@@ -3006,6 +3516,21 @@ export interface AssetClassesSelect<T extends boolean = true> {
   title?: T;
   description?: T;
   displayOrder?: T;
+  mapAppearance?:
+    | T
+    | {
+        color?: T;
+        volumeLabel?: T;
+        priceLabel?: T;
+        currency?: T;
+      };
+  marketDataKey?: T;
+  marketDataAliases?:
+    | T
+    | {
+        value?: T;
+        id?: T;
+      };
   slug?: T;
   legacySource?:
     | T
@@ -3027,7 +3552,9 @@ export interface AssetClassesSelect<T extends boolean = true> {
 export interface VenueTypesSelect<T extends boolean = true> {
   title?: T;
   description?: T;
+  parentVenueType?: T;
   displayOrder?: T;
+  mapLabel?: T;
   slug?: T;
   legacySource?:
     | T
@@ -3053,6 +3580,7 @@ export interface RegionsSelect<T extends boolean = true> {
   map?:
     | T
     | {
+        label?: T;
         centre?:
           | T
           | {
@@ -3060,6 +3588,20 @@ export interface RegionsSelect<T extends boolean = true> {
               longitude?: T;
             };
         zoom?: T;
+        boundary?: T;
+        pointsOfInterest?:
+          | T
+          | {
+              label?: T;
+              popupText?: T;
+              location?:
+                | T
+                | {
+                    latitude?: T;
+                    longitude?: T;
+                  };
+              id?: T;
+            };
       };
   slug?: T;
   legacySource?:
@@ -3071,6 +3613,52 @@ export interface RegionsSelect<T extends boolean = true> {
         originalUrl?: T;
         modifiedGmt?: T;
         contentHash?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customer-identities_select".
+ */
+export interface CustomerIdentitiesSelect<T extends boolean = true> {
+  provider?: T;
+  externalSubject?: T;
+  identityKey?: T;
+  status?: T;
+  email?: T;
+  displayName?: T;
+  customer?:
+    | T
+    | {
+        reference?: T;
+        name?: T;
+      };
+  account?:
+    | T
+    | {
+        reference?: T;
+        name?: T;
+      };
+  entitlements?:
+    | T
+    | {
+        key?: T;
+        label?: T;
+        status?: T;
+        startsAt?: T;
+        expiresAt?: T;
+        id?: T;
+      };
+  sync?:
+    | T
+    | {
+        state?: T;
+        lastAttemptAt?: T;
+        lastSuccessAt?: T;
+        sourceUpdatedAt?: T;
+        revision?: T;
+        message?: T;
       };
   updatedAt?: T;
   createdAt?: T;

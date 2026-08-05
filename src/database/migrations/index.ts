@@ -16,6 +16,8 @@ import * as migration_20260804_093914_market_matrix_component from './20260804_0
 import * as migration_20260804_103936_data_chart_asset_class from './20260804_103936_data_chart_asset_class'
 import * as migration_20260804_104200_data_chart_asset_class_backfill from './20260804_104200_data_chart_asset_class_backfill'
 import * as migration_20260804_113221_data_chart_semantics from './20260804_113221_data_chart_semantics'
+import * as migration_20260804_224938 from './20260804_224938'
+import * as migration_20260804_225535_market_data_legacy_upsert_compat from './20260804_225535_market_data_legacy_upsert_compat'
 
 export const migrations = [
   {
@@ -107,5 +109,15 @@ export const migrations = [
     up: migration_20260804_113221_data_chart_semantics.up,
     down: migration_20260804_113221_data_chart_semantics.down,
     name: '20260804_113221_data_chart_semantics',
+  },
+  {
+    up: migration_20260804_224938.up,
+    down: migration_20260804_224938.down,
+    name: '20260804_224938',
+  },
+  {
+    up: migration_20260804_225535_market_data_legacy_upsert_compat.up,
+    down: migration_20260804_225535_market_data_legacy_upsert_compat.down,
+    name: '20260804_225535_market_data_legacy_upsert_compat',
   },
 ]

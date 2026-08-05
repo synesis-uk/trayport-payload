@@ -31,6 +31,7 @@ export const marketMatrixVenueSelect = {
   path: true,
   title: true,
   venueTypes: true,
+  website: true,
 } as const
 
 const orderedTitleSelect = {

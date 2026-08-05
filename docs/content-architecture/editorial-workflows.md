@@ -30,11 +30,10 @@ Publication validates:
 - learning/video media where applicable; and
 - the singleton/root rule for the homepage.
 
-Conversion and interactive market-matrix pages can be composed and previewed as
-drafts, but the current publication guard rejects them until the planned
-first-party form and market-matrix blocks exist. Cookie/legal consent behavior
-and complete managed-link validation remain production work under separate
-gates.
+Interactive Market Matrix pages publish with exactly one managed matrix block.
+Conversion pages can be composed and previewed, but publication remains guarded
+until the bounded HubSpot embed is available. CookieYes behavior and complete
+managed-link validation remain production work under separate gates.
 
 Changing a published path keeps the old route live and reserves the new draft
 path. Publishing requires the editor to confirm the redirect; the new content
@@ -88,7 +87,7 @@ come from published `page`-mode venues or hubs. A map, matrix, or index must
 never link a relationship-only record.
 
 Market chart presentation is editable in Payload; raw monthly facts are maintained
-through the application-data import. Editors select a managed imported Asset Class,
+through the controlled application-data import. Editors select a managed Asset Class,
 Volume or Price, an Execution type or Hub series dimension, and Month, Quarter, or
 Year grouping. Execution type is limited to stacked Volume columns and cannot carry
 Hub filters. Hub series are limited to Volume columns or Price lines; their optional
@@ -100,6 +99,20 @@ temporarily unavailable, and retained unsupported configurations separately; pub
 blocks unsupported combinations rather than relying on a renderer fallback. WordPress
 `charts-new` values are mapped into these same fields during migration, including managed
 Hub relationships, so imported and newly authored charts share one contract.
+
+Editors maintain maps through the same managed resources rather than editing
+frontend code. Regions own bounded boundaries, centers, and points of interest;
+Hubs own coordinates, classification, countries, stable market-data identity,
+and optional explicit routes; Asset Classes own labels and colours; Venue Types
+own their grouping hierarchy. A global connection block uses the simple
+schematic, while a regional block enables Mapbox region/asset/Hub/route
+interaction and the corresponding accessible list. Provider tokens and styles
+are deployment settings, not editor fields.
+
+The Market Matrix reads Venue market connections. Editors correct a connection
+once on the Venue and preview its effect in filters, grouped rows, links, CSV,
+and Excel. Duplicate Venue/Hub connections are rejected or normalized at this
+boundary rather than hidden by the presentation.
 
 ## Manage Learning Hub content
 
@@ -149,8 +162,9 @@ Careers route, not private page `2207`.
 ### Site settings
 
 Editors manage brand assets, default SEO, contact information, social links,
-notices, and consent settings. Social destinations and cookie categories are
-not hard-coded in the target frontend.
+notices, retained HubSpot form identifiers, and bounded CookieYes settings.
+Social destinations are not hard-coded; CookieYes remains the consent-category
+authority.
 
 Globals support draft, version, preview where meaningful, scheduling, and
 revalidation in the same way as documents.
@@ -161,11 +175,11 @@ For an internal destination, choose a managed content reference. Use a custom
 URL only for an external destination or a deliberate protocol such as `mailto:`
 or `tel:`. Choose a media/file reference for downloads.
 
-The 26-root incremental import applies a reversible bridge: only accepted roots
+The 27-root incremental import applies a reversible bridge: only accepted roots
 and the two virtual indexes remain root-relative in Navigation/Footer. Other
 same-site destinations are rendered as canonical HTTPS links to the live site,
 preventing Next.js prefetch from requesting routes this build does not own. The
-current acceptance report requires exactly 35 unique live fallback paths, including the five
+current acceptance report requires exactly 34 unique live fallback paths, including the five
 clickable Company, Products, Markets, Regions, and Resources section roots.
 When a route is migrated, add it to the immutable root scope, pass route and
 runtime acceptance, then change that one destination back to its internal path.
@@ -173,8 +187,8 @@ runtime acceptance, then change that one destination back to its internal path.
 `/request-a-demo/` is the bounded exception for this milestone. Payload owns it
 as a temporary `302` redirect to `/contact/`; the source HubSpot form, dead form
 prompt, and unused hero media are not imported. Replace the redirect atomically
-with a publishable `page.conversion` only after the first-party submission path
-exists, then remove this exception and its redirect-specific assertions.
+with a publishable `page.conversion` only after the approved HubSpot embed exists,
+then remove this exception and its redirect-specific assertions.
 
 The shared route registry currently validates path ownership and prevents a
 redirect source from shadowing content, virtual routes, or another redirect.
@@ -221,17 +235,32 @@ Publishing fails for a required missing asset. Accessibility fallbacks and
 unavailable optional media remain visible in the content review queue until
 accepted, replaced, or removed.
 
-## First-party forms
+## HubSpot forms and CookieYes consent
 
-The typed first-party form is a planned production workflow for conversion and
-Event content. Once implemented, editors will configure approved fields,
-labels, required state, consent copy, success behavior, and submission routing.
-The platform must supply server validation, spam protection, rate limiting,
-safe storage/delivery, error states, and audit behavior. Until then, conversion
-pages remain draft-only.
+Active legacy form identifiers are retained and will be presented through one
+bounded HubSpot integration rather than a generic embed or a replacement form
+builder. Editors select an approved identifier and manage nearby copy; the
+integration owns loading, blocked, validation/error, consent, success, and
+accessibility states. Real submissions remain disabled until an approved test
+destination and consent flow are available. Conversion pages stay draft-only
+until that boundary exists.
 
-HubSpot fields, IDs, and admin screens are not migrated. Arbitrary embeds are
-not a substitute for the approved form behavior.
+CookieYes remains the consent provider. The Next.js integration must clone the
+live categories and user-visible behavior, preserve policy links, and expose a
+working preference control. Editors do not create arbitrary consent categories
+or scripts in rich text.
+
+## Customer identity and TIM
+
+Administrators may inspect non-authenticating customer-identity reconciliation
+records; Editors may read them only where their role permits. Neither role can
+enter TIM credentials, tokens, sessions, passwords, cookies, auto-login secrets,
+or protected-document credentials into Payload.
+
+TIM sign-in and logout, status/entitlement synchronization, protected
+documentation links, and the current auto-login outcome are required for launch
+but deferred from the local slice. Previewing a gated Learning Hub record is not
+evidence that this customer-authentication workflow exists.
 
 ## Preview, publishing, and rollback
 
@@ -304,9 +333,9 @@ only after both inventory and target-plan verification pass. Editors do not
 maintain those artifacts.
 
 The target plan is deterministic planning evidence: it accounts for 296 source
-routes including two virtual indexes. It does not load the remaining 268
-plan-only documents. The actual acceptance slice is the 26-root production
-pilot documented in the repository README: 25 rendered content routes plus the
+routes including two virtual indexes. It does not load the remaining 267
+plan-only documents. The actual acceptance slice is the 27-root production
+pilot documented in the repository README: 26 rendered content routes plus the
 temporary Request A Demo redirect.
 
 ## Launch validation
@@ -322,6 +351,7 @@ Editorial launch approval requires:
 - required media present and review decisions recorded;
 - SEO/canonical/sitemap output verified;
 - forms, consent, charts, maps, matrices, and gated video behavior verified;
+- TIM sign-in/logout, protected documentation links, and auto-login behavior verified;
 - role restrictions proven through the admin UI and API; and
 - a clean, idempotent production-shaped import with retained validation
   evidence.
@@ -329,5 +359,6 @@ Editorial launch approval requires:
 These are production gates, not conditions for calling the architecture design
 milestone complete. Cross-collection uniqueness and the 18 content-route runtime archetype
 invariants now pass; production readiness remains blocked by complete article
-bodies, complete listing-linked route ownership, planned blocks, managed links,
-editor-control effects, and full editor-role enforcement.
+bodies, complete listing-linked route ownership, deferred HubSpot/CookieYes
+integrations, managed links, editor-control effects, and full editor-role
+enforcement.

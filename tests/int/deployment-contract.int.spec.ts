@@ -198,7 +198,24 @@ describe('deployment configuration contract', () => {
     expect(upStatements).toContain("series_dimension = ''hub''")
     expect(upStatements).toContain("display_interval = ''month''")
     expect(upStatements).toContain("display_interval = ''year''")
-    expect(deploymentSchema.payloadMigrations.at(-1)).toBe('20260804_113221_data_chart_semantics')
+    expect(deploymentSchema.payloadMigrations).toContain('20260804_113221_data_chart_semantics')
+  })
+
+  it('locks the completed slice schema and legacy-loader compatibility at the manifest tail', () => {
+    const sliceSchema = readProjectFile('src/database/migrations/20260804_224938.ts')
+    const legacyCompatibility = readProjectFile(
+      'src/database/migrations/20260804_225535_market_data_legacy_upsert_compat.ts',
+    )
+
+    expect(deploymentSchema.payloadMigrations.slice(-2)).toEqual([
+      '20260804_224938',
+      '20260804_225535_market_data_legacy_upsert_compat',
+    ])
+    expect(sliceSchema).toContain('CREATE TABLE "app"."market_data_import_staging"')
+    expect(sliceSchema).toContain('CREATE UNIQUE INDEX "market_volume_monthly_stable_scope_unique"')
+    expect(sliceSchema).toContain('ADD CONSTRAINT "market_volume_monthly_source_import_id_fk"')
+    expect(legacyCompatibility).toContain('ADD CONSTRAINT market_volume_monthly_scope_unique')
+    expect(legacyCompatibility).not.toMatch(/\b(?:DELETE|TRUNCATE)\b/)
   })
 
   it('returns a no-store process liveness response without runtime details', async () => {
@@ -270,11 +287,14 @@ describe('deployment configuration contract', () => {
     expect(releaseFailedClient).toHaveBeenCalledWith(true)
   })
 
-  it('locks the first release to one stop-first web process with separate probes', () => {
+  it('documents a local-first review path and constrained ECS handoff with separate probes', () => {
     const deployment = readProjectFile('docs/deployment.md')
 
-    expect(deployment).toContain('replicas: 1')
-    expect(deployment).toContain('type: Recreate')
+    expect(deployment).toContain('Feature delivery remains local until core product acceptance')
+    expect(deployment).toContain('one EC2-hosted')
+    expect(deployment).toContain('Trayport production targets ECS')
+    expect(deployment).toContain('ECS desired count `1`')
+    expect(deployment).toContain('replacement/stop-first strategy')
     expect(deployment).toContain('/api/health/live/')
     expect(deployment).toContain('/api/health/ready/')
     expect(deployment).toContain('shared Next.js cache handler')

@@ -5,6 +5,11 @@ import { trayportLayoutBlocks } from '@/blocks/Trayport/config'
 import { contentPathField } from '@/fields/contentPath'
 import { coordinatesField } from '@/fields/coordinates'
 import { createLegacySourceField } from '@/fields/legacySource'
+import {
+  ensureMarketDataKey,
+  marketDataAliasesField,
+  marketDataKeyField,
+} from '@/fields/marketData'
 import { imageOrVideoUploadField } from '@/fields/mediaUpload'
 import { publishedAtField } from '@/fields/publishedAt'
 import { confirmPathRedirectField } from '@/fields/routeControls'
@@ -18,6 +23,7 @@ import {
   validateExternalHTTPSURL,
 } from '@/routing/urlPolicy'
 import { generateContentPreviewPath } from '@/utilities/generateContentPreviewPath'
+import { validateMapRouteGeoJSON } from '@/maps/geoJSON'
 
 import {
   revalidateDeletedRoutableContent,
@@ -48,6 +54,10 @@ export const Hubs: CollectionConfig = {
     contentMode: true,
     externalDestination: true,
     heroMedia: true,
+    legacySource: {
+      legacyId: true,
+    },
+    marketDataKey: true,
     meta: {
       description: true,
       image: true,
@@ -141,17 +151,24 @@ export const Hubs: CollectionConfig = {
                   label: 'Market code',
                 },
                 {
-                  name: 'marketDataKey',
-                  type: 'text',
+                  name: 'hubType',
+                  type: 'select',
                   admin: {
-                    description:
-                      'Stable key for future market-data queries. The market data itself is stored outside Payload.',
                     width: '50%',
                   },
-                  index: true,
+                  defaultValue: 'vhub',
+                  label: 'Map hub type',
+                  options: [
+                    { label: 'Virtual hub', value: 'vhub' },
+                    { label: 'Physical hub', value: 'phub' },
+                    { label: 'Offshore hub', value: 'ohub' },
+                    { label: 'Regional hub', value: 'rhub' },
+                  ],
                 },
               ],
             },
+            marketDataKeyField(),
+            marketDataAliasesField(),
             {
               name: 'assetClasses',
               type: 'relationship',
@@ -180,6 +197,54 @@ export const Hubs: CollectionConfig = {
               name: 'showOnMap',
               type: 'checkbox',
               defaultValue: true,
+            },
+            {
+              name: 'countryCode',
+              type: 'text',
+              admin: {
+                description: 'ISO 3166-1 alpha-3 country code used by the Mapbox boundary layer.',
+              },
+              hooks: {
+                beforeValidate: [
+                  ({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value),
+                ],
+              },
+              maxLength: 3,
+              minLength: 3,
+              validate: (value: unknown) =>
+                value === null ||
+                value === undefined ||
+                value === '' ||
+                /^[A-Z]{3}$/u.test(String(value))
+                  ? true
+                  : 'Use a three-letter ISO country code.',
+            },
+            {
+              name: 'connectedCountryCodes',
+              type: 'array',
+              admin: {
+                description: 'Additional countries served by this hub.',
+                initCollapsed: true,
+              },
+              fields: [
+                {
+                  name: 'code',
+                  type: 'text',
+                  hooks: {
+                    beforeValidate: [
+                      ({ value }) =>
+                        typeof value === 'string' ? value.trim().toUpperCase() : value,
+                    ],
+                  },
+                  maxLength: 3,
+                  minLength: 3,
+                  required: true,
+                  validate: (value: unknown) =>
+                    /^[A-Z]{3}$/u.test(String(value))
+                      ? true
+                      : 'Use a three-letter ISO country code.',
+                },
+              ],
             },
             {
               name: 'map',
@@ -216,6 +281,41 @@ export const Hubs: CollectionConfig = {
                       name: 'location',
                       required: true,
                     }),
+                  ],
+                },
+                {
+                  name: 'connections',
+                  type: 'array',
+                  admin: {
+                    description:
+                      'Explicit hub-to-hub routes. A route is optional; the renderer draws a direct connection when it is omitted.',
+                    initCollapsed: true,
+                  },
+                  fields: [
+                    {
+                      name: 'hub',
+                      type: 'relationship',
+                      relationTo: 'hubs',
+                      required: true,
+                    },
+                    {
+                      name: 'route',
+                      type: 'json',
+                      admin: {
+                        description:
+                          'Optional LineString, MultiLineString or FeatureCollection GeoJSON.',
+                      },
+                      validate: validateMapRouteGeoJSON,
+                    },
+                    {
+                      name: 'showLineMarker',
+                      type: 'checkbox',
+                      defaultValue: false,
+                    },
+                    {
+                      name: 'lineMarkerLabel',
+                      type: 'text',
+                    },
                   ],
                 },
               ],
@@ -313,6 +413,14 @@ export const Hubs: CollectionConfig = {
     createLegacySourceField(),
   ],
   hooks: {
+    beforeValidate: [
+      ({ data, originalDoc }) =>
+        ensureMarketDataKey(
+          'hub',
+          data as Record<string, unknown>,
+          originalDoc as Record<string, unknown>,
+        ),
+    ],
     beforeChange: [validateRoutableDocument('hubs')],
     afterChange: [syncRoutableRoute('hubs'), revalidateRoutableContent(['/market-coverage/'])],
     afterDelete: [

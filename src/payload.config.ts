@@ -8,9 +8,12 @@ import { fileURLToPath } from 'url'
 import { ArticleCategories } from './collections/ArticleCategories'
 import { Articles } from './collections/Articles'
 import { AssetClasses } from './collections/AssetClasses'
+import { CustomerIdentities } from './collections/CustomerIdentities'
 import { Hubs } from './collections/Hubs'
 import { LearningVideoCategories } from './collections/LearningVideoCategories'
 import { LearningVideos } from './collections/LearningVideos'
+import { LifecycleItems } from './collections/LifecycleItems'
+import { MarketDataImports } from './collections/MarketDataImports'
 import { Media } from './collections/Media'
 import { Offices } from './collections/Offices'
 import { Pages } from './collections/Pages'
@@ -34,12 +37,23 @@ const smtpPort = Number.parseInt(process.env.SMTP_PORT || '1025', 10)
 export default buildConfig({
   admin: {
     components: {
+      beforeDashboard: ['@/components/AdminBranding/BeforeDashboard'],
       beforeLogin: ['@/components/BeforeLogin'],
+      graphics: {
+        Icon: '@/components/AdminBranding/Icon',
+        Logo: '@/components/AdminBranding/Logo',
+      },
     },
     importMap: {
       baseDir: path.resolve(dirname),
     },
     user: Users.slug,
+    meta: {
+      icons: {
+        icon: '/favicon.svg',
+      },
+      titleSuffix: '— Trayport Content',
+    },
     livePreview: {
       breakpoints: [
         {
@@ -90,6 +104,8 @@ export default buildConfig({
     Hubs,
     Venues,
     LearningVideos,
+    MarketDataImports,
+    LifecycleItems,
     Offices,
     Media,
     ArticleCategories,
@@ -97,6 +113,7 @@ export default buildConfig({
     AssetClasses,
     VenueTypes,
     Regions,
+    CustomerIdentities,
     Users,
     RouteRegistry,
   ],

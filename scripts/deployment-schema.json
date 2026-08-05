@@ -17,6 +17,8 @@
     "20260804_093914_market_matrix_component",
     "20260804_103936_data_chart_asset_class",
     "20260804_104200_data_chart_asset_class_backfill",
-    "20260804_113221_data_chart_semantics"
+    "20260804_113221_data_chart_semantics",
+    "20260804_224938",
+    "20260804_225535_market_data_legacy_upsert_compat"
   ]
 }

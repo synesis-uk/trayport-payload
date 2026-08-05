@@ -21,6 +21,7 @@ export interface ContentSectionPresentationColumn {
 
 export type ContentSectionComponentType =
   | 'actions'
+  | 'checklist'
   | 'dataChart'
   | 'dataTable'
   | 'divider'
@@ -30,6 +31,7 @@ export type ContentSectionComponentType =
   | 'featureList'
   | 'gallery'
   | 'heading'
+  | 'lifecycle'
   | 'marketCoverage'
   | 'marketMatrix'
   | 'media'
