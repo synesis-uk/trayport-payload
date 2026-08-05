@@ -64,6 +64,7 @@ const loadPriority: Record<TargetRecord['target'], number> = {
   articles: 40,
   hubs: 40,
   'learning-videos': 40,
+  banners: 45,
   redirects: 45,
   global: 50,
 }

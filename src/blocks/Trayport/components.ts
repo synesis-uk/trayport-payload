@@ -378,7 +378,6 @@ export const DataTableComponent: Block = {
         {
           name: 'text',
           type: 'text',
-          required: true,
         },
       ],
     },
@@ -393,7 +392,6 @@ export const DataTableComponent: Block = {
             {
               name: 'text',
               type: 'textarea',
-              required: true,
             },
           ],
         },

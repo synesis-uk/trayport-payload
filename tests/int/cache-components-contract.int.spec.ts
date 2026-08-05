@@ -41,9 +41,9 @@ describe('Next.js Cache Components boundary', () => {
     expect(catchAll).toContain('<Suspense fallback={<ContentLoadingState />}>')
     expect(catchAll).toContain('<CatchAllContent params={params} searchParams={searchParams} />')
     expect(contentRouteRenderer).toContain('<Suspense fallback={<ContentLoadingState />}>')
-    expect(contentRouteRenderer).toContain(
-      '<DraftAwareContentRoute path={path} searchQuery={initialSearchQuery} />',
-    )
+    expect(contentRouteRenderer).toContain('<DraftAwareContentRoute')
+    expect(contentRouteRenderer).toContain('previewBannerID={previewBannerID}')
+    expect(contentRouteRenderer).toContain('searchQuery={initialSearchQuery}')
   })
 
   it('keeps build-time fallbacks free of CMS reads', () => {

@@ -859,7 +859,7 @@ html[data-theme='dark'] .trayport-admin-dashboard__admin-section {
 @container trayport-dashboard (min-width: 66rem) {
   .trayport-admin-dashboard {
     &__quick-actions {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
 
     &__workflow-grid {

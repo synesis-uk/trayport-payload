@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url'
 import { ArticleCategories } from './collections/ArticleCategories'
 import { Articles } from './collections/Articles'
 import { AssetClasses } from './collections/AssetClasses'
+import { Banners } from './collections/Banners'
 import { CustomerIdentities } from './collections/CustomerIdentities'
 import { Hubs } from './collections/Hubs'
 import { LearningVideoCategories } from './collections/LearningVideoCategories'
@@ -27,12 +28,19 @@ import { Navigation } from './globals/Navigation'
 import { RouteIndexes } from './globals/RouteIndexes'
 import { SiteSettings } from './globals/SiteSettings'
 import { plugins } from './plugins'
+import {
+  bannerNotificationQueue,
+  processBannerNotificationsTask,
+} from '@/banners/notificationWorkflow'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 const smtpPort = Number.parseInt(process.env.SMTP_PORT || '1025', 10)
+const autoRunPayloadJobs =
+  process.env.PAYLOAD_JOBS_AUTORUN === 'true' ||
+  (process.env.NODE_ENV === 'development' && process.env.PAYLOAD_JOBS_AUTORUN !== 'false')
 
 export default buildConfig({
   admin: {
@@ -105,6 +113,7 @@ export default buildConfig({
     : undefined,
   collections: [
     Pages,
+    Banners,
     Articles,
     Hubs,
     Venues,
@@ -149,6 +158,10 @@ export default buildConfig({
         return authHeader === `Bearer ${secret}`
       },
     },
-    tasks: [],
+    autoRun: autoRunPayloadJobs
+      ? [{ cron: '0 * * * * *', limit: 1, queue: bannerNotificationQueue }]
+      : undefined,
+    enableConcurrencyControl: true,
+    tasks: [processBannerNotificationsTask],
   },
 })

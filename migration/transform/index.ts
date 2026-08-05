@@ -5,7 +5,7 @@ import { normalizeTrayportSlug } from '../../src/fields/slug'
 import { sourceRecordSchema, type SourcePost, type SourceRecord } from '../contracts/v1'
 import { assertRunNotAccepted, atomicWriteText, sealAcceptedRun } from '../lib/acceptedRun'
 import { migrationConfig } from '../lib/config'
-import { pilotScope, type PilotRoot } from '../scopes/pilot'
+import { pilotScope, type AcceptedRouteDependency, type PilotRoot } from '../scopes/pilot'
 import { validateSource, validateTransformed } from '../validate'
 import {
   asArray,
@@ -21,6 +21,7 @@ import {
   sourceURL,
 } from './helpers'
 import { htmlToLexical, htmlToMultilinePlainText, htmlToPlainText } from './lexical'
+import { mapBannerReusable } from './banner'
 import { mapLifecycleReusable } from './lifecycle'
 import {
   mapArticleLayout,
@@ -33,6 +34,12 @@ import { legacyExternalHTTPSDestination, migrationDestination, normalizeMigratio
 
 const pilotRootByLegacyId = new Map<number, PilotRoot>(
   pilotScope.roots.map((root) => [root.legacyId, root]),
+)
+const acceptedRouteByLegacyId = new Map<number, PilotRoot | AcceptedRouteDependency>(
+  [...pilotScope.roots, ...pilotScope.acceptedRouteDependencies].map((route) => [
+    route.legacyId,
+    route,
+  ]),
 )
 
 const tradingInJouleLegacyAlias = {
@@ -366,17 +373,17 @@ const mapPost = (
   links: ManagedLinkLookup,
 ): TargetRecord | null => {
   if (post.postType === 'page') {
-    const root = pilotRootByLegacyId.get(post.legacyId)
-    if (root?.targetOwner === 'redirects') return null
+    const acceptedRoute = acceptedRouteByLegacyId.get(post.legacyId)
+    if (acceptedRoute?.targetOwner === 'redirects') return null
     const isInsights = post.legacyId === 9248
     const isNews = post.legacyId === 9244
     const isLearningHub = post.legacyId === 3311
     const pageType =
-      root && root.archetype in pageTypeByArchetype
-        ? pageTypeByArchetype[root.archetype as keyof typeof pageTypeByArchetype]
+      acceptedRoute && acceptedRoute.archetype in pageTypeByArchetype
+        ? pageTypeByArchetype[acceptedRoute.archetype as keyof typeof pageTypeByArchetype]
         : 'standard'
     const usesArticleStyleSections =
-      root?.archetype === 'page.legal' &&
+      acceptedRoute?.archetype === 'page.legal' &&
       asArray(post.acf.sections_new).length === 0 &&
       asArray(post.acf.sections).length > 0
     const mappedLayout = usesArticleStyleSections
@@ -1102,6 +1109,9 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
       )
       .flatMap((record): Array<[number, ManagedLinkTarget]> => {
         const root = pilotRootByLegacyId.get(record.legacyId)
+        if (!root && record.postType === 'page') {
+          return [[record.legacyId, { kind: 'page' as const, relationTo: 'pages' as const }]]
+        }
         if (!root) return []
         if (root.targetOwner === 'redirects') {
           return [[record.legacyId, { url: root.path }]]
@@ -1134,6 +1144,11 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
         managedLinks,
       )
       if (target) targets.push(target)
+      continue
+    }
+
+    if (record.entity === 'reusable' && record.postType === 'banner') {
+      targets.push(mapBannerReusable(record))
       continue
     }
 

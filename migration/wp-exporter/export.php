@@ -537,10 +537,96 @@ function tp_export_reusable(
         'entity' => 'reusable',
         'legacyId' => $postId,
         'postType' => (string) $post->post_type,
+        'status' => (string) $post->post_status,
         'title' => html_entity_decode(get_the_title($postId), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
         'path' => tp_relative_path_for_post($postId),
+        'menuOrder' => (int) $post->menu_order,
+        'publishedAt' => $post->post_date_gmt !== '0000-00-00 00:00:00'
+            ? mysql2date(DATE_ATOM, $post->post_date_gmt, false)
+            : null,
+        'modifiedAt' => $post->post_modified_gmt !== '0000-00-00 00:00:00'
+            ? mysql2date(DATE_ATOM, $post->post_modified_gmt, false)
+            : null,
         'data' => (object) tp_normalize($data, $mediaIds, $termIds),
     ]);
+}
+
+function tp_banner_date_to_atom($value): ?string
+{
+    if (!is_string($value) || trim($value) === '') {
+        return null;
+    }
+
+    $date = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', trim($value), wp_timezone());
+
+    return $date instanceof DateTimeImmutable ? $date->format(DATE_ATOM) : null;
+}
+
+/**
+ * Export the live reusable banner system and return every Page dependency needed
+ * for targeting or managed banner links, retaining which relationship made each
+ * non-root Page reachable.
+ */
+function tp_export_banner_reusables(array &$mediaIds, array &$termIds): array
+{
+    $bannerIds = get_posts([
+        'post_type' => 'banner',
+        'post_status' => ['publish', 'draft', 'pending', 'future', 'private'],
+        'posts_per_page' => -1,
+        'fields' => 'ids',
+        'orderby' => [
+            'menu_order' => 'ASC',
+            'date' => 'DESC',
+        ],
+        'no_found_rows' => true,
+    ]);
+    $pageRoles = [];
+
+    foreach (array_values($bannerIds) as $displayOrder => $bannerId) {
+        $bannerId = (int) $bannerId;
+        $fields = function_exists('get_fields') ? (get_fields($bannerId) ?: []) : [];
+        $liveDates = is_array($fields['live_dates'] ?? null) ? $fields['live_dates'] : [];
+        $notifyUsers = is_array($fields['notify_users'] ?? null) ? $fields['notify_users'] : [];
+        $recipientEmails = [];
+
+        foreach ($notifyUsers as $user) {
+            $userId = tp_reference_id($user);
+            $wpUser = $userId > 0 ? get_user_by('id', $userId) : false;
+            if ($wpUser instanceof WP_User && is_email($wpUser->user_email)) {
+                $recipientEmails[] = strtolower((string) $wpUser->user_email);
+            }
+        }
+
+        foreach ((array) ($fields['pages'] ?? []) as $page) {
+            $pageId = tp_reference_id($page);
+            if ($pageId > 0 && get_post_type($pageId) === 'page') {
+                $pageRoles[$pageId] = 'banner-target';
+            }
+        }
+
+        $link = is_array($fields['link'] ?? null) ? $fields['link'] : [];
+        $linkedPageId = tp_reference_id($link['value'] ?? null);
+        if ($linkedPageId > 0 && get_post_type($linkedPageId) === 'page') {
+            $pageRoles[$linkedPageId] = $pageRoles[$linkedPageId] ?? 'banner-action';
+        }
+
+        tp_export_reusable(
+            $bannerId,
+            ['live_dates', 'position', 'layout', 'bg_color', 'show_on', 'pages', 'image', 'header', 'text', 'link'],
+            $mediaIds,
+            $termIds,
+            [
+                'start_at' => tp_banner_date_to_atom($liveDates['from'] ?? null),
+                'end_at' => tp_banner_date_to_atom($liveDates['to'] ?? null),
+                'display_order' => $displayOrder,
+                'notification_recipient_emails' => array_values(array_unique($recipientEmails)),
+            ]
+        );
+    }
+
+    ksort($pageRoles);
+
+    return $pageRoles;
 }
 
 /**
@@ -1212,6 +1298,25 @@ foreach ($rootIds as $postId) {
     } else {
         tp_export_post((int) $postId, $mediaIds, $termIds, null, true, 'root');
     }
+}
+
+$bannerPageRoles = tp_export_banner_reusables($mediaIds, $termIds);
+foreach ($bannerPageRoles as $pageId => $scopeRole) {
+    if (in_array((int) $pageId, $rootIds, true)) {
+        continue;
+    }
+    $template = (string) get_page_template_slug($pageId);
+    $pageFields = $template === 'layouts/article.blade.php'
+        ? ['article_header', 'sections', 'page_settings']
+        : ['sections_new', 'page_settings'];
+    tp_export_post(
+        (int) $pageId,
+        $mediaIds,
+        $termIds,
+        $pageFields,
+        true,
+        $scopeRole
+    );
 }
 
 $newsIds = get_posts([

@@ -2,6 +2,11 @@ import { notFound } from 'next/navigation'
 import { connection } from 'next/server'
 import { Suspense, type ReactElement } from 'react'
 
+import type { Banner } from '@/payload-types'
+
+import { loadBannersForPage, type PageBannerSlots } from '@/banners/loadBanners.server'
+import { emptyBannerSlots } from '@/banners/model'
+import { normalizeBannerPreviewID } from '@/banners/model'
 import { DynamicLivePreviewListener } from '@/components/LivePreviewListener/DynamicLivePreviewListener.client'
 import {
   ArticleView,
@@ -49,14 +54,23 @@ const renderRouteResult = ({
   draft,
   result,
   searchQuery,
+  banners,
 }: {
   draft: boolean
   result: Exclude<RouteResult, { kind: 'redirect' }>
   searchQuery: string
+  banners: PageBannerSlots
 }): ReactElement => {
   switch (result.kind) {
     case 'page':
-      return <PageView document={result.document} draft={draft} searchQuery={searchQuery} />
+      return (
+        <PageView
+          banners={banners}
+          document={result.document}
+          draft={draft}
+          searchQuery={searchQuery}
+        />
+      )
     case 'article':
       return <ArticleView document={result.document} draft={draft} />
     case 'hub':
@@ -83,10 +97,12 @@ const RenderedContentRoute = ({
   draft,
   result,
   searchQuery,
+  banners,
 }: {
   draft: boolean
   result: RouteResult | null
   searchQuery: string
+  banners: PageBannerSlots
 }) => {
   if (!result) notFound()
   if (result.kind === 'redirect') {
@@ -100,35 +116,57 @@ const RenderedContentRoute = ({
     <>
       <StructuredData value={structuredDataFor(result)} />
       {draft ? <DynamicLivePreviewListener /> : null}
-      {renderRouteResult({ draft, result, searchQuery })}
+      {renderRouteResult({ banners, draft, result, searchQuery })}
     </>
   )
 }
 
 const DraftAwareContentRoute = async ({
   path,
+  previewBannerID,
   searchQuery,
 }: {
   path: string
+  previewBannerID?: number
   searchQuery: string
 }) => {
   await connection()
   const draft = await authenticatedDraftRequest()
   const result = await queryContentByPath(path)
-  return <RenderedContentRoute draft={draft} result={result} searchQuery={searchQuery} />
+  const banners =
+    result?.kind === 'page'
+      ? await loadBannersForPage({
+          draft,
+          pageID: result.document.id,
+          previewBannerID: draft ? previewBannerID : undefined,
+        })
+      : emptyBannerSlots<Banner>()
+  return (
+    <RenderedContentRoute
+      banners={banners}
+      draft={draft}
+      result={result}
+      searchQuery={searchQuery}
+    />
+  )
 }
 
 /**
  * The build shell stays database-free. Request context is resolved before either
  * the tagged published lookup or the deliberately uncached authenticated draft lookup.
  */
-export const ContentRoute = ({ searchQuery, segments }: ContentRouteProps) => {
+export const ContentRoute = ({ bannerPreview, searchQuery, segments }: ContentRouteProps) => {
   const path = canonicalContentRoutePath(segments)
   const initialSearchQuery = normalizeListingSearchQuery(searchQuery)
+  const previewBannerID = normalizeBannerPreviewID(bannerPreview)
 
   return (
     <Suspense fallback={<ContentLoadingState />}>
-      <DraftAwareContentRoute path={path} searchQuery={initialSearchQuery} />
+      <DraftAwareContentRoute
+        path={path}
+        previewBannerID={previewBannerID}
+        searchQuery={initialSearchQuery}
+      />
     </Suspense>
   )
 }

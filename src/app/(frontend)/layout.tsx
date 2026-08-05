@@ -14,6 +14,7 @@ import { getServerSideURL } from '@/utilities/getURL'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 
 import './globals.css'
+import './banners.css'
 import './parity-shell.css'
 import './parity-structured.css'
 import './parity-blocks.css'

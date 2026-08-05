@@ -23,6 +23,12 @@ const quickActions = [
     label: 'Create an article',
   },
   {
+    description: 'Publish a targeted website announcement with placement and schedule controls.',
+    href: '/admin/collections/banners/create',
+    icon: 'banner',
+    label: 'Schedule a banner',
+  },
+  {
     description: 'Add a public or customer learning resource to the Learning Hub.',
     href: '/admin/collections/learning-videos/create',
     icon: 'video',
@@ -67,6 +73,12 @@ const websiteAreas = [
     icon: 'redirect',
     label: 'Redirects',
   },
+  {
+    description: 'Review targeted announcements and their publishing windows',
+    href: '/admin/collections/banners',
+    icon: 'banner',
+    label: 'Banners',
+  },
 ] as const
 
 const administratorAreas = [
@@ -98,6 +110,7 @@ const administratorAreas = [
 
 const collectionLabels = {
   articles: 'Articles',
+  banners: 'Banners',
   'learning-videos': 'Learning videos',
   pages: 'Pages',
 } as const
@@ -120,11 +133,13 @@ const RecentContentRow = ({ item }: { item: DashboardContentItem }) => (
       <span className="trayport-admin-dashboard__recent-icon" aria-hidden="true">
         <DashboardIcon
           name={
-            item.collection === 'learning-videos'
-              ? 'video'
-              : item.collection === 'articles'
-                ? 'article'
-                : 'page'
+            item.collection === 'banners'
+              ? 'banner'
+              : item.collection === 'learning-videos'
+                ? 'video'
+                : item.collection === 'articles'
+                  ? 'article'
+                  : 'page'
           }
         />
       </span>
@@ -236,7 +251,9 @@ export const DashboardWorkspace = ({
             <div className="trayport-admin-dashboard__empty-state">
               <DashboardIcon name="page" />
               <p>No recent content yet.</p>
-              <span>Your latest page, article, and learning-video edits will appear here.</span>
+              <span>
+                Your latest page, article, banner, and learning-video edits will appear here.
+              </span>
             </div>
           )}
 

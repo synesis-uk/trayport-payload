@@ -75,7 +75,7 @@
     ]
   },
   "approvedProductionScope": {
-    "publicRouteTotal": 296,
+    "publicRouteTotal": 297,
     "inventoryEvidenceStatus": "verified",
     "reachableTermSubtypes": [
       "asset-class",
@@ -117,7 +117,7 @@
     "routeOwners": [
       {
         "id": "page-documents",
-        "count": 50,
+        "count": 51,
         "sourceType": "page",
         "targetOwner": "pages",
         "ownership": "payload-document"
@@ -177,6 +177,11 @@
         "id": "faq",
         "legacyId": 7609,
         "path": "/resources/faqs/"
+      },
+      {
+        "id": "banner-eex-news",
+        "legacyId": 11299,
+        "path": "/eex-news/"
       }
     ],
     "requiredExclusions": [
@@ -1354,7 +1359,7 @@
       "severity": "blocker",
       "status": "passing",
       "enforcement": "production-inventory-verification",
-      "assertion": "A reproducible production inventory proves the approved 296 public routes: 51 WordPress page identities (50 target Pages plus one temporary Redirect), two virtual indexes, 90 posts, 66 venues, 72 hubs, and 15 learning videos, with FAQ included and Commodities Report excluded.",
+      "assertion": "A reproducible production inventory proves the approved 297 public routes: 52 WordPress page identities (51 target Pages plus one temporary Redirect), two virtual indexes, 90 posts, 66 venues, 72 hubs, and 15 learning videos, with FAQ and the published-banner-reachable EEX News Page included and Commodities Report excluded.",
       "evidence": [
         "migration/scopes/production.ts",
         "migration/inventory/contracts.ts",

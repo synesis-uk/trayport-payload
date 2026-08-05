@@ -18,6 +18,7 @@ export type LegacyReference = {
 
 export type TargetCollection =
   | 'media'
+  | 'banners'
   | 'redirects'
   | 'pages'
   | 'articles'

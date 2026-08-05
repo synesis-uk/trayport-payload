@@ -45,12 +45,17 @@ HubSpot form or its presentation media. The redirect is removed when a real
 approved HubSpot-backed submission journey is ready. This route-specific bridge
 does not remove retained HubSpot form identifiers from launch scope.
 
+Five additional Pages required by published banner targeting or internal banner
+CTAs are also imported and rendered. Together with the 27 roots, the accepted
+slice therefore contains 32 route owners: 31 rendered managed documents and the
+temporary redirect.
+
 The verified production
-source corpus contains 296 canonical routes; those routes are inventoried and
+source corpus contains 297 canonical routes; those routes are inventoried and
 classified, but they are not all imported or rendered by this frontend yet.
-The deterministic production target plan describes 294 future/current Payload
+The deterministic production target plan describes 295 future/current Payload
 document owners and two virtual indexes, but it is planning evidence rather than
-proof that the other 267 plan-only documents have been migrated or remediated.
+proof that the other 263 plan-only documents have been migrated or remediated.
 
 The Insights and News indexes are backed by all 39 and 31 published source
 records respectively. The Learning Hub owns 15 protected metadata records. The
@@ -94,7 +99,7 @@ migration flow, and [docs/design-direction.md](docs/design-direction.md) for the
 visual and interaction direction. The [proof-of-concept editor
 guide](docs/editor-guide.md) summarizes the available CMS controls. The
 [production content-architecture contract](docs/content-architecture/README.md)
-defines the approved 296-route source scope, target archetypes, Payload
+defines the approved 297-route source scope, target archetypes, Payload
 ownership, block catalogue, editor workflows, and production gates.
 
 The public UI follows the [frontend system contract](docs/frontend-system.md): Tailwind 4 semantic
@@ -239,7 +244,8 @@ ID to re-extract or re-transform accepted input.
 
 `make content-inventory` is the production-scope discovery gate. It reads the
 active ACF navigation and footer, applies the approved FAQ inclusion and
-Commodities Report exclusion, closes over generated listings and dependencies,
+Commodities Report exclusion, adds Page reachability from every published
+banner, closes over generated listings and dependencies,
 and fails on count drift, unknown archetypes/layouts, error issues, or duplicate
 canonical owners. Per-run output is written to
 `migration/work/inventory/<run-id>/`; sanitized retained evidence lives in
@@ -247,7 +253,8 @@ canonical owners. Per-run output is written to
 
 The generated target plan is deterministic implementation input. Running it
 does not expand the production-pilot importer: the loaded and rendered source
-slice remains the 27-root closure listed above, and the full 296-route import, body remediation,
+slice remains the 27 roots plus five published-banner Page dependencies listed
+above, and the full 297-route import, body remediation,
 media/link review, and parity validation remain future work.
 
 The loader is idempotent across accepted runs. Loading equivalent source data

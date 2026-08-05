@@ -27,6 +27,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   const { searchParams } = req.nextUrl
 
   const path = searchParams.get('path')
+  const banner = searchParams.get('banner')
   const previewSecret = searchParams.get('previewSecret')
   const expectedPreviewSecret = process.env.PREVIEW_SECRET
 
@@ -40,6 +41,10 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) {
     return new Response('This endpoint can only be used for relative previews', { status: 400 })
+  }
+
+  if (banner !== null && !/^[1-9]\d*$/.test(banner)) {
+    return new Response('Invalid banner preview identifier', { status: 400 })
   }
 
   const normalizedPath = normalizeContentPath(path)
@@ -93,5 +98,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   )
   draft.enable()
 
-  redirect(normalizedPath)
+  redirect(
+    banner ? `${normalizedPath}?bannerPreview=${encodeURIComponent(banner)}` : normalizedPath,
+  )
 }

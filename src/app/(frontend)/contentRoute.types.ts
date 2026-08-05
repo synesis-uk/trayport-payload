@@ -33,6 +33,7 @@ export type RedirectResult = {
 export type RouteResult = ContentResult | RedirectResult | VirtualResult
 
 export type ContentRouteProps = {
+  bannerPreview?: string | string[]
   searchQuery?: string | string[]
   segments?: string[]
 }

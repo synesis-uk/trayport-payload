@@ -12,7 +12,7 @@ same 18 content-route IDs. Payload integration tests now prove their
 discriminators, required/forbidden route policies, top-level block policies,
 publication guards, virtual claims, and cross-collection collision behavior.
 This passing runtime gate is narrower than production parity: deferred
-HubSpot/CookieYes integrations and the remaining 267 plan-only documents are
+HubSpot/CookieYes integrations and the remaining 263 plan-only documents are
 still incomplete.
 
 ## Target archetypes
@@ -68,7 +68,7 @@ conversion page; the presence and purpose of a form does.
 
 ## Count ownership
 
-The direct-page archetypes collectively target 50 Payload page documents; the
+The direct-page archetypes collectively target 51 Payload page documents; the
 source Request A Demo page is temporarily owned by `redirects` instead.
 The source template footprint for those documents is fixed in
 [scope.md](scope.md#page-document-footprint). The retained inventory verifies
@@ -90,7 +90,7 @@ The remaining route ownership is explicit:
 Relationship-only venue records, map-only hub records, and article
 listing-metadata records are not counted as public routes. The retained
 [inventory summary](inventory-summary.json) verifies these owner totals against
-the 296-route source corpus.
+the 297-route source corpus.
 
 ## Route ownership rules
 
@@ -148,7 +148,7 @@ The implemented publication hook enforces:
 - imported and native writes use the same route/discriminator rules.
 
 Production still requires the planned form and cookie-consent components,
-complete 296-route managed-link validation, and verification that every
+complete 297-route managed-link validation, and verification that every
 editor-visible setting affects the frontend. Those requirements remain under
 their separate non-passing gates; the passing archetype gate does not claim
 they are complete.

@@ -87,9 +87,9 @@ const timelineBlock = {
 const dataTableBlock = {
   blockType: 'dataTable',
   caption: 'Connected power markets',
-  headers: [{ text: 'Market' }, { text: 'Status' }],
+  headers: [{ text: 'Market' }, { text: 'Status' }, {}],
   rows: [
-    { cells: [{ text: 'German Power' }, { text: 'Connected' }, { text: 'Supplemental' }] },
+    { cells: [{ text: 'German Power' }, { text: 'Connected' }, {}, { text: 'Supplemental' }] },
     { cells: null },
   ],
 } satisfies DataTableComponent
@@ -159,13 +159,18 @@ describe('typed structured block adapters', () => {
     expect(region.getAttribute('tabindex')).toBe('0')
     expect(within(region).getByRole('table', { name: dataTableBlock.caption })).toBeTruthy()
     const headers = within(region).getAllByRole('columnheader')
-    expect(headers.map((header) => header.textContent)).toEqual(['Market', 'Status', 'Column 3'])
-    expect(headers[2].querySelector('.sr-only')).toBeTruthy()
+    expect(headers.map((header) => header.textContent)).toEqual([
+      'Market',
+      'Status',
+      '',
+      'Column 4',
+    ])
+    expect(headers[3].querySelector('.sr-only')).toBeTruthy()
     expect(
       within(region)
         .getAllByRole('cell')
         .map((cell) => cell.textContent),
-    ).toEqual(['German Power', 'Connected', 'Supplemental', '', '', ''])
+    ).toEqual(['German Power', 'Connected', '', 'Supplemental', '', '', '', ''])
     expect(region.querySelectorAll('tbody > tr')).toHaveLength(2)
   })
 

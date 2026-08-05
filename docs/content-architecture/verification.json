@@ -5,8 +5,8 @@
   "assertions": [
     {
       "id": "directPublicRoutes",
-      "expected": 53,
-      "actual": 53,
+      "expected": 54,
+      "actual": 54,
       "passed": true
     },
     {
@@ -17,8 +17,8 @@
     },
     {
       "id": "routes",
-      "expected": 296,
-      "actual": 296,
+      "expected": 297,
+      "actual": 297,
       "passed": true
     },
     {
@@ -65,8 +65,8 @@
     },
     {
       "id": "route-owner:page-documents",
-      "expected": 50,
-      "actual": 50,
+      "expected": 51,
+      "actual": 51,
       "passed": true
     },
     {

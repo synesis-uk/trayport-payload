@@ -168,6 +168,36 @@ export const representativeRoutes = [
     path: '/contact/',
     title: /Contact Trayport \| Get in Touch & Request a Demo \| Trayport/i,
   },
+  {
+    heading: 'Data Analytics',
+    legacyId: 1930,
+    path: '/products/data-analytics/',
+    title: /Data Analytics \| Advanced Insights \| Trayport/i,
+  },
+  {
+    heading: 'An end-to-end solution catering to your market requirements',
+    legacyId: 1940,
+    path: '/products/exchange-trading-system/',
+    title: /Exchange Trading System \| Trayport Solutions/i,
+  },
+  {
+    heading: 'Lifecycle Information',
+    legacyId: 4028,
+    path: '/resources/lifecycle-information/',
+    title: /Lifecycle Information \| Product Support \| Trayport/i,
+  },
+  {
+    heading: 'Exchange Connectivity',
+    legacyId: 6773,
+    path: '/products/exchange-connectivity/',
+    title: /Exchange Connectivity \| Trayport Products/i,
+  },
+  {
+    heading: 'EEX’s New Natural Gas Spot Trading System',
+    legacyId: 11299,
+    path: '/eex-news/',
+    title: /EEX's New Natural Gas Spot Trading System/i,
+  },
 ] as const satisfies readonly RepresentativeRoute[]
 
 export const activeNavigationRoots = ['Company', 'Products', 'Markets', 'Regions', 'Resources']

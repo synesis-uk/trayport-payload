@@ -152,6 +152,32 @@ function tp_inventory_add_reference(array &$references, array $reference): void
     $references[tp_inventory_reference_key($reference)] = $reference;
 }
 
+function tp_inventory_post_reference_id($value): int
+{
+    if ($value instanceof WP_Post) {
+        return (int) $value->ID;
+    }
+    if (is_numeric($value)) {
+        return (int) $value;
+    }
+    if (is_array($value)) {
+        foreach (['ID', 'id', 'value'] as $key) {
+            if (isset($value[$key]) && is_numeric($value[$key])) {
+                return (int) $value[$key];
+            }
+        }
+    }
+    if (is_object($value)) {
+        foreach (['ID', 'id', 'value'] as $key) {
+            if (isset($value->{$key}) && is_numeric($value->{$key})) {
+                return (int) $value->{$key};
+            }
+        }
+    }
+
+    return 0;
+}
+
 function tp_inventory_link_candidate($value, string $sourcePath, string $origin): ?array
 {
     if ($value instanceof WP_Post) {
@@ -578,6 +604,22 @@ foreach ($posts as $post) {
     $fields = get_fields($post->ID);
     if (!is_array($fields)) {
         $fields = [];
+    }
+    if ($post->post_type === 'banner') {
+        foreach (array_values((array) ($fields['pages'] ?? [])) as $index => $page) {
+            $pageId = tp_inventory_post_reference_id($page);
+            if ($pageId < 1 || get_post_type($pageId) !== 'page') {
+                continue;
+            }
+            tp_inventory_add_reference($references, [
+                'kind' => 'post',
+                'intent' => 'dependency',
+                'legacyId' => $pageId,
+                'taxonomy' => null,
+                'url' => tp_inventory_sanitize_url(get_permalink($pageId) ?: null),
+                'sourcePath' => 'posts.' . $post->ID . '.acf.all-acf-fields.pages[' . $index . ']',
+            ]);
+        }
     }
     $template = (string) get_page_template_slug($post->ID);
     $sectionsNewTemplates = [

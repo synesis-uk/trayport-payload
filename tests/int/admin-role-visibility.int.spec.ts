@@ -24,6 +24,7 @@ describe('admin role visibility', () => {
   it('counts changed drafts from the latest-version view used by the editor', async () => {
     const draftTotals = {
       articles: 2,
+      banners: 4,
       'learning-videos': 3,
       pages: 1,
     }
@@ -45,7 +46,7 @@ describe('admin role visibility', () => {
     const draftQueries = find.mock.calls
       .map(([options]) => options)
       .filter((options) => options.where)
-    expect(draftQueries).toHaveLength(3)
+    expect(draftQueries).toHaveLength(4)
     expect(draftQueries).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

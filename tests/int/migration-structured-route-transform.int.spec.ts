@@ -6,7 +6,7 @@ import {
   venueEditorialDataFromWordPress,
   venueWebsiteFromWordPress,
 } from '../../migration/transform'
-import { mapArticleLayout } from '../../migration/transform/blocks'
+import { mapArticleLayout, mapPageLayout } from '../../migration/transform/blocks'
 import type { TransformCoverage } from '../../migration/transform/types'
 import { describe, expect, it } from 'vitest'
 
@@ -57,6 +57,50 @@ const coverage = (): TransformCoverage => ({
 })
 
 describe('structured-route WordPress transform', () => {
+  it('preserves intentionally blank table headers and cells without inventing display text', () => {
+    const result = mapPageLayout(
+      {
+        sections_new: [
+          {
+            acf_fc_layout: 'single',
+            components: [
+              {
+                acf_fc_layout: 'table',
+                table: {
+                  fields: {
+                    body: [
+                      [{ c: 'German Power' }, { c: '' }],
+                      [{ c: '' }, { c: 'Connected' }],
+                    ],
+                    header: [{ c: 'Market' }, { c: '' }],
+                  },
+                  title: 'Connection status',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      coverage(),
+    )
+
+    expect(result[0]?.columns).toMatchObject([
+      {
+        components: [
+          {
+            blockType: 'dataTable',
+            caption: 'Connection status',
+            headers: [{ text: 'Market' }, { text: '' }],
+            rows: [
+              { cells: [{ text: 'German Power' }, { text: '' }] },
+              { cells: [{ text: '' }, { text: 'Connected' }] },
+            ],
+          },
+        ],
+      },
+    ])
+  })
+
   it('keeps public venue SEO metadata out of visible summary and About content', () => {
     const result = venueEditorialDataFromWordPress(venuePost(), true)
 

@@ -83,6 +83,38 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
     { authoritativeField: string; path: string; template: string }
   >([
     [
+      1930,
+      {
+        authoritativeField: 'sections_new',
+        path: '/products/data-analytics/',
+        template: 'layouts/default-new.blade.php',
+      },
+    ],
+    [
+      1940,
+      {
+        authoritativeField: 'sections_new',
+        path: '/products/exchange-trading-system/',
+        template: 'layouts/default-new.blade.php',
+      },
+    ],
+    [
+      4028,
+      {
+        authoritativeField: 'sections_new',
+        path: '/resources/lifecycle-information/',
+        template: 'layouts/default-new.blade.php',
+      },
+    ],
+    [
+      6773,
+      {
+        authoritativeField: 'sections_new',
+        path: '/products/exchange-connectivity/',
+        template: 'layouts/default-new.blade.php',
+      },
+    ],
+    [
       2231,
       {
         authoritativeField: 'sections_new',
@@ -197,13 +229,15 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
     10140,
     9248,
     3311,
-    3002,
+    1930,
     2205,
     1926,
     9244,
-    3001,
+    1940,
+    4028,
+    6773,
     ...Array.from(
-      { length: 37 },
+      { length: 35 },
       (_, index) =>
         [2231, 5920, 4737, 7589, 7585, 4803, 7573, 5983, 2221, 11475, 5981][index] || 3007 + index,
     ),
@@ -355,6 +389,66 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
       },
     }),
   )
+  const eexNews = inventoryNode(11299, 'page', '/eex-news/', {
+    authoritativeField: 'sections_new',
+    template: 'layouts/default-new.blade.php',
+  })
+  const banners = [
+    inventoryNode(4362, 'banner', '/banner/joule/', {
+      references: [
+        {
+          kind: 'post',
+          intent: 'link',
+          legacyId: 1924,
+          taxonomy: null,
+          url: '/products/joule/',
+          sourcePath: 'posts.4362.acf.all-acf-fields.link',
+        },
+      ],
+    }),
+    inventoryNode(4363, 'banner', '/banner/home/', {
+      references: [
+        {
+          kind: 'post',
+          intent: 'dependency',
+          legacyId: 1898,
+          taxonomy: null,
+          url: '/',
+          sourcePath: 'posts.4363.acf.all-acf-fields.pages[0]',
+        },
+      ],
+    }),
+    inventoryNode(7597, 'banner', '/banner/product-resources/', {
+      references: [1930, 4028].map((legacyId, index) => ({
+        kind: 'post' as const,
+        intent: 'dependency' as const,
+        legacyId,
+        taxonomy: null,
+        url: null,
+        sourcePath: `posts.7597.acf.all-acf-fields.pages[${index}]`,
+      })),
+    }),
+    inventoryNode(11602, 'banner', '/banner/eex-news/', {
+      references: [
+        ...[1940, 6773].map((legacyId, index) => ({
+          kind: 'post' as const,
+          intent: 'dependency' as const,
+          legacyId,
+          taxonomy: null,
+          url: null,
+          sourcePath: `posts.11602.acf.all-acf-fields.pages[${index}]`,
+        })),
+        {
+          kind: 'post',
+          intent: 'link',
+          legacyId: 11299,
+          taxonomy: null,
+          url: '/eex-news/',
+          sourcePath: 'posts.11602.acf.all-acf-fields.link',
+        },
+      ],
+    }),
+  ]
 
   return {
     schemaVersion: 1,
@@ -392,6 +486,8 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
       ...hubs,
       ...learningVideos,
       ...redirects,
+      eexNews,
+      ...banners,
       inventoryNode(2233, 'page', '/resources/commodities-report/'),
       inventoryNode(2207, 'page', '/', { status: 'private' }),
       inventoryNode(8888, 'page', '/ignored-parent/'),

@@ -302,13 +302,13 @@ export const normalizeDataTableComponent = (
   const headers: DataTablePresentationModel['headers'] = (component.headers || []).map(
     (header, index) => ({
       key: header.id || `header-${index}`,
-      text: header.text,
+      text: header.text || '',
     }),
   )
   const rows: DataTablePresentationModel['rows'] = (component.rows || []).map((row, rowIndex) => ({
     cells: (row.cells || []).map((cell, cellIndex) => ({
       key: cell.id || `cell-${cellIndex}`,
-      text: cell.text,
+      text: cell.text || '',
     })),
     key: row.id || `row-${rowIndex}`,
   }))

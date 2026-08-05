@@ -1,5 +1,6 @@
 type DashboardIconName =
   | 'article'
+  | 'banner'
   | 'data'
   | 'footer'
   | 'identity'
@@ -35,6 +36,13 @@ export const DashboardIcon = ({ name }: DashboardIconProps) => {
         <svg {...commonProps}>
           <path d="M7 3.75h7.5L19 8.2v12.05H7z" />
           <path d="M14.5 3.75V8.2H19M10 12h6M10 15.5h6" />
+        </svg>
+      )
+    case 'banner':
+      return (
+        <svg {...commonProps}>
+          <path d="M4 6.25h10.75v8.5H4zM14.75 8.25 20 5v11l-5.25-3.25" />
+          <path d="M7.25 14.75v4.5h3.5v-4.5" />
         </svg>
       )
     case 'data':

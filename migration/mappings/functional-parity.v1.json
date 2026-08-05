@@ -1,0 +1,1013 @@
+{
+  "schemaVersion": 1,
+  "catalogue": "wordpress-to-payload-functional-parity",
+  "auditedAt": "2026-08-05",
+  "catalogueStatus": "partial",
+  "launchReadiness": "missing",
+  "purpose": "A feature-level parity contract across source discovery, Payload schema, editor experience, frontend runtime, migration, and verification. It complements the 297-route inventory; it does not replace or redefine route ownership.",
+  "authority": {
+    "sourceBaseline": "The live public Trayport site and the equivalent desktop-local WordPress deployment",
+    "routeInventory": "docs/content-architecture/inventory-summary.json",
+    "routeContract": "migration/mappings/content-architecture.v1.json",
+    "humanReport": "docs/content-architecture/functional-parity.md"
+  },
+  "statusDefinitions": {
+    "complete": "All six dimensions are satisfied for the feature's stated boundary; this does not widen that boundary or imply launch readiness.",
+    "partial": "Useful target behavior exists, but one or more required dimensions remain incomplete.",
+    "missing": "A required target capability is absent in at least one dimension.",
+    "deferred": "The requirement is accepted but intentionally scheduled for a later delivery slice.",
+    "excluded": "The feature has an explicit approved omission or replacement disposition.",
+    "decision": "Source behavior or target ownership is ambiguous and requires a recorded product decision before implementation can close."
+  },
+  "routeProgress": {
+    "status": "partial",
+    "approvedRouteOwners": 297,
+    "acceptedRouteOwners": 34,
+    "acceptedPercent": 11.4,
+    "planOnlyRouteOwners": 263,
+    "acceptedBreakdown": {
+      "renderedPayloadDocuments": 31,
+      "managedRedirectRouteOwners": 1,
+      "virtualIndexRouteOwners": 2
+    },
+    "evidence": [
+      "inventory:docs/content-architecture/inventory-summary.json",
+      "document:docs/content-architecture/README.md",
+      "document:docs/content-architecture/decisions.md"
+    ]
+  },
+  "features": [
+    {
+      "id": "production-route-corpus",
+      "title": "Production route corpus",
+      "category": "content",
+      "launchPolicy": "required",
+      "targetOwner": "Payload route owners, redirects, and two derived indexes",
+      "status": "partial",
+      "boundary": "The approved 297 canonical public route owners, distinct from dependencies, aliases, and navigation occurrences.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "The reproducible inventory proves 297 unique included route owners with zero unknown archetypes, including the EEX News Page reached from the active published banner.",
+          "evidence": ["inventory:docs/content-architecture/verification.json"]
+        },
+        "schema": {
+          "status": "complete",
+          "summary": "All approved route-owner families and route invariants have target models.",
+          "evidence": ["document:docs/content-architecture/payload-model.md"]
+        },
+        "editor": {
+          "status": "partial",
+          "summary": "The accepted models are editable, but the complete production population and review queues are not present.",
+          "evidence": ["document:docs/editor-guide.md"]
+        },
+        "runtime": {
+          "status": "partial",
+          "summary": "Thirty-one Payload documents, one redirect owner, and two virtual indexes are accepted; 263 owners remain plan-only.",
+          "evidence": ["document:docs/content-architecture/README.md"]
+        },
+        "migration": {
+          "status": "partial",
+          "summary": "The deterministic target plan covers all owners, while the accepted load remains a 34-owner runtime slice.",
+          "evidence": ["migration:migration/scopes/production.ts"]
+        },
+        "verification": {
+          "status": "partial",
+          "summary": "Source-scope verification passes; complete imported, rendered, linked, and reviewed route acceptance does not.",
+          "evidence": ["test:tests/int/production-inventory.int.spec.ts"]
+        }
+      },
+      "acceptance": [
+        "All 297 owners load without unresolved relationships or duplicate canonical paths.",
+        "Every listing-linked detail renders complete content and passes route, link, media, SEO, and visual review."
+      ],
+      "decisionRequired": null,
+      "nextAction": "Extend the immutable import and acceptance review from 34 to all 297 route owners."
+    },
+    {
+      "id": "page-block-composition",
+      "title": "Page and article block composition",
+      "category": "editorial",
+      "launchPolicy": "required",
+      "targetOwner": "Payload Pages, Articles, and the bounded Trayport block library",
+      "status": "partial",
+      "boundary": "Authoritative WordPress flexible-content semantics mapped to typed, reusable Payload blocks and section structure.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "Observed layouts and authoritative field families have explicit dispositions.",
+          "evidence": ["inventory:docs/content-architecture/layout-coverage.json"]
+        },
+        "schema": {
+          "status": "complete",
+          "summary": "The accepted top-level and section-component catalogue is modeled with bounded controls.",
+          "evidence": ["code:src/blocks/Trayport/config.ts"]
+        },
+        "editor": {
+          "status": "complete",
+          "summary": "Editors have visual section presets, meaningful summaries, collapsible groups, and advanced controls separated from primary tasks.",
+          "evidence": ["document:docs/editor-guide.md"]
+        },
+        "runtime": {
+          "status": "complete",
+          "summary": "Configured accepted blocks have typed renderer ownership and responsive section composition.",
+          "evidence": ["test:tests/int/typed-layout-server-adapters.int.spec.ts"]
+        },
+        "migration": {
+          "status": "partial",
+          "summary": "Accepted roots transform deterministically, but the full production corpus has not been loaded and remediated.",
+          "evidence": ["migration:migration/transform/blocks.ts"]
+        },
+        "verification": {
+          "status": "partial",
+          "summary": "Schema-renderer totality and accepted-route tests pass; production-wide visual and editorial review remains open.",
+          "evidence": ["test:tests/int/structured-parity-contract.int.spec.ts"]
+        }
+      },
+      "acceptance": [
+        "Every in-scope source layout maps explicitly with no silent drops.",
+        "Every visible editor control has tested runtime behavior across the production corpus."
+      ],
+      "decisionRequired": null,
+      "nextAction": "Run the full-corpus transform and control-to-runtime audit, then review exceptions with editors."
+    },
+    {
+      "id": "navigation-footer",
+      "title": "Navigation and footer",
+      "category": "navigation",
+      "launchPolicy": "required",
+      "targetOwner": "Payload Navigation, Footer, and Site Settings globals",
+      "status": "partial",
+      "boundary": "Active ACF dropdown/footer configuration, shared utility actions, legal copy, social destinations, and managed internal links.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "The active ACF options are authoritative; classic WordPress menus are excluded.",
+          "evidence": ["document:docs/content-architecture/scope.md"]
+        },
+        "schema": {
+          "status": "complete",
+          "summary": "Navigation, footer, social, notice, and managed-link data have bounded global models.",
+          "evidence": ["code:src/globals/Navigation.ts", "code:src/globals/Footer.ts"]
+        },
+        "editor": {
+          "status": "complete",
+          "summary": "Shared configuration is editable independently of route documents.",
+          "evidence": ["document:docs/content-architecture/editorial-workflows.md"]
+        },
+        "runtime": {
+          "status": "partial",
+          "summary": "The accepted internal roots work; 34 plan-only same-site destinations intentionally fall back to the live site.",
+          "evidence": ["document:docs/frontend-improvements.md"]
+        },
+        "migration": {
+          "status": "complete",
+          "summary": "The accepted ACF globals and link dispositions import deterministically.",
+          "evidence": ["test:tests/int/migration-navigation-transform.int.spec.ts"]
+        },
+        "verification": {
+          "status": "partial",
+          "summary": "Desktop/mobile interaction tests pass, while all destinations cannot become internal until their owners are accepted.",
+          "evidence": ["test:tests/e2e/navigation.e2e.spec.ts"]
+        }
+      },
+      "acceptance": [
+        "All launch navigation and footer destinations resolve to accepted internal owners or approved external destinations.",
+        "Desktop, mobile, keyboard, focus, and current-location behavior passes."
+      ],
+      "decisionRequired": null,
+      "nextAction": "Convert each live-site fallback to a managed internal link as its route owner is accepted."
+    },
+    {
+      "id": "scheduled-page-banners",
+      "title": "Scheduled and targeted page banners",
+      "category": "editorial",
+      "launchPolicy": "required",
+      "targetOwner": "Payload Banners collection and page banner runtime",
+      "status": "partial",
+      "boundary": "Reusable small/large banners targeting all or selected pages, with start/end dates, first/second/last placement, priority, managed media/link, and lifecycle notifications.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "The banner CPT, ACF fields, active-window resolver, placement behavior, and four notification moments are identified.",
+          "evidence": [
+            "wordpress:web/app/themes/trayport/acf-json/group_678a7aab4d4f7.json",
+            "wordpress:web/app/themes/trayport/app/Helpers/BannerResolver.php",
+            "wordpress:web/app/themes/trayport/resources/scripts/utils/banner-manager.php"
+          ]
+        },
+        "schema": {
+          "status": "complete",
+          "summary": "Payload models content, layout, active dates, page targeting, placement, priority, and private CMS recipients; a non-versioned delivery ledger owns operational notification state.",
+          "evidence": ["code:src/collections/Banners.ts"]
+        },
+        "editor": {
+          "status": "complete",
+          "summary": "Editors and administrators can draft, schedule, target, order, and publish banners through bounded fields; a saved banner can be previewed on a target Page outside its public date window.",
+          "evidence": ["code:src/collections/Banners.ts"]
+        },
+        "runtime": {
+          "status": "partial",
+          "summary": "Request-time active filtering, first/second/last page slots, and a retry-bounded four-event notification task with an exact-schedule delivery ledger exist; production SMTP and scheduler execution are not yet accepted, and SMTP cannot make the final send/ledger transition exactly-once.",
+          "evidence": [
+            "code:src/banners/loadBanners.server.ts",
+            "code:src/banners/notificationWorkflow.ts",
+            "code:src/components/Banners/BannerSlot.tsx"
+          ]
+        },
+        "migration": {
+          "status": "complete",
+          "summary": "Extractor, relationship transform, recipient-review state, load priority, and database migrations exist; the live source run contains four banners plus all five dependent Pages and referenced media.",
+          "evidence": [
+            "migration:migration/wp-exporter/export.php",
+            "migration:migration/transform/banner.ts",
+            "test:tests/int/migration-banner-transform.int.spec.ts",
+            "document:docs/content-architecture/banner-migration-acceptance.json"
+          ]
+        },
+        "verification": {
+          "status": "partial",
+          "summary": "Date, targeting, grouping, presentation, transform, notification, source-load, and desktop/mobile browser acceptance pass; production SMTP/scheduler evidence remains open.",
+          "evidence": [
+            "test:tests/int/banner-model.int.spec.ts",
+            "test:tests/int/banner-notification-workflow.int.spec.ts",
+            "test:tests/int/migration-banner-transform.int.spec.ts",
+            "test:tests/ui/site-banners.ui.spec.tsx",
+            "document:docs/content-architecture/banner-migration-acceptance.json"
+          ]
+        }
+      },
+      "acceptance": [
+        "A banner can target every page or selected Pages and appears only inside its inclusive start/end window.",
+        "First, second, and last placements and small/large presentations match or explicitly improve the live behavior.",
+        "Existing active/future banner data and relationships import idempotently.",
+        "Configured recipients receive deduplicated before-live, live, before-offline, and offline notifications."
+      ],
+      "decisionRequired": null,
+      "nextAction": "Complete production scheduler/SMTP recipient acceptance, including the migrated-recipient review workflow and monitoring for the rare stale-lease duplicate window after SMTP acceptance."
+    },
+    {
+      "id": "hubspot-forms",
+      "title": "HubSpot forms",
+      "category": "integration",
+      "launchPolicy": "deferred-to-launch",
+      "targetOwner": "HubSpot with a bounded Next.js form component and Payload-managed identifiers",
+      "status": "deferred",
+      "boundary": "Retain only form identifiers used by the live experience; generic WordPress form-builder administration remains excluded.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "The active form-ID pattern and intentionally dormant Contact/Request A Demo form blocks have explicit dispositions.",
+          "evidence": ["document:docs/content-architecture/scope.md"]
+        },
+        "schema": {
+          "status": "missing",
+          "summary": "The planned bounded hubspotForm block is not yet configured in Payload.",
+          "evidence": ["document:docs/content-architecture/block-catalogue.md"]
+        },
+        "editor": {
+          "status": "missing",
+          "summary": "Editors cannot yet select an approved portal/form identifier or preview integration states.",
+          "evidence": ["document:docs/content-architecture/editorial-workflows.md"]
+        },
+        "runtime": {
+          "status": "deferred",
+          "summary": "Embed loading, consent, error, and accessibility behavior is deferred to the external-integration slice.",
+          "evidence": ["document:docs/delivery-slices.md"]
+        },
+        "migration": {
+          "status": "missing",
+          "summary": "Active form identifiers are not transformed into a target block; route-specific dormant instances are deliberately omitted.",
+          "evidence": ["document:docs/frontend-improvements.md"]
+        },
+        "verification": {
+          "status": "deferred",
+          "summary": "Real submission waits for an approved test destination and consent flow.",
+          "evidence": ["document:docs/delivery-slices.md"]
+        }
+      },
+      "acceptance": [
+        "Approved identifiers render through one consent-aware accessible component with loading, blocked, and error states.",
+        "A production-like test submission reaches an approved HubSpot destination without bypassing consent."
+      ],
+      "decisionRequired": null,
+      "nextAction": "Implement the bounded block and runtime locally, then connect an approved HubSpot test destination after CookieYes behavior is available."
+    },
+    {
+      "id": "cookieyes-consent",
+      "title": "CookieYes consent and preferences",
+      "category": "integration",
+      "launchPolicy": "deferred-to-launch",
+      "targetOwner": "CookieYes with Payload-managed presentation copy where appropriate",
+      "status": "deferred",
+      "boundary": "Clone the live CookieYes categories and preference behavior; do not replace them with a Trayport-owned consent taxonomy.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "CookieYes is the approved authority and the cookie-policy route/shortcode semantics are identified.",
+          "evidence": ["document:docs/content-architecture/scope.md"]
+        },
+        "schema": {
+          "status": "partial",
+          "summary": "Site notice copy exists, but provider configuration/category ownership is not modeled as a final boundary.",
+          "evidence": ["code:src/globals/SiteSettings.ts"]
+        },
+        "editor": {
+          "status": "partial",
+          "summary": "Editors can manage bridge copy but not the final provider-backed preference experience.",
+          "evidence": ["code:src/Footer/CookieNotice.tsx"]
+        },
+        "runtime": {
+          "status": "deferred",
+          "summary": "A versioned aggregate accept/reject bridge exists; it is not the required CookieYes category integration.",
+          "evidence": ["code:src/Footer/cookieConsent.ts"]
+        },
+        "migration": {
+          "status": "partial",
+          "summary": "Policy content and notice copy migrate, but provider categories/preferences do not.",
+          "evidence": ["test:tests/int/footer-import-contract.int.spec.ts"]
+        },
+        "verification": {
+          "status": "partial",
+          "summary": "Bridge persistence and accessibility are tested; provider categories, consent-gated integrations, and preference reopening are not.",
+          "evidence": ["test:tests/e2e/footer-cookie.e2e.spec.ts"]
+        }
+      },
+      "acceptance": [
+        "Live categories, defaults, preference reopening, withdrawal, expiry, and cross-page behavior match the approved CookieYes configuration.",
+        "HubSpot and analytics remain blocked until their relevant consent categories allow them."
+      ],
+      "decisionRequired": null,
+      "nextAction": "Clone the approved CookieYes configuration into its Next.js integration and replace the local aggregate bridge after parity tests pass."
+    },
+    {
+      "id": "tim-customer-access",
+      "title": "TIM customer login, documentation links, and auto-login",
+      "category": "integration",
+      "launchPolicy": "deferred-to-launch",
+      "targetOwner": "TIM authentication boundary plus non-authenticating Payload reconciliation records",
+      "status": "deferred",
+      "boundary": "TIM remains separate from Payload editor authentication and is required at launch for sign-in, protected documentation, and current auto-login outcomes.",
+      "dimensions": {
+        "source": {
+          "status": "partial",
+          "summary": "The required user-visible workflow is locked, but production provider contracts and failure cases are not yet available as executable evidence.",
+          "evidence": ["document:docs/content-architecture/editorial-workflows.md"]
+        },
+        "schema": {
+          "status": "complete",
+          "summary": "Payload has a non-authenticating identity/status model with explicit credential, token, session, and secret exclusions.",
+          "evidence": ["code:src/collections/CustomerIdentities.ts"]
+        },
+        "editor": {
+          "status": "complete",
+          "summary": "Administrators can reconcile identities while editors have read-only visibility; neither can store authentication material.",
+          "evidence": ["test:tests/int/customer-identities.int.spec.ts"]
+        },
+        "runtime": {
+          "status": "deferred",
+          "summary": "TIM sign-in, logout, expiry, revocation, protected links, and auto-login are not implemented.",
+          "evidence": ["document:docs/delivery-slices.md"]
+        },
+        "migration": {
+          "status": "deferred",
+          "summary": "No WordPress credentials or sessions will migrate; any safe identity reconciliation awaits the TIM contract.",
+          "evidence": ["document:docs/content-architecture/payload-model.md"]
+        },
+        "verification": {
+          "status": "deferred",
+          "summary": "Provider success, unavailable, expiry, revocation, logout, protected-link, and auto-login cases are launch gates.",
+          "evidence": ["document:docs/content-architecture/decisions.md"]
+        }
+      },
+      "acceptance": [
+        "Successful TIM subjects reach the same protected documentation outcomes without Payload handling their credentials.",
+        "Expiry, revocation, unavailable-provider, logout, and auto-login flows fail securely and are observable."
+      ],
+      "decisionRequired": null,
+      "nextAction": "Obtain the TIM integration contract and test environment, then implement the separate server-side session boundary."
+    },
+    {
+      "id": "site-search",
+      "title": "Site search",
+      "category": "navigation",
+      "launchPolicy": "decision-required",
+      "targetOwner": "Undecided between a whole-site search index and the current Insights-only filter",
+      "status": "decision",
+      "boundary": "The live modal/search results use Relevanssi across site content; the target modal currently forwards only to the Insights listing query.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "Live modal, results flow, and Relevanssi ownership are identified.",
+          "evidence": [
+            "wordpress:web/app/themes/trayport/resources/views/components/search-modal.blade.php",
+            "wordpress:web/app/themes/trayport/resources/views/search.blade.php"
+          ]
+        },
+        "schema": {
+          "status": "decision",
+          "summary": "No whole-site search projection or indexing contract is defined.",
+          "evidence": ["decision:Choose the launch search corpus and ranking/ownership boundary."]
+        },
+        "editor": {
+          "status": "decision",
+          "summary": "Synonyms, exclusions, weighting, and whether editors need controls depend on the chosen search boundary.",
+          "evidence": ["decision:Search editorial controls are not yet scoped."]
+        },
+        "runtime": {
+          "status": "partial",
+          "summary": "The accessible modal and URL-backed Insights search work, but this is not live whole-site parity.",
+          "evidence": ["code:src/Header/SiteSearchDialog.client.tsx"]
+        },
+        "migration": {
+          "status": "decision",
+          "summary": "Index population and exclusion rules cannot close until the launch corpus is approved.",
+          "evidence": ["decision:No search-index migration contract exists."]
+        },
+        "verification": {
+          "status": "partial",
+          "summary": "Modal focus and Insights filtering are tested; cross-type relevance and result parity are not.",
+          "evidence": ["test:tests/e2e/content-features.e2e.spec.ts"]
+        }
+      },
+      "acceptance": [
+        "A recorded decision defines the indexed content types, exclusions, ranking, result route, and fallback behavior.",
+        "Representative page, article, event, venue, hub, and Learning Hub queries meet the approved result contract."
+      ],
+      "decisionRequired": "Should launch reproduce whole-site Relevanssi behavior, or intentionally replace it with an Insights-only search labelled and designed as such?",
+      "nextAction": "Make the search-scope decision before building an index or presenting the current Insights filter as site search."
+    },
+    {
+      "id": "redirects",
+      "title": "Legacy redirects and path changes",
+      "category": "navigation",
+      "launchPolicy": "required",
+      "targetOwner": "Payload Redirects collection, route registry, and Next.js proxy",
+      "status": "partial",
+      "boundary": "Fifty published WordPress rules (49 permanent, one temporary), the temporary Request A Demo owner, and redirects created by confirmed path changes.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "All 50 rules and the known duplicate, missing-target, and private-target review cases are inventoried.",
+          "evidence": ["document:docs/content-architecture/scope.md"]
+        },
+        "schema": {
+          "status": "complete",
+          "summary": "Redirects share the protected route namespace and retain 301/302 semantics.",
+          "evidence": ["code:src/plugins/index.ts"]
+        },
+        "editor": {
+          "status": "complete",
+          "summary": "Confirmed published path changes can create old-path redirects atomically.",
+          "evidence": ["document:docs/content-architecture/editorial-workflows.md"]
+        },
+        "runtime": {
+          "status": "complete",
+          "summary": "The proxy validates and resolves accepted redirect claims before page rendering.",
+          "evidence": ["code:src/proxy.ts"]
+        },
+        "migration": {
+          "status": "partial",
+          "summary": "The accepted target has one ordinary legacy rule plus the Request A Demo redirect; the full 50-rule review/import is open.",
+          "evidence": ["migration:migration/scopes/pilot.ts"]
+        },
+        "verification": {
+          "status": "partial",
+          "summary": "Accepted redirects and route-shadowing guards are tested; full-rule chains, loops, collisions, private and missing destinations await disposition.",
+          "evidence": ["test:tests/int/proxy-routing.int.spec.ts"]
+        }
+      },
+      "acceptance": [
+        "Every required legacy source has one safe canonical destination and exact 301/302 behavior.",
+        "There are no duplicates, loops, chains, missing/private targets, or content-route shadowing."
+      ],
+      "decisionRequired": null,
+      "nextAction": "Disposition the known invalid rules, import the approved set, and run full redirect-graph and browser checks."
+    },
+    {
+      "id": "media-assets",
+      "title": "Media files and accessibility metadata",
+      "category": "media",
+      "launchPolicy": "required",
+      "targetOwner": "Payload Media metadata with S3-compatible object storage",
+      "status": "partial",
+      "boundary": "Referenced images, documents, videos, derivatives, alternative/decorative state, caption/attribution, focal point, and source provenance.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "The inventory identifies referenced media and 105 files unavailable in the local source copy.",
+          "evidence": ["inventory:docs/content-architecture/inventory-summary.json"]
+        },
+        "schema": {
+          "status": "complete",
+          "summary": "Payload models managed files and bounded accessibility/review metadata.",
+          "evidence": ["code:src/collections/Media.ts"]
+        },
+        "editor": {
+          "status": "complete",
+          "summary": "Editors can choose meaningful alt text or decorative state and manage supporting metadata.",
+          "evidence": ["test:tests/int/media-accessibility.int.spec.ts"]
+        },
+        "runtime": {
+          "status": "complete",
+          "summary": "Managed media renders through compact projections and durable-storage-aware URLs.",
+          "evidence": ["test:tests/ui/media.ui.spec.tsx"]
+        },
+        "migration": {
+          "status": "partial",
+          "summary": "Accepted recovery and missing-media fallbacks work; all unavailable production dependencies still require disposition.",
+          "evidence": ["test:tests/int/migration-media-recovery.int.spec.ts"]
+        },
+        "verification": {
+          "status": "partial",
+          "summary": "Accepted media boundaries pass, while production-wide file presence, rights, alt, caption, attribution, and poster review remains open.",
+          "evidence": ["document:docs/content-architecture/editorial-workflows.md"]
+        }
+      },
+      "acceptance": [
+        "Every referenced launch file exists in production object storage or has an approved replacement/removal.",
+        "Alt/decorative, caption, attribution, poster, transcript, and download behavior is reviewed by media type."
+      ],
+      "decisionRequired": null,
+      "nextAction": "Recover or disposition all unavailable files and complete the production media accessibility/rights review."
+    },
+    {
+      "id": "video-captions",
+      "title": "Video captions and subtitle tracks",
+      "category": "media",
+      "launchPolicy": "required",
+      "targetOwner": "Payload Media/video model and frontend video tracks",
+      "status": "missing",
+      "boundary": "SRT/VTT caption dependencies associated with managed or embedded MP4 video, distinct from visible editorial captions.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "The source audit found 32 MP4 dependencies and one SRT dependency, plus theme handling for SRT/VTT tracks.",
+          "evidence": [
+            "wordpress:web/app/themes/trayport/app/Support/VideoCaptions.php",
+            "wordpress:web/app/themes/trayport/resources/views/components/media/video.blade.php"
+          ]
+        },
+        "schema": {
+          "status": "missing",
+          "summary": "The target media/video models have no managed subtitle-track relationship or language/label/default fields.",
+          "evidence": ["code:src/collections/Media.ts"]
+        },
+        "editor": {
+          "status": "missing",
+          "summary": "Editors cannot attach or review a caption track for a video.",
+          "evidence": ["decision:No target subtitle-track editor control exists."]
+        },
+        "runtime": {
+          "status": "missing",
+          "summary": "The target video renderer emits no HTML track element.",
+          "evidence": ["code:src/components/Trayport/TrayportVideo.client.tsx"]
+        },
+        "migration": {
+          "status": "missing",
+          "summary": "SRT/VTT dependencies and video-track relationships are not extracted, transformed, or loaded.",
+          "evidence": ["decision:The current migration has no subtitle-track target."]
+        },
+        "verification": {
+          "status": "missing",
+          "summary": "No automated or editorial caption-track acceptance exists.",
+          "evidence": [
+            "decision:Caption availability, language, default selection, and keyboard playback are untested."
+          ]
+        }
+      },
+      "acceptance": [
+        "In-scope caption files migrate as managed assets related to the correct videos with language, label, and default semantics.",
+        "The video runtime exposes usable native tracks and passes keyboard, screen-reader, and content review."
+      ],
+      "decisionRequired": null,
+      "nextAction": "Add a bounded subtitle-track model and renderer, map SRT/VTT dependencies, and verify the single observed relationship before full-corpus import."
+    },
+    {
+      "id": "publishing-lifecycle",
+      "title": "Draft, preview, version, schedule, publish, and revalidation lifecycle",
+      "category": "operations",
+      "launchPolicy": "required",
+      "targetOwner": "Payload versions/access/hooks plus Next.js preview and cache invalidation",
+      "status": "partial",
+      "boundary": "Editors and administrators publish; administrators retain destructive/account authority; public reads remain published-only and path changes stay atomic.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "Required WordPress draft/publish/schedule/version and public-projection behavior is documented.",
+          "evidence": ["document:docs/content-architecture/editorial-workflows.md"]
+        },
+        "schema": {
+          "status": "complete",
+          "summary": "Routable content has drafts, autosave, scheduling, published timestamps, route claims, and access controls.",
+          "evidence": ["code:src/collections/Pages/index.ts"]
+        },
+        "editor": {
+          "status": "complete",
+          "summary": "Editors and administrators can draft, preview, inspect versions, schedule, and publish within the agreed role boundary.",
+          "evidence": ["test:tests/int/admin-role-visibility.int.spec.ts"]
+        },
+        "runtime": {
+          "status": "partial",
+          "summary": "Signed preview and published-only reads exist; the final duplicate/revalidation/path-change behavior matrix is not closed for every collection and scheduled transition.",
+          "evidence": ["code:src/routing/previewAccess.ts", "code:src/hooks/publicProjection.ts"]
+        },
+        "migration": {
+          "status": "partial",
+          "summary": "Accepted published content loads idempotently, but full draft/future/version provenance and complete production records are not migrated.",
+          "evidence": ["migration:migration/load/index.ts"]
+        },
+        "verification": {
+          "status": "partial",
+          "summary": "Focused access, preview, publication, route, and cache tests exist; a collection-by-transition acceptance matrix remains open.",
+          "evidence": ["test:tests/int/public-revalidation-hooks.int.spec.ts"]
+        }
+      },
+      "acceptance": [
+        "Every publishable collection passes create/update/draft/preview/schedule/publish/unpublish/delete tests for Administrator, Editor, and public roles.",
+        "Every public projection transition invalidates exactly the affected route, index, sitemap, global, redirect, and dependency caches."
+      ],
+      "decisionRequired": null,
+      "nextAction": "Complete the collection-by-operation and transition/revalidation matrix, including scheduled path changes and duplicate submissions."
+    },
+    {
+      "id": "analytics",
+      "title": "Consent-gated analytics",
+      "category": "integration",
+      "launchPolicy": "required",
+      "targetOwner": "Deployment-managed Google Tag Manager configuration gated by CookieYes",
+      "status": "missing",
+      "boundary": "Preserve the active GTM-P8HWX2S analytics container only after the approved CookieYes category grants consent.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "The active WordPress container identifier GTM-P8HWX2S is identified.",
+          "evidence": [
+            "wordpress:web/app/themes/trayport/resources/views/layouts/_body.blade.php",
+            "wordpress:web/app/themes/trayport/resources/views/partials/pagemeta.blade.php"
+          ]
+        },
+        "schema": {
+          "status": "decision",
+          "summary": "The environment/global ownership of the container identifier and enablement is not recorded in a target contract.",
+          "evidence": [
+            "decision:Choose deployment-only versus bounded Site Settings ownership for analytics configuration."
+          ]
+        },
+        "editor": {
+          "status": "excluded",
+          "summary": "Event/tag administration belongs in GTM rather than a duplicate Payload analytics editor.",
+          "evidence": ["decision:Payload should not recreate GTM tag administration."]
+        },
+        "runtime": {
+          "status": "missing",
+          "summary": "The target does not load the GTM container behind CookieYes consent.",
+          "evidence": ["decision:No GTM runtime integration exists in the Next.js frontend."]
+        },
+        "migration": {
+          "status": "excluded",
+          "summary": "GTM tags and analytics history are external configuration, not WordPress content records to migrate.",
+          "evidence": [
+            "decision:Retain the approved external container rather than transform analytics records."
+          ]
+        },
+        "verification": {
+          "status": "missing",
+          "summary": "No blocked-before-consent, allowed-after-consent, withdrawal, or page-navigation network tests exist.",
+          "evidence": ["decision:Analytics consent/network acceptance is not implemented."]
+        }
+      },
+      "acceptance": [
+        "No GTM or analytics network activity occurs before the relevant CookieYes consent.",
+        "Consent, withdrawal, client navigation, duplicate-load prevention, and production container identity are verified."
+      ],
+      "decisionRequired": null,
+      "nextAction": "Record configuration ownership, then add GTM-P8HWX2S through a deduplicated CookieYes-gated Next.js boundary and network tests."
+    },
+    {
+      "id": "people-details",
+      "title": "People records and public detail links",
+      "category": "content",
+      "launchPolicy": "decision-required",
+      "targetOwner": "Undecided between managed public People routes, embedded relationships, or link removal/redirects",
+      "status": "decision",
+      "boundary": "Nine live people detail links are user-visible, while the current approved target treats people only as dependencies and omits public people route owners.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "The audit identifies nine live public people-detail links and their dependency usage.",
+          "evidence": ["inventory:docs/content-architecture/route-manifest.csv"]
+        },
+        "schema": {
+          "status": "missing",
+          "summary": "There is no Payload People collection with an approved route policy.",
+          "evidence": ["document:docs/content-architecture/payload-model.md"]
+        },
+        "editor": {
+          "status": "missing",
+          "summary": "Editors cannot manage reusable people details or a deliberate replacement disposition.",
+          "evidence": ["decision:People have no dedicated target editor workflow."]
+        },
+        "runtime": {
+          "status": "missing",
+          "summary": "The nine live linked detail outcomes are not owned by the target runtime.",
+          "evidence": ["decision:No public People route renderer exists."]
+        },
+        "migration": {
+          "status": "partial",
+          "summary": "Some people content can be flattened into dependent blocks/bylines, but linked identities and destinations are not migrated.",
+          "evidence": ["migration:migration/transform/blocks.ts"]
+        },
+        "verification": {
+          "status": "decision",
+          "summary": "Acceptance cannot close until each live link is assigned a route, replacement, removal, or redirect.",
+          "evidence": ["decision:Disposition all nine public people links."]
+        }
+      },
+      "acceptance": [
+        "Every live people link has an approved managed route, embedded replacement, removal, or redirect.",
+        "If public details remain, their schema, editor, migration, SEO, and privacy review pass."
+      ],
+      "decisionRequired": "Do the nine live people detail pages remain public managed routes, become embedded profiles, or have their links removed/redirected?",
+      "nextAction": "Review the nine linked records with stakeholders and record one disposition before widening the 297-route contract."
+    },
+    {
+      "id": "event-content-routing",
+      "title": "Event content type and route namespace",
+      "category": "content",
+      "launchPolicy": "decision-required",
+      "targetOwner": "Payload Articles with event semantics, subject to a source-route decision",
+      "status": "decision",
+      "boundary": "The approved corpus contains 20 event-flavoured core posts under /event/, while a separate Events CPT uses /events/ and two redirects cross the namespaces.",
+      "dimensions": {
+        "source": {
+          "status": "partial",
+          "summary": "Both source families and two redirects are identified, but their authoritative launch relationship is ambiguous.",
+          "evidence": ["inventory:docs/content-architecture/route-manifest.csv"]
+        },
+        "schema": {
+          "status": "partial",
+          "summary": "Articles model event metadata, but no second Events CPT target or namespace policy is approved.",
+          "evidence": ["code:src/collections/Articles.ts"]
+        },
+        "editor": {
+          "status": "partial",
+          "summary": "Editors can manage event articles, but cannot see a resolved legacy-CPT merge/redirect policy.",
+          "evidence": ["document:docs/content-architecture/payload-model.md"]
+        },
+        "runtime": {
+          "status": "partial",
+          "summary": "A representative /event/ article renders; /events/ ownership and legacy redirect outcomes remain unresolved.",
+          "evidence": ["test:tests/helpers/site.ts"]
+        },
+        "migration": {
+          "status": "partial",
+          "summary": "Core event posts are planned as Articles; separate Events CPT records and cross-namespace aliases lack a final disposition.",
+          "evidence": ["migration:migration/inventory/discover.ts"]
+        },
+        "verification": {
+          "status": "missing",
+          "summary": "No test proves a complete, collision-free event corpus and redirect graph across both source namespaces.",
+          "evidence": ["decision:Event namespace/corpus acceptance is open."]
+        }
+      },
+      "acceptance": [
+        "One authoritative event corpus and canonical namespace are approved.",
+        "All retained event details, listings, SEO paths, and the two redirects migrate without duplicate or missing ownership."
+      ],
+      "decisionRequired": "Should the separate Events CPT merge into Article events, remain excluded as dormant, or become a distinct target; and which of /event/ or /events/ is canonical?",
+      "nextAction": "Compare live reachability and content overlap for both source families, then record the canonical corpus and redirect policy."
+    },
+    {
+      "id": "regional-market-maps",
+      "title": "Global connections and regional market maps",
+      "category": "specialist",
+      "launchPolicy": "required",
+      "targetOwner": "Payload map configuration and relationships, Next.js accessible fallback, and lazy Mapbox runtime",
+      "status": "complete",
+      "boundary": "The approved local slice: managed regions, hubs, venues, asset classes, geometry, connectivity, filters, period data, fallbacks, and Mapbox interaction.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "Live relationships, interactions, map data, and presentation controls were inventoried.",
+          "evidence": ["document:docs/delivery-slices.md"]
+        },
+        "schema": {
+          "status": "complete",
+          "summary": "Payload owns bounded regions, geometry, points, relationships, appearance, and filters.",
+          "evidence": ["code:src/collections/Regions.ts"]
+        },
+        "editor": {
+          "status": "complete",
+          "summary": "Specialist controls and related records are available in Payload with publication guards.",
+          "evidence": ["test:tests/int/specialist-editor-ux.int.spec.ts"]
+        },
+        "runtime": {
+          "status": "complete",
+          "summary": "Accessible deterministic fallbacks render server-side and Mapbox loads lazily where configured.",
+          "evidence": ["test:tests/e2e/regional-market-map.e2e.spec.ts"]
+        },
+        "migration": {
+          "status": "complete",
+          "summary": "Accepted map entities, relationships, appearance, and defaults migrate through the local slice.",
+          "evidence": ["test:tests/int/migration-market-coverage-transform.int.spec.ts"]
+        },
+        "verification": {
+          "status": "complete",
+          "summary": "Model, loader, UI, browser, accessibility, and provider-failure boundaries are covered locally.",
+          "evidence": ["test:tests/ui/regional-market-map.ui.spec.tsx"]
+        }
+      },
+      "acceptance": [
+        "The approved local map slice remains green; deployment supplies reviewed Mapbox values and production-like data-volume checks before launch."
+      ],
+      "decisionRequired": null,
+      "nextAction": null
+    },
+    {
+      "id": "market-matrix",
+      "title": "Market Matrix",
+      "category": "specialist",
+      "launchPolicy": "required",
+      "targetOwner": "Payload Venue relationships and the Next.js Matrix runtime/exporters",
+      "status": "complete",
+      "boundary": "The approved local slice: venue-to-hub connectivity, filters, accessible grouped data, canonical links, CSV, and formatted Excel export.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "Live relationships, filters, grouping, and download behavior were inventoried.",
+          "evidence": ["document:docs/delivery-slices.md"]
+        },
+        "schema": {
+          "status": "complete",
+          "summary": "Venue relationships are the single managed matrix authority.",
+          "evidence": ["code:src/fields/venueMarketConnections.ts"]
+        },
+        "editor": {
+          "status": "complete",
+          "summary": "Editors manage relationships in Payload and pages publish with exactly one bounded Matrix block.",
+          "evidence": ["test:tests/int/market-matrix-model.int.spec.ts"]
+        },
+        "runtime": {
+          "status": "complete",
+          "summary": "Filters, grouping, accessible data view, managed links, and safe CSV/XLSX downloads share one projection.",
+          "evidence": ["test:tests/ui/market-matrix.ui.spec.tsx"]
+        },
+        "migration": {
+          "status": "complete",
+          "summary": "The authoritative relationships and page block migrate in the accepted local slice.",
+          "evidence": ["test:tests/int/migration-market-coverage-transform.int.spec.ts"]
+        },
+        "verification": {
+          "status": "complete",
+          "summary": "Model, loader, filters, spreadsheet-safety, CSV, and formatted Excel behavior are covered.",
+          "evidence": ["test:tests/int/market-matrix-export.int.spec.ts"]
+        }
+      },
+      "acceptance": [
+        "The approved local Matrix slice remains green; production-like relationship volume and stakeholder UAT still apply as release checks."
+      ],
+      "decisionRequired": null,
+      "nextAction": null
+    },
+    {
+      "id": "charts-market-data",
+      "title": "Charts and market-data operations",
+      "category": "specialist",
+      "launchPolicy": "required",
+      "targetOwner": "Payload editorial chart configuration, application PostgreSQL facts, and Highcharts runtime",
+      "status": "complete",
+      "boundary": "The approved local slice: managed Asset Class/Hub keys, validated preview/commit import, transactional facts, bounded volume/price queries, charts, and data tables.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "Active chart configurations and market-volume facts were inventoried and normalized.",
+          "evidence": ["document:docs/delivery-slices.md"]
+        },
+        "schema": {
+          "status": "complete",
+          "summary": "Payload owns bounded editorial configuration while application PostgreSQL owns raw market facts.",
+          "evidence": ["code:src/fields/marketData.ts"]
+        },
+        "editor": {
+          "status": "complete",
+          "summary": "Editors select managed dimensions and bounded chart controls; operators preview and commit validated imports.",
+          "evidence": ["test:tests/int/market-data-import-workflow.int.spec.ts"]
+        },
+        "runtime": {
+          "status": "complete",
+          "summary": "Highcharts is lazy, accessible data remains available, and unsupported configurations fail closed.",
+          "evidence": ["test:tests/e2e/market-volume-chart.e2e.spec.ts"]
+        },
+        "migration": {
+          "status": "complete",
+          "summary": "The accepted configuration and 1,194 fact rows load transactionally and reconcile.",
+          "evidence": ["test:tests/int/imported-content.int.spec.ts"]
+        },
+        "verification": {
+          "status": "complete",
+          "summary": "Storage boundary, parser, workflow, loader, chart runtime, and data-view evidence pass locally.",
+          "evidence": ["test:tests/int/market-data-gate.int.spec.ts"]
+        }
+      },
+      "acceptance": [
+        "The approved local chart/data slice remains green; Highcharts licensing and production-shaped response profiling remain launch operations gates."
+      ],
+      "decisionRequired": null,
+      "nextAction": null
+    },
+    {
+      "id": "seo-discovery",
+      "title": "SEO, canonical metadata, sitemap, and social presentation",
+      "category": "content",
+      "launchPolicy": "required",
+      "targetOwner": "Payload SEO fields, route registry, and Next.js metadata/sitemap",
+      "status": "partial",
+      "boundary": "Managed titles/descriptions/media, canonical routes, article social metadata, robots behavior, and published content sitemap.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "Source routes, available metadata, canonicals, and exclusions are captured by the inventory.",
+          "evidence": ["inventory:docs/content-architecture/route-manifest.csv"]
+        },
+        "schema": {
+          "status": "complete",
+          "summary": "Routable models share bounded SEO fields and canonical managed paths.",
+          "evidence": ["code:src/fields/seo.ts"]
+        },
+        "editor": {
+          "status": "complete",
+          "summary": "Editors can manage route-specific search/social presentation without editing canonical URLs separately.",
+          "evidence": ["document:docs/editor-guide.md"]
+        },
+        "runtime": {
+          "status": "complete",
+          "summary": "Next metadata, canonical URLs, social fields, status-preserving 404s, and published-only sitemap exist.",
+          "evidence": ["code:src/utilities/generateMeta.ts"]
+        },
+        "migration": {
+          "status": "partial",
+          "summary": "Accepted-route metadata migrates; the other 263 route owners and their missing-media/link decisions do not.",
+          "evidence": ["migration:migration/transform/index.ts"]
+        },
+        "verification": {
+          "status": "partial",
+          "summary": "Representative metadata and sitemap tests pass, but production-wide canonical/social/search review remains open.",
+          "evidence": ["test:tests/e2e/metadata.e2e.spec.ts"]
+        }
+      },
+      "acceptance": [
+        "Every accepted route has reviewed metadata, canonical ownership, social presentation, indexability, and sitemap disposition.",
+        "No excluded, draft, redirect-source, duplicate, or missing route leaks into discovery output."
+      ],
+      "decisionRequired": null,
+      "nextAction": "Run metadata/canonical/sitemap review across all 297 accepted route owners after full import."
+    },
+    {
+      "id": "commodities-report",
+      "title": "Commodities Report",
+      "category": "content",
+      "launchPolicy": "excluded",
+      "targetOwner": "No target owner",
+      "status": "excluded",
+      "boundary": "WordPress page 2233 and its unused feature architecture.",
+      "dimensions": {
+        "source": {
+          "status": "complete",
+          "summary": "The dormant page and supporting architecture are identified.",
+          "evidence": ["document:docs/content-architecture/scope.md"]
+        },
+        "schema": {
+          "status": "excluded",
+          "summary": "No Payload model is required.",
+          "evidence": ["decision:Approved scope exclusion CA-003."]
+        },
+        "editor": {
+          "status": "excluded",
+          "summary": "No editor workflow is required.",
+          "evidence": ["decision:Approved scope exclusion CA-003."]
+        },
+        "runtime": {
+          "status": "excluded",
+          "summary": "No public target route is required.",
+          "evidence": ["decision:Approved scope exclusion CA-003."]
+        },
+        "migration": {
+          "status": "excluded",
+          "summary": "The source identity and feature records are deliberately omitted.",
+          "evidence": ["migration:migration/scopes/production.ts"]
+        },
+        "verification": {
+          "status": "complete",
+          "summary": "The inventory asserts its exclusion from the 297 canonical owners.",
+          "evidence": ["inventory:docs/content-architecture/verification.json"]
+        }
+      },
+      "acceptance": [
+        "The page remains absent from navigation, migration, sitemap, and public target ownership; any legacy links receive explicit removal or redirect disposition."
+      ],
+      "decisionRequired": null,
+      "nextAction": null
+    }
+  ]
+}

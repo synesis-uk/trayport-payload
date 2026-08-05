@@ -16,10 +16,10 @@ Payload/admin, market-map, Market Matrix, and chart/market-data slices described
 in the [delivery plan](../delivery-slices.md).
 
 This status does not widen the delivered content slice. The current importer and
-frontend acceptance cover 27 immutable source roots: 26 rendered content routes
-and the temporary `/request-a-demo/` redirect to Contact. The verified 296-route
-inventory and deterministic target plan describe the remaining 267 plan-only
-documents;
+frontend acceptance cover 27 immutable source roots plus five Pages required by
+published banners: 31 rendered content routes and the temporary
+`/request-a-demo/` redirect to Contact. The verified 297-route inventory and
+deterministic target plan describe the remaining 263 plan-only documents;
 they do not mean those documents have been imported, rendered, or reviewed.
 
 - [Scope and acceptance boundary](scope.md)
@@ -28,6 +28,7 @@ they do not mean those documents have been imported, rendered, or reviewed.
 - [Block catalogue and observed layout coverage](block-catalogue.md)
 - [Editorial workflows](editorial-workflows.md)
 - [Architecture decisions and readiness gates](decisions.md)
+- [Functional parity catalogue and audit](functional-parity.md)
 - [Delivery slices and remaining plan](../delivery-slices.md)
 - [Thin visual and interaction direction](../design-direction.md)
 - [Retained inventory summary](inventory-summary.json)
@@ -54,4 +55,4 @@ TMPDIR=/tmp corepack pnpm exec tsx migration/cli.ts inventory --scope production
 ```
 
 These target-plan artifacts are deterministic planning evidence only. The full
-296-route import, content remediation, and production review are not complete.
+297-route import, content remediation, and production review are not complete.

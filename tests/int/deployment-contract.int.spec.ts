@@ -201,21 +201,54 @@ describe('deployment configuration contract', () => {
     expect(deploymentSchema.payloadMigrations).toContain('20260804_113221_data_chart_semantics')
   })
 
-  it('locks the completed slice schema and legacy-loader compatibility at the manifest tail', () => {
+  it('retains the completed slice schema before the banner migration tail', () => {
     const sliceSchema = readProjectFile('src/database/migrations/20260804_224938.ts')
     const legacyCompatibility = readProjectFile(
       'src/database/migrations/20260804_225535_market_data_legacy_upsert_compat.ts',
     )
+    const notificationJobs = readProjectFile(
+      'src/database/migrations/20260805_105208_banner_notification_jobs.ts',
+    )
+    const scheduledBanners = readProjectFile(
+      'src/database/migrations/20260805_104353_scheduled_page_banners.ts',
+    )
+    const deliveryLedger = readProjectFile(
+      'src/database/migrations/20260805_111442_banner_notification_delivery_ledger.ts',
+    )
 
-    expect(deploymentSchema.payloadMigrations.slice(-2)).toEqual([
+    expect(deploymentSchema.payloadMigrations.slice(-6, -4)).toEqual([
       '20260804_224938',
       '20260804_225535_market_data_legacy_upsert_compat',
+    ])
+    expect(deploymentSchema.payloadMigrations.slice(-4)).toEqual([
+      '20260805_104353_scheduled_page_banners',
+      '20260805_104915_banner_recipient_migration_review',
+      '20260805_105208_banner_notification_jobs',
+      '20260805_111442_banner_notification_delivery_ledger',
     ])
     expect(sliceSchema).toContain('CREATE TABLE "app"."market_data_import_staging"')
     expect(sliceSchema).toContain('CREATE UNIQUE INDEX "market_volume_monthly_stable_scope_unique"')
     expect(sliceSchema).toContain('ADD CONSTRAINT "market_volume_monthly_source_import_id_fk"')
     expect(legacyCompatibility).toContain('ADD CONSTRAINT market_volume_monthly_scope_unique')
     expect(legacyCompatibility).not.toMatch(/\b(?:DELETE|TRUNCATE)\b/)
+    expect(notificationJobs).toContain(
+      'DELETE FROM "payload_jobs_log"\n  WHERE "task_slug" = \'processBannerNotifications\'',
+    )
+    expect(notificationJobs).toContain(
+      'DELETE FROM "payload_jobs"\n  WHERE "task_slug" = \'processBannerNotifications\'',
+    )
+    const scheduledBannersDown = scheduledBanners.split('export async function down')[1]
+    expect(scheduledBannersDown.indexOf('DROP CONSTRAINT')).toBeLessThan(
+      scheduledBannersDown.indexOf('DROP TABLE "banners"'),
+    )
+    expect(deliveryLedger).toContain('CREATE TABLE "app"."banner_notification_deliveries"')
+    expect(deliveryLedger).toContain('banner_notification_deliveries_schedule_unique')
+    expect(deliveryLedger).toContain('banner_notification_deliveries_banner_id_fk')
+    expect(deliveryLedger).toContain('DROP COLUMN "notification_state_started_sent_at"')
+    expect(deliveryLedger).toContain(
+      'Cannot roll back the banner notification ledger while non-sent or historical-schedule deliveries exist.',
+    )
+    expect(deliveryLedger).toContain('"delivery"."scheduled_at" = "banner"."start_at"')
   })
 
   it('returns a no-store process liveness response without runtime details', async () => {

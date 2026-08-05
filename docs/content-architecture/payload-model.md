@@ -264,10 +264,10 @@ Dropdown roots may intentionally have no link. The import must not turn legacy
 `for_page` values into anchors when `menu_block` exists.
 
 During incremental migration, a navigation or footer destination remains
-root-relative only when one of the 27 accepted roots or two virtual routes owns
-it. Every other same-site destination is rewritten to its canonical
-`https://www.trayport.com/` URL. Acceptance currently validates exactly 34 unique
-live fallback paths: 29 leaf destinations plus the five clickable section roots.
+root-relative only when one of the 27 accepted roots, five published-banner Page
+dependencies, or two virtual routes owns it. Every other same-site destination is rewritten to its canonical
+`https://www.trayport.com/` URL. Acceptance currently validates exactly 30 unique
+live fallback paths: 25 leaf destinations plus the five clickable section roots.
 This bridge is removed per route when that destination
 joins the accepted imported set.
 

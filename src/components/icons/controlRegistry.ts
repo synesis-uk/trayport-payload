@@ -5,6 +5,7 @@ import {
   faCirclePlay,
   faMinus,
   faSpinnerThird,
+  faXmark,
 } from '@awesome.me/kit-9e17af3472/icons/classic/solid'
 import { faAngleDown } from '@awesome.me/kit-9e17af3472/icons/sharp-duotone/light'
 
@@ -13,6 +14,7 @@ export const controlIcons = {
   check: faCheck,
   chevronDown: faAngleDown,
   chevronUp: faChevronUp,
+  close: faXmark,
   minus: faMinus,
   playCircle: faCirclePlay,
   spinner: faSpinnerThird,

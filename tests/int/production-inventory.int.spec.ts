@@ -13,10 +13,10 @@ describe('production WordPress inventory', () => {
     const inventory = discoverProductionInventory(snapshot, productionScope)
 
     expect(inventory.summary).toMatchObject({
-      directAuthoredRouteStrings: 54,
-      directPublicRoutes: 53,
+      directAuthoredRouteStrings: 55,
+      directPublicRoutes: 54,
       listingRoutes: 243,
-      routes: 296,
+      routes: 297,
       redirects: 50,
       exclusions: 1,
       unknownArchetypes: 0,
@@ -45,8 +45,23 @@ describe('production WordPress inventory', () => {
           legacyId: 7589,
           archetype: 'page.legal',
         }),
+        expect.objectContaining({
+          legacyId: 11299,
+          canonicalPath: '/eex-news/',
+          roles: ['banner'],
+          sources: ['posts.11602.acf.all-acf-fields.link'],
+          archetype: 'page.standard',
+          targetOwner: 'pages',
+        }),
       ]),
     )
+    expect(inventory.routes.some(({ postType }) => postType === 'banner')).toBe(false)
+    expect(inventory.edges).toContainEqual({
+      from: 'post:11602',
+      to: 'post:11299',
+      kind: 'banner',
+      sourcePath: 'posts.11602.acf.all-acf-fields.link',
+    })
     expect(inventory.routes.some(({ legacyId }) => legacyId === 8888)).toBe(false)
     expect(inventory.exclusions).toEqual([
       expect.objectContaining({ legacyId: 2233, path: '/resources/commodities-report/' }),
@@ -86,6 +101,26 @@ describe('production WordPress inventory', () => {
         }),
       ]),
     )
+  })
+
+  it('lets every published banner add managed Page reachability without using active dates', () => {
+    const snapshot = productionFixture()
+    const inventory = discoverProductionInventory(snapshot, productionScope)
+
+    expect(
+      inventory.routes
+        .filter(({ roles }) => roles.includes('banner'))
+        .map(({ legacyId }) => legacyId)
+        .sort((left, right) => (left || 0) - (right || 0)),
+    ).toEqual([1898, 1924, 1930, 1940, 4028, 6773, 11299])
+
+    const eexBanner = snapshot.nodes.find(({ legacyId }) => legacyId === 11602)
+    expect(eexBanner).toBeDefined()
+    if (!eexBanner) return
+    eexBanner.status = 'future'
+
+    const withoutFutureBanner = discoverProductionInventory(snapshot, productionScope)
+    expect(withoutFutureBanner.routes.some(({ legacyId }) => legacyId === 11299)).toBe(false)
   })
 
   it('emits byte-for-byte deterministic reports and passes the production drift gate', () => {
@@ -163,7 +198,7 @@ describe('production WordPress inventory', () => {
 
     expect(inventory.summary).toMatchObject({
       listingRoutes: 243,
-      routes: 296,
+      routes: 297,
       unknownArchetypes: 0,
     })
     expect(verification.status).toBe('failed')

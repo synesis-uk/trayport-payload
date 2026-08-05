@@ -822,11 +822,11 @@ const mapComponent = (
       const table = asObject(component.table)
       const fields = asObject(table.fields)
       const headers = asArray(fields.header).map((cell) => ({
-        text: htmlToPlainText(asObject(cell).c || cell),
+        text: htmlToPlainText(asObject(cell).c ?? cell),
       }))
       const rows = asArray(fields.body).map((row) => ({
         cells: asArray(row).map((cell) => ({
-          text: htmlToPlainText(asObject(cell).c || cell),
+          text: htmlToPlainText(asObject(cell).c ?? cell),
         })),
       }))
       return [

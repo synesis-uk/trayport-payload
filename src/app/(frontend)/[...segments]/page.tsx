@@ -7,12 +7,12 @@ type RouteProps = {
   params: Promise<{
     segments: string[]
   }>
-  searchParams: Promise<{ q?: string | string[] }>
+  searchParams: Promise<{ bannerPreview?: string | string[]; q?: string | string[] }>
 }
 
 const CatchAllContent = async ({ params, searchParams }: RouteProps) => {
-  const [{ segments }, { q }] = await Promise.all([params, searchParams])
-  return <ContentRoute searchQuery={q} segments={segments} />
+  const [{ segments }, { bannerPreview, q }] = await Promise.all([params, searchParams])
+  return <ContentRoute bannerPreview={bannerPreview} searchQuery={q} segments={segments} />
 }
 
 export default function CatchAllPage({ params, searchParams }: RouteProps) {

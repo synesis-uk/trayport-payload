@@ -31,7 +31,7 @@ const pilotSourcePageCount = pilotScope.roots.filter(({ postType }) => postType 
 const pilotTargetPageCount = pilotScope.roots.filter(
   ({ targetOwner }) => targetOwner === 'pages',
 ).length
-const expectedNavigationFooterLiveFallbacks = 34
+const expectedNavigationFooterLiveFallbacks = 30
 
 const countBy = <T>(values: T[], key: (value: T) => string): Record<string, number> => {
   const counts: Record<string, number> = {}
@@ -624,8 +624,16 @@ export const validateSource = (
   }
 
   const pages = posts.filter(({ postType }) => postType === 'page')
-  assert.equal(pages.length, 22)
+  const bannerTargetPages = pages.filter(({ scopeRole }) => scopeRole === 'banner-target')
+  const bannerActionPages = pages.filter(({ scopeRole }) => scopeRole === 'banner-action')
+  const bannerDependencyPages = [...bannerTargetPages, ...bannerActionPages]
+  assert.equal(pages.length, pilotSourcePageCount + bannerDependencyPages.length)
   assert.equal(pages.filter(({ scopeRole }) => scopeRole === 'root').length, 22)
+  assert.deepEqual(
+    sortedNumbers(bannerTargetPages.map(({ legacyId }) => legacyId)),
+    [1930, 1940, 4028, 6773],
+  )
+  assert.deepEqual(sortedNumbers(bannerActionPages.map(({ legacyId }) => legacyId)), [11299])
 
   const articles = posts.filter(({ postType }) => postType === 'post')
   assert.equal(articles.length, 71)
@@ -849,6 +857,20 @@ export const validateSource = (
     )
     lifecycleItems.forEach((record) => sourceLifecycleReusableSchema.parse(record))
   }
+  const banners = reusables.filter(({ postType }) => postType === 'banner')
+  assert.deepEqual(
+    sortedNumbers(banners.map(({ legacyId }) => legacyId)),
+    [4362, 4363, 7597, 11602],
+  )
+  assert(banners.every(({ status }) => status === 'publish'))
+  const activeBanner = banners.find(({ legacyId }) => legacyId === 11602)
+  assert(activeBanner)
+  assert.equal(activeBanner.data.start_at, '2026-07-20T00:00:00+00:00')
+  assert.equal(activeBanner.data.end_at, '2026-12-31T17:00:00+00:00')
+  assert.deepEqual(activeBanner.data.pages, [1940, 6773])
+  assert.deepEqual(activeBanner.data.notification_recipient_emails, [
+    'sophie.inghamclark@trayport.com',
+  ])
   const jouleFunctionalityVideo = reusables.find(
     ({ legacyId, postType }) => legacyId === 7665 && postType === 'videos',
   )
@@ -950,7 +972,11 @@ export const validateSource = (
     runId,
     checks: {
       roots: pilotRootCount,
-      pages: pilotSourcePageCount,
+      pages: pages.length,
+      bannerTargetPages: bannerTargetPages.length,
+      bannerActionPages: bannerActionPages.length,
+      bannerDependencyPages: bannerDependencyPages.length,
+      banners: banners.length,
       articles: 71,
       insightsArticles: 39,
       newsArticles: 31,
@@ -1011,9 +1037,23 @@ export const validateTransformed = (
     (record): record is Extract<SourceRecord, { entity: 'reusable' }> =>
       record.entity === 'reusable' && record.postType === 'lifecycle',
   )
+  const sourceBanners = sourceRecords.filter(
+    (record): record is Extract<SourceRecord, { entity: 'reusable' }> =>
+      record.entity === 'reusable' && record.postType === 'banner',
+  )
+  const sourceBannerTargetPages = sourceRecords.filter(
+    (record): record is SourcePost =>
+      record.entity === 'post' && record.scopeRole === 'banner-target',
+  )
+  const sourceBannerActionPages = sourceRecords.filter(
+    (record): record is SourcePost =>
+      record.entity === 'post' && record.scopeRole === 'banner-action',
+  )
+  const sourceBannerDependencyPages = [...sourceBannerTargetPages, ...sourceBannerActionPages]
+  const expectedPageTargets = pilotTargetPageCount + sourceBannerDependencyPages.length
   const counts = countBy(targets, ({ target }) => target)
   assert.deepEqual(counts, {
-    pages: pilotTargetPageCount,
+    pages: expectedPageTargets,
     articles: 71,
     hubs: 72,
     venues: 66,
@@ -1026,6 +1066,7 @@ export const validateTransformed = (
     'venue-types': 3,
     regions: 4,
     media: sourceMedia.length,
+    banners: sourceBanners.length,
     redirects: 2,
     global: 3,
   })
@@ -1176,7 +1217,8 @@ export const validateTransformed = (
       ignoredComponentLayouts?: Record<string, { count?: number; reason?: string }>
     }
   }
-  assert.equal(transformCoverage.coverage?.ignoredComponentLayouts?.form?.count, 5)
+  const deferredHubSpotForms = transformCoverage.coverage?.ignoredComponentLayouts?.form?.count || 0
+  assert.equal(deferredHubSpotForms, 7)
   assert.match(
     transformCoverage.coverage?.ignoredComponentLayouts?.form?.reason || '',
     /HubSpot forms are explicitly deferred/i,
@@ -1498,6 +1540,21 @@ export const validateTransformed = (
     assert.match(String(lifecycleItem.data.endOfLifeDate), /^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/)
   }
 
+  const banners = targets.filter(({ target }) => target === 'banners')
+  assert.equal(banners.length, sourceBanners.length)
+  assert.deepEqual(
+    sortedNumbers(banners.map(({ legacy }) => legacy.legacyId)),
+    [4362, 4363, 7597, 11602],
+  )
+  const activeBanner = banners.find(({ legacy }) => legacy.legacyId === 11602)
+  assert(activeBanner)
+  assert.equal(activeBanner.data._status, 'published')
+  assert.equal(activeBanner.data.targetMode, 'specific')
+  assert.deepEqual(activeBanner.data.targetPages, [
+    { $legacyRef: 'page', legacyId: 1940 },
+    { $legacyRef: 'page', legacyId: 6773 },
+  ])
+
   const venues = targets.filter(({ target }) => target === 'venues')
   const venueWebsites = venues.flatMap(({ data }) =>
     typeof data.website === 'string' ? [data.website] : [],
@@ -1670,6 +1727,20 @@ export const validateTransformed = (
     assert(discriminator)
     assert.equal(owner.data[discriminator[0]], discriminator[1])
   }
+  for (const dependency of pilotScope.acceptedRouteDependencies) {
+    const owners = targets.filter(
+      ({ legacy, target }) => legacy.legacyId === dependency.legacyId && target === 'pages',
+    )
+    assert.equal(owners.length, 1, `Expected one Pages owner for ${dependency.legacyId}`)
+    const owner = owners[0]
+    assert(owner)
+    assert.equal(owner.data.path, dependency.path)
+    assert.equal(owner.data._status, 'published')
+    assert.equal(
+      owner.data.pageType,
+      dependency.archetype === 'page.product' ? 'product' : 'standard',
+    )
+  }
 
   const routablePaths = targets
     .map(({ data }) => data.path)
@@ -1677,15 +1748,20 @@ export const validateTransformed = (
     .sort()
   assert.deepEqual(
     routablePaths,
-    pilotScope.roots
-      .filter(({ targetOwner }) => targetOwner !== 'redirects')
-      .map(({ path }) => path)
-      .sort(),
-    'Only the agreed content documents may own canonical content paths.',
+    [
+      ...pilotScope.roots
+        .filter(({ targetOwner }) => targetOwner !== 'redirects')
+        .map(({ path }) => path),
+      ...sourceBannerDependencyPages.flatMap(({ path }) => (path ? [path] : [])),
+    ].sort(),
+    'Only agreed pilot owners and required banner Page dependencies may own canonical paths.',
   )
   assert.equal(new Set(routablePaths).size, routablePaths.length)
 
-  const importedRootOwners = pilotScope.roots.flatMap((root) => {
+  const importedAcceptedOwners = [
+    ...pilotScope.roots,
+    ...pilotScope.acceptedRouteDependencies,
+  ].flatMap((root) => {
     if (root.targetOwner === 'redirects') return []
     const owner = targets.find(
       ({ legacy, target }) => legacy.legacyId === root.legacyId && target === root.targetOwner,
@@ -1695,7 +1771,7 @@ export const validateTransformed = (
   })
   const contentURLs: string[] = []
   const contentLinkReferences: ManagedLinkReference[] = []
-  importedRootOwners.forEach((owner) => {
+  importedAcceptedOwners.forEach((owner) => {
     collectURLFields(owner.data.layout, contentURLs)
     collectManagedLinkReferences(owner.data.layout, contentLinkReferences)
   })
@@ -1722,8 +1798,16 @@ export const validateTransformed = (
   }
   for (const reference of contentLinkReferences) {
     const root = pilotScope.roots.find(({ legacyId }) => legacyId === reference.legacyId)
-    assert(root && root.targetOwner !== 'redirects')
-    assert.equal(reference.relationTo, relationByTarget[root.targetOwner])
+    if (root) {
+      assert.notEqual(root.targetOwner, 'redirects')
+      assert.equal(reference.relationTo, relationByTarget[root.targetOwner])
+      continue
+    }
+    assert(
+      sourceBannerDependencyPages.some(({ legacyId }) => legacyId === reference.legacyId),
+      `Managed Page reference ${reference.legacyId} is outside the accepted dependency graph.`,
+    )
+    assert.equal(reference.relationTo, 'pages')
   }
 
   const insightsIndex = targets.find(
@@ -1840,7 +1924,11 @@ export const validateTransformed = (
       targetRecords: targets.length,
       legacyReferences: targetGraph.legacyReferences,
       uniqueTargetIdentities: targetGraph.uniqueTargetIdentities,
-      pages: pilotTargetPageCount,
+      pages: expectedPageTargets,
+      bannerTargetPages: sourceBannerTargetPages.length,
+      bannerActionPages: sourceBannerActionPages.length,
+      bannerDependencyPages: sourceBannerDependencyPages.length,
+      banners: banners.length,
       articles: 71,
       fullArticles: 2,
       listingArticles: 69,
@@ -1868,8 +1956,8 @@ export const validateTransformed = (
       germanHeaderMediaBridge:
         sourceMedia.find(({ legacyId }) => legacyId === 9727)?.availability === 'unavailable',
       dataCharts: dataChartCount,
-      routableDocuments: pilotRootCount,
-      deferredHubSpotForms: 5,
+      routableDocuments: pilotRootCount + sourceBannerDependencyPages.length,
+      deferredHubSpotForms,
       protectedVideoExcluded: true,
       redirects: 2,
       globals: 3,

@@ -6,9 +6,9 @@ This audit records the section structures already present in transformed Payload
 
 The accepted baseline was generated from:
 
-- Run: `slices-01456-final-map-defaults-20260805`
-- Artifact: `migration/work/slices-01456-final-map-defaults-20260805/transformed.ndjson`
-- Accepted artifact SHA-256: `f3c8a017754a8ab9a169c3ed116e988b03e2bae83eec5aaef3bc11963db56dc1`
+- Run: `banner-route-table-semantics-20260805`
+- Artifact: `migration/work/banner-route-table-semantics-20260805/transformed.ndjson`
+- Accepted artifact SHA-256: `3a61f1dd2a01e8744106bc3c6733935f8bf12748c70012cdc9e84921769cf6a3`
 
 The work artifact is intentionally Git-ignored. The audit utility and this retained result are committed; the source can be regenerated through the migration workflow.
 
@@ -18,9 +18,9 @@ The command is deterministic, read-only, and does not require Payload or Postgre
 
 ```bash
 corepack pnpm exec tsx scripts/editor-layout-audit.ts \
-  --input migration/work/slices-01456-final-map-defaults-20260805/transformed.ndjson \
+  --input migration/work/banner-route-table-semantics-20260805/transformed.ndjson \
   --format markdown \
-  --source "accepted transformed content: slices-01456-final-map-defaults-20260805"
+  --source "accepted transformed content: banner-route-table-semantics-20260805"
 ```
 
 Use `--format json` for machine-readable output. The input may be:
@@ -37,34 +37,34 @@ Records with an explicit target other than `pages` are ignored. Direct documents
 
 | Measure | Count |
 | --- | ---: |
-| Input transformed records | 453 |
-| Page documents | 21 |
-| Pages with layout | 21 |
-| Top-level blocks | 138 |
-| Content sections | 114 |
-| Columns | 179 |
-| Nested components | 306 |
+| Input transformed records | 471 |
+| Page documents | 26 |
+| Pages with layout | 26 |
+| Top-level blocks | 164 |
+| Content sections | 135 |
+| Columns | 208 |
+| Nested components | 382 |
 | Empty sections | 0 |
 | Empty columns | 0 |
-| Ignored non-page records | 432 |
+| Ignored non-page records | 445 |
 
-The top-level blocks are 114 content sections, 21 heroes, two article listings, and one learning-video listing.
+The top-level blocks are 135 content sections, 26 heroes, two article listings, and one learning-video listing.
 
 ## Section controls
 
 | Editor control | Observed use | Implementation implication |
 | --- | --- | --- |
-| Anchor | Set on 23 sections (20.2%) | Keep available, but do not place before content. Put under organisation/advanced settings. |
-| Surface tone | None 58.8%, white 36%, dark 5.3% | Presets should choose the tone. Retain a small visual tone choice in Appearance. |
-| Wrapper theme | None 90.4%; all coloured treatments 9.6% | Default and hide in Advanced for the normal path. |
-| Background media | Set once (0.9%) | Hide behind an explicit “Add background image” action. |
-| Background opacity | Non-default once (0.9%) | Only show when background media is set. |
-| Surface radius | Default 93.9%, extra-large 6.1% | Presets should own this; keep the override in Advanced. |
-| Surface padding | None 93.9%, medium 6.1% | Presets should own this; keep the override in Advanced. |
-| Width | Wide 59.6%, reading 35.1%, standard 5.3% | Width is meaningful but should normally be selected by the preset. A compact visual override is justified. |
-| Spacing above | Regular 49.1%, tight 43%, large 7.9% | Expose a simple compact/standard/spacious treatment; independent values belong in Advanced. |
-| Spacing below | Regular 50.9%, tight 42.1%, large 7% | Use the same treatment as spacing above, with independent override in Advanced. |
-| Column gap | Regular 95.6%, tight 4.4% | Default it and hide it in Advanced. |
+| Anchor | Set on 26 sections (19.3%) | Keep available, but do not place before content. Put under organisation/advanced settings. |
+| Surface tone | None 62.2%, white 30.4%, dark 7.4% | Presets should choose the tone. Retain a small visual tone choice in Appearance. |
+| Wrapper theme | None 88.9%; all coloured treatments 11.1% | Default and hide in Advanced for the normal path. |
+| Background media | Set twice (1.5%) | Hide behind an explicit “Add background image” action. |
+| Background opacity | Non-default twice (1.5%) | Only show when background media is set. |
+| Surface radius | Default 92.6%, extra-large 7.4% | Presets should own this; keep the override in Advanced. |
+| Surface padding | None 91.9%, medium 8.1% | Presets should own this; keep the override in Advanced. |
+| Width | Wide 63.7%, reading 29.6%, standard 6.7% | Width is meaningful but should normally be selected by the preset. A compact visual override is justified. |
+| Spacing above | Regular 55.6%, tight 37%, large 7.4% | Expose a simple compact/standard/spacious treatment; independent values belong in Advanced. |
+| Spacing below | Regular 57%, tight 36.3%, large 6.7% | Use the same treatment as spacing above, with independent override in Advanced. |
+| Column gap | Regular 96.3%, tight 3.7% | Default it and hide it in Advanced. |
 
 This supports the proposed content-first ordering: columns and components, Appearance, Advanced layout, then anchor and technical settings.
 
@@ -72,12 +72,12 @@ This supports the proposed content-first ordering: columns and components, Appea
 
 | Pattern | Sections | Share |
 | --- | ---: | ---: |
-| `12` | 69 | 60.5% |
-| `6 + 6` | 21 | 18.4% |
-| `6` | 8 | 7% |
-| All other patterns combined | 16 | 14% |
+| `12` | 83 | 61.5% |
+| `6 + 6` | 27 | 20% |
+| `6` | 8 | 5.9% |
+| All other patterns combined | 17 | 12.6% |
 
-Single-column and equal two-column structures account for 78.9% of all sections. They should be the dominant choices in the visual picker. The remaining patterns include `8 + 4`, `4 + 8`, repeated feature-card spans, and complex imported sections that combine several visual rows inside one stored section.
+Single-column and equal two-column structures account for 81.5% of all sections. They should be the dominant choices in the visual picker. The remaining patterns include `8 + 4`, `4 + 8`, repeated feature-card spans, and complex imported sections that combine several visual rows inside one stored section.
 
 The complex patterns must remain editable. They should not define the ordinary add-section workflow, and they must not be destructively rewritten merely to fit a preset.
 
@@ -85,24 +85,26 @@ The complex patterns must remain editable. They should not define the ordinary a
 
 | Component | Occurrences | Share of nested components |
 | --- | ---: | ---: |
-| Heading | 96 | 31.4% |
-| Rich text | 74 | 24.2% |
-| Actions | 26 | 8.5% |
-| Media | 25 | 8.2% |
-| Divider | 24 | 7.8% |
-| Feature list | 19 | 6.2% |
-| Market coverage | 12 | 3.9% |
-| Office | 8 | 2.6% |
-| Data chart | 6 | 2% |
-| FAQ | 6 | 2% |
-| Entity list | 3 | 1% |
-| Standalone icon | 3 | 1% |
-| Data table | 1 | 0.3% |
+| Heading | 122 | 31.9% |
+| Rich text | 95 | 24.9% |
+| Feature list | 31 | 8.1% |
+| Media | 31 | 8.1% |
+| Actions | 30 | 7.9% |
+| Divider | 26 | 6.8% |
+| Market coverage | 13 | 3.4% |
+| Office | 8 | 2.1% |
+| FAQ | 7 | 1.8% |
+| Data chart | 6 | 1.6% |
+| Entity list | 3 | 0.8% |
+| Standalone icon | 3 | 0.8% |
+| Data table | 2 | 0.5% |
+| Checklist | 1 | 0.3% |
+| Lifecycle | 1 | 0.3% |
 | Market matrix | 1 | 0.3% |
 | Statistics | 1 | 0.3% |
 | Timeline | 1 | 0.3% |
 
-Heading, rich text, actions, and media represent 72.3% of nested components. Their insertion and editing paths should therefore receive the strongest visual priority. Specialist components should remain discoverable through clearly labelled groups rather than appearing in one flat list.
+Heading, rich text, actions, and media represent 72.8% of nested components. Their insertion and editing paths should therefore receive the strongest visual priority. Specialist components should remain discoverable through clearly labelled groups rather than appearing in one flat list.
 
 ## Candidate preset sizing
 
@@ -110,21 +112,21 @@ The audit assigns each section to one candidate using conservative, mutually exc
 
 | Candidate preset | Sections | Share |
 | --- | ---: | ---: |
-| Intro text | 42 | 36.8% |
-| Feature grid | 18 | 15.8% |
-| Text with actions | 10 | 8.8% |
-| Market coverage map | 9 | 7.9% |
-| Text and media | 9 | 7.9% |
-| FAQ | 6 | 5.3% |
-| Chart or data table | 5 | 4.4% |
-| Market matrix | 1 | 0.9% |
-| Statistics | 1 | 0.9% |
-| Media and text | 1 | 0.9% |
-| Call-to-action band | 1 | 0.9% |
+| Intro text | 47 | 34.8% |
+| Feature grid | 22 | 16.3% |
+| Text and media | 13 | 9.6% |
+| Text with actions | 11 | 8.1% |
+| Market coverage map | 10 | 7.4% |
+| FAQ | 7 | 5.2% |
+| Chart or data table | 6 | 4.4% |
+| Market matrix | 1 | 0.7% |
+| Statistics | 1 | 0.7% |
+| Media and text | 1 | 0.7% |
+| Call-to-action band | 1 | 0.7% |
 | Media gallery | 0 | 0% |
-| Advanced custom section | 11 | 9.6% |
+| Advanced custom section | 15 | 11.1% |
 
-The named candidates cover 90.4% of existing sections. The initial picker should therefore include:
+The named candidates cover 88.9% of existing sections. The initial picker should therefore include:
 
 1. Intro text.
 2. Text with actions.
@@ -138,7 +140,7 @@ The named candidates cover 90.4% of existing sections. The initial picker should
 10. Market matrix.
 11. Blank advanced section.
 
-Media gallery has no observed occurrence in the accepted pages, so it does not need a first-tier shortcut. It remains available as a component. The 11 advanced sections include mixed and specialist compositions such as offices, timeline content, and multiple visual rows within one stored section; these need human review before another preset is introduced.
+Media gallery has no observed occurrence in the accepted pages, so it does not need a first-tier shortcut. It remains available as a component. The 15 advanced sections include mixed and specialist compositions such as offices, timeline content, and multiple visual rows within one stored section; these need human review before another preset is introduced.
 
 ## Implementation constraints established by the audit
 
@@ -153,6 +155,6 @@ Media gallery has no observed occurrence in the accepted pages, so it does not n
 
 ## Limits and review gate
 
-This baseline covers the 21 accepted imported pages, not all 296 routes in the production inventory and not future editor-created content. Candidate classification is structural and intentionally conservative. Before removing a control or introducing a destructive data migration, rerun the audit against a current Payload export and visually inspect the advanced/custom sections.
+This baseline covers the 26 accepted imported Pages, not all 297 routes in the production inventory and not future editor-created content. Candidate classification is structural and intentionally conservative. Before removing a control or introducing a destructive data migration, rerun the audit against a current Payload export and visually inspect the advanced/custom sections.
 
 The editor-experience slice can proceed when it preserves these records, exposes the common preset path, and leaves public rendering unchanged for untouched pages.

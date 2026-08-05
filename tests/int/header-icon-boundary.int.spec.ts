@@ -22,6 +22,7 @@ describe('public-shell Font Awesome boundary', () => {
       'check',
       'chevronDown',
       'chevronUp',
+      'close',
       'minus',
       'playCircle',
       'spinner',

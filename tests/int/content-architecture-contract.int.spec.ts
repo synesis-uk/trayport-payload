@@ -315,20 +315,20 @@ describe('production content-architecture contract', () => {
     expect(dispositionSources('shortcode')).toEqual(['wcc_category_list'])
   })
 
-  it('records verified evidence for the approved 296-route source scope', () => {
+  it('records verified evidence for the approved 297-route source scope', () => {
     const scope = contentArchitectureContract.approvedProductionScope
     const routeOwners = Object.fromEntries(
       scope.routeOwners.map(({ count, id, targetOwner }) => [id, { count, targetOwner }]),
     )
 
-    expect(scope.publicRouteTotal).toBe(296)
-    expect(scope.routeOwners.reduce((total, { count }) => total + count, 0)).toBe(296)
+    expect(scope.publicRouteTotal).toBe(297)
+    expect(scope.routeOwners.reduce((total, { count }) => total + count, 0)).toBe(297)
     expect(routeOwners).toEqual({
       'editorial-posts': { count: 90, targetOwner: 'articles' },
       'hub-details': { count: 72, targetOwner: 'hubs' },
       'learning-video-details': { count: 15, targetOwner: 'learning-videos' },
       'market-coverage-index': { count: 1, targetOwner: 'hubs' },
-      'page-documents': { count: 50, targetOwner: 'pages' },
+      'page-documents': { count: 51, targetOwner: 'pages' },
       'temporary-contact-redirect': { count: 1, targetOwner: 'redirects' },
       'venue-details': { count: 66, targetOwner: 'venues' },
       'venue-index': { count: 1, targetOwner: 'venues' },
@@ -336,6 +336,11 @@ describe('production content-architecture contract', () => {
     expect(scope.requiredIncludes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: 'faq', legacyId: 7609, path: '/resources/faqs/' }),
+        expect.objectContaining({
+          id: 'banner-eex-news',
+          legacyId: 11299,
+          path: '/eex-news/',
+        }),
       ]),
     )
     expect(scope.requiredExclusions).toEqual(
@@ -377,10 +382,10 @@ describe('production content-architecture contract', () => {
     const routeManifest = source('docs/content-architecture/route-manifest.csv')
 
     expect(summary.counts).toMatchObject({
-      directAuthoredRouteStrings: 54,
-      directPublicRoutes: 53,
+      directAuthoredRouteStrings: 55,
+      directPublicRoutes: 54,
       listingRoutes: 243,
-      routes: 296,
+      routes: 297,
       redirects: 50,
       exclusions: 1,
       unknownArchetypes: 0,
@@ -427,16 +432,23 @@ describe('production content-architecture contract', () => {
       'route-owner:hub-details': { actual: 72, expected: 72 },
       'route-owner:learning-video-details': { actual: 15, expected: 15 },
       'route-owner:market-coverage-index': { actual: 1, expected: 1 },
-      'route-owner:page-documents': { actual: 50, expected: 50 },
+      'route-owner:page-documents': { actual: 51, expected: 51 },
       'route-owner:temporary-contact-redirect': { actual: 1, expected: 1 },
       'route-owner:venue-details': { actual: 66, expected: 66 },
       'route-owner:venue-index': { actual: 1, expected: 1 },
     })
 
     const manifestRows = routeManifest.trimEnd().split('\n').slice(1)
-    expect(manifestRows.filter((row) => /,included,\d+$/.test(row))).toHaveLength(296)
+    expect(manifestRows.filter((row) => /,included,\d+$/.test(row))).toHaveLength(297)
     expect(manifestRows.filter((row) => /,excluded,\d+$/.test(row))).toHaveLength(1)
     expect(manifestRows.filter((row) => /,redirect,\d+$/.test(row))).toHaveLength(50)
+    expect(
+      manifestRows.some(
+        (row) =>
+          row.startsWith('/eex-news/,/eex-news/,11299,') &&
+          row.includes(',banner,posts.11602.acf.all-acf-fields.link,'),
+      ),
+    ).toBe(true)
     expect(
       manifestRows.some(
         (row) =>

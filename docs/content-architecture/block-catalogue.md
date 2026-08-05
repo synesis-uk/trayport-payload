@@ -315,7 +315,7 @@ still block `production-block-catalogue-implemented`; runtime rejection of
 unsupported publication is a safe invariant, not an implementation of the
 missing external integration.
 
-The production inventory command also emits a deterministic 296-route target
+The production inventory command also emits a deterministic 297-route target
 plan:
 
 ```bash
@@ -323,6 +323,7 @@ make content-inventory
 ```
 
 That plan records where these block transforms will be needed, but it is
-planning evidence only. The current acceptance slice covers 27 source roots—26
-rendered content routes and one temporary managed redirect—and the other 267
+planning evidence only. The current acceptance slice covers 27 source roots plus
+five published-banner Page dependencies—31 rendered content routes and one
+temporary managed redirect—and the other 263
 plan-only production bodies have not been transformed or content-remediated.

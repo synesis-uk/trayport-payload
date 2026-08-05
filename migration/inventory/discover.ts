@@ -475,6 +475,30 @@ export const discoverProductionInventory = (
     }
     if (recordExclusion(target.legacyId, reference.sourcePath, reference.url || target.path)) return
 
+    const isPublishedManagedLinkSurface =
+      owner.status === 'publish' &&
+      scope.publishedManagedLinkPostTypes.includes(
+        owner.postType as (typeof scope.publishedManagedLinkPostTypes)[number],
+      )
+    if (
+      isPublishedManagedLinkSurface &&
+      target.postType === 'page' &&
+      target.status === 'publish' &&
+      target.postTypePublic &&
+      normalizePath(target.path)
+    ) {
+      const targetPath = normalizePath(target.path)
+      if (targetPath) authoredDirectPaths.add(targetPath)
+      addRoute(target, 'banner', reference.sourcePath, target.path, true)
+      addEdge({
+        from,
+        to: nodeKey(target.legacyId),
+        kind: 'banner',
+        sourcePath: reference.sourcePath,
+      })
+      return
+    }
+
     if (reference.intent === 'link') {
       // Authored body/ACF links are validation and redirect targets. They do not
       // broaden the public scope or recursively pull the destination's graph into
@@ -495,6 +519,18 @@ export const discoverProductionInventory = (
         sourcePath: reference.sourcePath,
       })
     }
+  }
+
+  for (const owner of snapshot.nodes) {
+    if (
+      owner.status !== 'publish' ||
+      !scope.publishedManagedLinkPostTypes.includes(
+        owner.postType as (typeof scope.publishedManagedLinkPostTypes)[number],
+      )
+    ) {
+      continue
+    }
+    for (const reference of owner.references) processReference(owner, reference)
   }
 
   const addListingItems = (

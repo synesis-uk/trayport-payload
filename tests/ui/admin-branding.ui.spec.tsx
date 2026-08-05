@@ -50,7 +50,7 @@ describe('Payload admin branding', () => {
 
     const navigation = screen.getByRole('navigation', { name: 'Primary content actions' })
     const links = within(navigation).getAllByRole('link')
-    expect(links).toHaveLength(4)
+    expect(links).toHaveLength(5)
     expect(within(navigation).getByRole('list')).toBeTruthy()
     expect(screen.getByRole('link', { name: /Create a page/ }).getAttribute('href')).toBe(
       '/admin/collections/pages/create',
@@ -60,6 +60,9 @@ describe('Payload admin branding', () => {
     )
     expect(screen.getByRole('link', { name: /Redirects/ }).getAttribute('href')).toBe(
       '/admin/collections/redirects',
+    )
+    expect(screen.getByRole('link', { name: /Schedule a banner/ }).getAttribute('href')).toBe(
+      '/admin/collections/banners/create',
     )
     expect(screen.getByText(/editors and administrators can draft and publish/i)).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Administration' })).toBeNull()
@@ -72,6 +75,7 @@ describe('Payload admin branding', () => {
         data={{
           draftCounts: {
             articles: 2,
+            banners: 4,
             'learning-videos': 1,
             pages: 3,
           },
@@ -108,7 +112,7 @@ describe('Payload admin branding', () => {
     expect(within(recentRegion).getByText('Market coverage')).toBeTruthy()
     expect(screen.getByText('Draft / changed')).toBeTruthy()
     expect(screen.getByText('Published')).toBeTruthy()
-    expect(screen.getByText('6')).toBeTruthy()
+    expect(screen.getByText('10')).toBeTruthy()
 
     const adminNavigation = screen.getByRole('navigation', { name: 'Administration areas' })
     expect(within(adminNavigation).getAllByRole('link')).toHaveLength(4)

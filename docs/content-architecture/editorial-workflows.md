@@ -179,9 +179,9 @@ The 27-root incremental import applies a reversible bridge: only accepted roots
 and the two virtual indexes remain root-relative in Navigation/Footer. Other
 same-site destinations are rendered as canonical HTTPS links to the live site,
 preventing Next.js prefetch from requesting routes this build does not own. The
-current acceptance report requires exactly 34 unique live fallback paths, including the five
+current acceptance report requires exactly 30 unique live fallback paths, including the five
 clickable Company, Products, Markets, Regions, and Resources section roots.
-When a route is migrated, add it to the immutable root scope, pass route and
+When a route is migrated, add it to the immutable accepted scope, pass route and
 runtime acceptance, then change that one destination back to its internal path.
 
 `/request-a-demo/` is the bounded exception for this milestone. Payload owns it
@@ -293,10 +293,12 @@ The production content import follows a repeatable pipeline:
 
 1. **Preflight:** prove the expected WordPress/ACF versions, database, uploads,
    Payload database, and object storage are available.
-2. **Inventory:** discover live ACF navigation/footer routes, explicit
-   inclusions, virtual indexes, recursive internal links, listing children,
-   dependencies, and redirects.
-3. **Scope validation:** prove the 296-route formula, FAQ inclusion, Commodities
+2. **Inventory:** discover live ACF navigation/footer routes, Page targeting and
+   internal CTAs from every published banner, explicit inclusions, virtual
+   indexes, recursive dependencies, terminal content links, listing children,
+   and redirects.
+3. **Scope validation:** prove the 297-route formula, FAQ and published-banner
+   EEX News inclusion, Commodities
    exclusion, known archetypes, and unique route ownership.
 4. **Extract:** read through the local WordPress runtime so ACF relationships,
    repeaters, clones, and option fields are resolved without mutating WordPress.
@@ -332,17 +334,17 @@ Inventory run IDs are immutable and cannot be reused; `latest-run.txt` advances
 only after both inventory and target-plan verification pass. Editors do not
 maintain those artifacts.
 
-The target plan is deterministic planning evidence: it accounts for 296 source
-routes including two virtual indexes. It does not load the remaining 267
+The target plan is deterministic planning evidence: it accounts for 297 source
+routes including two virtual indexes. It does not load the remaining 263
 plan-only documents. The actual acceptance slice is the 27-root production
-pilot documented in the repository README: 26 rendered content routes plus the
-temporary Request A Demo redirect.
+pilot plus five published-banner Page dependencies documented in the repository
+README: 31 rendered content routes plus the temporary Request A Demo redirect.
 
 ## Launch validation
 
 Editorial launch approval requires:
 
-- all 296 source routes accounted for (now verified) and rendered by their
+- all 297 source routes accounted for (now verified) and rendered by their
   assigned target owner (not yet complete);
 - no empty listing-linked detail;
 - no unknown layout or silently dropped source content;

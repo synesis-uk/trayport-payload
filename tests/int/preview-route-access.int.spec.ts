@@ -204,4 +204,17 @@ describe('preview route request boundary', () => {
     expect(previewRouteHarness.draftDisable).not.toHaveBeenCalled()
     expect(previewRouteHarness.redirect).toHaveBeenCalledWith(path)
   })
+
+  it('carries a validated banner identifier into an authenticated page preview', async () => {
+    process.env.PREVIEW_SECRET = secret
+
+    await expect(
+      GET(previewRequest({ banner: '17', path, previewSecret: secret })),
+    ).rejects.toThrow(`NEXT_REDIRECT:${path}?bannerPreview=17`)
+    expect(previewRouteHarness.redirect).toHaveBeenCalledWith(`${path}?bannerPreview=17`)
+
+    const invalid = await GET(previewRequest({ banner: '../17', path, previewSecret: secret }))
+    expect(invalid.status).toBe(400)
+    await expect(invalid.text()).resolves.toBe('Invalid banner preview identifier')
+  })
 })

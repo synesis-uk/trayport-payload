@@ -116,6 +116,10 @@ describe.sequential('post-import acceptance', () => {
       articleCategories: 3,
       assetClasses: 12,
       articles: 71,
+      banners: 4,
+      bannerActionPages: 1,
+      bannerDependencyPages: 5,
+      bannerTargetPages: 4,
       connectedVenues: 21,
       deferredHubSpotForms: 5,
       eexConnections: 37,
@@ -137,7 +141,7 @@ describe.sequential('post-import acceptance', () => {
       marketRows: 1194,
       newsArticles: 31,
       offices: 4,
-      pages: 22,
+      pages: 27,
       protectedVideoExcluded: true,
       roots: 27,
       venueTypes: 3,
@@ -145,6 +149,10 @@ describe.sequential('post-import acceptance', () => {
     expect(transformed.ok).toBe(true)
     expect(transformed.checks).toMatchObject({
       articles: 71,
+      banners: 4,
+      bannerActionPages: 1,
+      bannerDependencyPages: 5,
+      bannerTargetPages: 4,
       commoditiesReportExcluded: true,
       eexConnections: 37,
       fullArticles: 2,
@@ -156,17 +164,18 @@ describe.sequential('post-import acceptance', () => {
       learningVideos: 15,
       listingArticles: 69,
       offices: 4,
-      pages: 21,
+      pages: 26,
+      deferredHubSpotForms: 7,
       protectedVideoExcluded: true,
       redirects: 2,
-      routableDocuments: 27,
+      routableDocuments: 32,
       marketMatrixAutoTraderConnections: 20,
       marketMatrixConnections: 655,
       marketMatrixDirectConnections: 417,
       marketMatrixDualConnections: 218,
       marketMatrixDuplicateMergeValidated: true,
       marketMatrixVenueRows: 64,
-      navigationFooterLiveFallbacks: 34,
+      navigationFooterLiveFallbacks: 30,
       venues: 66,
       venueWebsitesHTTPS: true,
     })
@@ -177,7 +186,7 @@ describe.sequential('post-import acceptance', () => {
     )
   })
 
-  it('loads the 21 pages and 71 articles with their agreed route policies', async () => {
+  it('loads 26 Pages, including banner dependencies, and 71 Articles', async () => {
     const [pages, articles, assetClasses] = await Promise.all([
       payload.find({
         collection: 'pages',
@@ -207,7 +216,7 @@ describe.sequential('post-import acceptance', () => {
       }),
     ])
 
-    expect(pages.docs).toHaveLength(21)
+    expect(pages.docs).toHaveLength(26)
     expect(articles.docs).toHaveLength(71)
     expect(
       articles.docs.filter(({ articleType, featured }) => articleType === 'insight' && featured),
@@ -287,6 +296,49 @@ describe.sequential('post-import acceptance', () => {
       expect(document, `Missing WordPress ${route.legacyId}`).toBeDefined()
       expect(document?.path).toBe(route.path)
     }
+  })
+
+  it('loads all four WordPress banners and preserves the currently active Page targeting', async () => {
+    const banners = await payload.find({
+      collection: 'banners',
+      depth: 1,
+      limit: 10,
+      overrideAccess: true,
+      pagination: false,
+      sort: 'priority',
+      where: wordpressWhere,
+    })
+
+    expect(banners.docs).toHaveLength(4)
+    expect(banners.docs.map(({ legacySource }) => legacySource?.legacyId)).toEqual([
+      11602, 7597, 4363, 4362,
+    ])
+    const active = documentByLegacyID(banners.docs, 11602)
+    expect(active).toMatchObject({
+      _status: 'published',
+      endAt: '2026-12-31T17:00:00.000Z',
+      layout: 'small',
+      position: 'first',
+      startAt: '2026-07-20T00:00:00.000Z',
+      targetMode: 'specific',
+      tone: 'cyan',
+    })
+    const targetPageIDs = (active.targetPages || []).map(relationshipID)
+    const targetPages = await payload.find({
+      collection: 'pages',
+      depth: 0,
+      limit: 2,
+      overrideAccess: true,
+      pagination: false,
+      where: { id: { in: targetPageIDs } },
+    })
+    expect(targetPages.docs.map(({ legacySource }) => legacySource?.legacyId).sort()).toEqual([
+      1940, 6773,
+    ])
+    expect(active.migratedRecipientEmails).toEqual([
+      expect.objectContaining({ email: 'sophie.inghamclark@trayport.com' }),
+    ])
+    expect(active.notifyUsers).toEqual([])
   })
 
   it('imports the active Home and Joule presentation semantics into typed fields', async () => {

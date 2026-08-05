@@ -10,14 +10,14 @@
     "frontPageId": 1898
   },
   "counts": {
-    "directAuthoredRouteStrings": 54,
-    "directPublicRoutes": 53,
+    "directAuthoredRouteStrings": 55,
+    "directPublicRoutes": 54,
     "listingRoutes": 243,
-    "routes": 296,
-    "dependencies": 718,
+    "routes": 297,
+    "dependencies": 720,
     "redirects": 50,
     "exclusions": 1,
-    "issues": 267,
+    "issues": 270,
     "unknownArchetypes": 0,
     "unavailableMedia": 105
   },
@@ -26,12 +26,12 @@
     "failures": []
   },
   "hashes": {
-    "snapshot": "978fbe3b6447871e531a1be4fc0f70699aed66303218e6050412e5e23ed87c00",
-    "inventory": "d9b83d340bdfcd5adaf050edc56f0dd8d37e0dd83c4d895f07a4f4327438d6bd",
-    "ndjson": "1ae1bf7fa924aa7489f585f84a074b8b324d242d05395fe3f1fc74186bf056a4",
-    "routeManifest": "feb6cb94e98d6973e23fea70545a2ad06b2c5cc6430a38ddf67fdb0a674dfa66",
-    "layoutCoverage": "4c11e4e88d634236641ae20b4dabea99801185480652f8730696337679dfc599",
-    "verification": "8815552598f0d09010e4dff2f2ae2ed24b726e0dbdd029bf80e445e64d5223fe"
+    "snapshot": "5e979983f2b096bf34bcae70477b13245a871244f44c755ec488e50868a9c36a",
+    "inventory": "24bae8cf1f34baf37b54ffdc031d1be2234832edf22b52550828fed36395e76d",
+    "ndjson": "74e3113cfb571e5b9535119865b17a2063daaafcb36326696c945fe216d055be",
+    "routeManifest": "ea2b3f7d2d2e542799849c6b11cb0f5041a859ed95a0d12b4664a0feb332d55f",
+    "layoutCoverage": "8eca255d581ee669c960da5e32891b720b12c4bf1fc3df3411a5aaa6b12614f8",
+    "verification": "270deed931a5e00f2fa642c49359dcd7270dec6818187cbad0261acf88ada278"
   },
   "artifacts": {
     "sourceSnapshot": "source-snapshot.json",

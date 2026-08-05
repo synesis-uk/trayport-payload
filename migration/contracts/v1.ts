@@ -66,6 +66,8 @@ export const sourcePostSchema = baseRecordSchema.extend({
   featuredMediaId: z.number().int().positive().nullable(),
   scopeRole: z.enum([
     'root',
+    'banner-action',
+    'banner-target',
     'insights-listing',
     'news-listing',
     'learning-listing',
@@ -160,8 +162,12 @@ export const sourceReusableSchema = baseRecordSchema.extend({
   entity: z.literal('reusable'),
   legacyId: z.number().int().positive(),
   postType: z.string().min(1),
+  status: z.string().min(1).optional(),
   title: z.string(),
   path: z.string().nullable(),
+  menuOrder: z.number().int().optional(),
+  publishedAt: z.string().nullable().optional(),
+  modifiedAt: z.string().nullable().optional(),
   data: z.record(z.string(), normalizedValueSchema),
 })
 

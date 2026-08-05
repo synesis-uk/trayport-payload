@@ -14,7 +14,7 @@ const evidence = {
 }
 
 describe('production target plan', () => {
-  it('turns the verified 296-route inventory into the explicit implementation plan', () => {
+  it('turns the verified 297-route inventory into the explicit implementation plan', () => {
     const snapshot = productionFixture()
     const inventory = discoverProductionInventory(snapshot, productionScope)
     const { plan, verification } = buildProductionTargetPlan(inventory, snapshot, evidence)
@@ -22,11 +22,11 @@ describe('production target plan', () => {
     expect(verification.status).toBe('passed')
     expect(verification.failures).toEqual([])
     expect(plan.summary).toEqual({
-      routes: 296,
-      payloadDocuments: 294,
+      routes: 297,
+      payloadDocuments: 295,
       virtualIndexes: 2,
-      pocReadyDocuments: 27,
-      planOnlyDocuments: 267,
+      pocReadyDocuments: 32,
+      planOnlyDocuments: 263,
       systemReadyRoutes: 2,
       managedTaxonomies: 33,
       learningVideoCategories: 11,
@@ -40,9 +40,16 @@ describe('production target plan', () => {
         .map(({ legacyId }) => legacyId)
         .sort((left, right) => (left || 0) - (right || 0)),
     ).toEqual([
-      34, 1898, 1924, 1926, 2203, 2205, 2221, 2231, 2495, 3311, 3363, 4031, 4737, 4803, 5920, 5981,
-      5983, 7573, 7585, 7589, 7609, 8454, 9244, 9248, 9351, 10030, 11475,
+      34, 1898, 1924, 1926, 1930, 1940, 2203, 2205, 2221, 2231, 2495, 3311, 3363, 4028, 4031, 4737,
+      4803, 5920, 5981, 5983, 6773, 7573, 7585, 7589, 7609, 8454, 9244, 9248, 9351, 10030, 11299,
+      11475,
     ])
+    expect(plan.routes.find(({ legacyId }) => legacyId === 11299)).toMatchObject({
+      canonicalPath: '/eex-news/',
+      contentState: 'poc-ready',
+      roles: ['banner'],
+      sources: ['posts.11602.acf.all-acf-fields.link'],
+    })
     expect(
       plan.routes
         .filter(({ ownerKind }) => ownerKind === 'virtual-index')
@@ -243,8 +250,8 @@ describe('production target plan', () => {
     expect(verification.status).toBe('failed')
     expect(verification.failures).toEqual(
       expect.arrayContaining([
-        'poc-ready-documents: expected 27, received 26',
-        'plan-only-documents: expected 267, received 268',
+        'poc-ready-documents: expected 32, received 31',
+        'plan-only-documents: expected 263, received 264',
         'poc-root:1924: expected 1, received 0',
       ]),
     )

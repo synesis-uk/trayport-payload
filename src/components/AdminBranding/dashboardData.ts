@@ -1,6 +1,6 @@
 import type { PayloadRequest } from 'payload'
 
-export type DashboardCollectionSlug = 'articles' | 'learning-videos' | 'pages'
+export type DashboardCollectionSlug = 'articles' | 'banners' | 'learning-videos' | 'pages'
 
 export type DashboardContentItem = {
   collection: DashboardCollectionSlug
@@ -28,6 +28,10 @@ const collectionDetails = [
     slug: 'articles',
   },
   {
+    kind: 'Banner',
+    slug: 'banners',
+  },
+  {
     kind: 'Learning video',
     slug: 'learning-videos',
   },
@@ -36,6 +40,7 @@ const collectionDetails = [
 export const emptyDashboardContentData = (): DashboardContentData => ({
   draftCounts: {
     articles: 0,
+    banners: 0,
     'learning-videos': 0,
     pages: 0,
   },

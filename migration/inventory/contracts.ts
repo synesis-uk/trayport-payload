@@ -95,6 +95,7 @@ export type RuntimeInventorySeed = z.infer<typeof runtimeSeedSchema>
 export type RuntimeReference = z.infer<typeof runtimeReferenceSchema>
 
 export type InventoryRouteRole =
+  | 'banner'
   | 'footer'
   | 'listing-item'
   | 'navigation'
@@ -136,6 +137,7 @@ export type InventoryEdge = {
   from: string
   to: string
   kind:
+    | 'banner'
     | 'content-link'
     | 'footer'
     | 'listing-item'

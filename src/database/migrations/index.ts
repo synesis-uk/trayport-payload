@@ -18,6 +18,10 @@ import * as migration_20260804_104200_data_chart_asset_class_backfill from './20
 import * as migration_20260804_113221_data_chart_semantics from './20260804_113221_data_chart_semantics'
 import * as migration_20260804_224938 from './20260804_224938'
 import * as migration_20260804_225535_market_data_legacy_upsert_compat from './20260804_225535_market_data_legacy_upsert_compat'
+import * as migration_20260805_104353_scheduled_page_banners from './20260805_104353_scheduled_page_banners'
+import * as migration_20260805_104915_banner_recipient_migration_review from './20260805_104915_banner_recipient_migration_review'
+import * as migration_20260805_105208_banner_notification_jobs from './20260805_105208_banner_notification_jobs'
+import * as migration_20260805_111442_banner_notification_delivery_ledger from './20260805_111442_banner_notification_delivery_ledger'
 
 export const migrations = [
   {
@@ -119,5 +123,25 @@ export const migrations = [
     up: migration_20260804_225535_market_data_legacy_upsert_compat.up,
     down: migration_20260804_225535_market_data_legacy_upsert_compat.down,
     name: '20260804_225535_market_data_legacy_upsert_compat',
+  },
+  {
+    up: migration_20260805_104353_scheduled_page_banners.up,
+    down: migration_20260805_104353_scheduled_page_banners.down,
+    name: '20260805_104353_scheduled_page_banners',
+  },
+  {
+    up: migration_20260805_104915_banner_recipient_migration_review.up,
+    down: migration_20260805_104915_banner_recipient_migration_review.down,
+    name: '20260805_104915_banner_recipient_migration_review',
+  },
+  {
+    up: migration_20260805_105208_banner_notification_jobs.up,
+    down: migration_20260805_105208_banner_notification_jobs.down,
+    name: '20260805_105208_banner_notification_jobs',
+  },
+  {
+    up: migration_20260805_111442_banner_notification_delivery_ledger.up,
+    down: migration_20260805_111442_banner_notification_delivery_ledger.down,
+    name: '20260805_111442_banner_notification_delivery_ledger',
   },
 ]

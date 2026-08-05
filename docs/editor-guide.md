@@ -27,6 +27,8 @@ authority for every request.
   library.
 - **Articles** manage Insights listing metadata, featured order, taxonomy,
   editorial dates, and full article bodies.
+- **Banners** manage reusable announcements with bounded presentation,
+  scheduling, placement, Page targeting, and lifecycle recipients.
 - **Hubs** store market-map data and, when set to `Public page`, a routable
   market-coverage page.
 - **Venues** provide the broker, exchange, and clearing-house relationships used
@@ -114,6 +116,33 @@ publishing; publishing revalidates the route and related sitemap/listing data.
   notices, retained HubSpot form identifiers, and bounded CookieYes settings.
 - **Redirects** can be maintained by administrators and editors; deletion is
   administrator-only.
+
+## Scheduled banners
+
+Create a Banner when one announcement must appear on every Page or a selected
+set of managed Pages. Use a compact announcement for the dismissible notice bar
+or a large promotional banner for image, heading, supporting copy, and action.
+The public banner is shown inclusively from **Start** through **End**; both
+values are stored as exact instants.
+
+Placement controls are intentionally bounded: **First** appears before page
+content, **Second** follows its first section, and **Last** follows all page
+content. Lower priority numbers appear first when two active banners share a
+slot. Preview a target Page before publishing; during active-window acceptance,
+also inspect an untargeted Page to confirm that it remains absent.
+
+After saving a Banner, **Preview** opens the homepage for an all-page banner or
+the first selected Page for a targeted banner. That authenticated preview shows
+only the selected Banner and temporarily ignores its date window, so a future
+announcement can be reviewed without making it publicly discoverable. Public
+requests and the public REST API cannot read the Banner collection directly.
+
+Up to two CMS users can receive reminders 24 hours before start, at start, 24
+hours before end, and at end. Imported WordPress email addresses remain visible
+to CMS users as read-only review evidence; choose the matching current CMS users
+before relying on notifications. Delivery state is private operational data in
+a non-versioned ledger, so restoring a content version does not resend an event
+for the same schedule.
 
 ## Media and accessibility
 

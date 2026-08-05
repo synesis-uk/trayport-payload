@@ -15,12 +15,12 @@ Status language is deliberately narrow:
 - **Open** means the named visual or migration acceptance evidence does not yet pass.
 - **Golden** identifies a tracked WordPress reference; it does not mean the candidate matches it.
 
-The retained WordPress production inventory contains 296 public destinations: 51 WordPress page
+The retained WordPress production inventory contains 297 public destinations: 52 WordPress page
 identities, two virtual indexes, and 243 listing children. Target ownership splits those page
-identities into 50 Payload Pages and one temporary Redirect. The table below groups the inventory by
+identities into 51 Payload Pages and one temporary Redirect. The table below groups the inventory by
 18 content archetypes plus the temporary-redirect archetype and their React/runtime owners. The
-named migration acceptance slice now contains 27 roots: 26 rendered content routes and the explicit
-`/request-a-demo/` 302. The other 267 planned bodies remain content-migration work and must not be
+named migration acceptance slice now contains 27 roots plus five published-banner dependencies:
+31 rendered content routes and the explicit `/request-a-demo/` 302. The other 263 planned bodies remain content-migration work and must not be
 treated as direct-navigation frontend acceptance merely because their route family has an
 implementation owner.
 
@@ -50,9 +50,10 @@ the frontend layout.
 | Managed aliases and path redirects, including `/request-a-demo/` -> `/contact/` | `redirects`; `redirect.temporary-contact` for the accepted WordPress page identity; registry owner `redirect` | No content view; `src/proxy.ts` preserves configured 301/302 semantics before page rendering | Route-registry and Redirects records | Request A Demo is explicitly accepted as a temporary 302, not a rendered conversion page; alias status/destination is exercised. **Implemented and reversible per redirect record.** |
 | Unknown path | no route claim | shared `NotFoundView`: eyebrow, single heading, explanation and home action | Proxy published-route preflight plus Next.js global/route not-found boundaries | Unknown ordinary, file-like, and reserved-namespace child paths retain HTTP 404 status with the designed body; signed preview tokens are the only draft-route bypass. **Implemented behavior / Bridge styling.** |
 
-Navigation and footer links use an explicit migration bridge. Links to the 27 accepted roots and the
-two virtual indexes stay internal. The 34 unique same-site destinations whose bodies are still
-plan-only resolve to canonical `https://www.trayport.com/` fallbacks: 29 leaf destinations plus the
+Navigation and footer links use an explicit migration bridge. Links to the 27 accepted roots, five
+published-banner Page dependencies, and two virtual indexes stay internal. The 30 unique same-site
+destinations whose bodies are still plan-only resolve to canonical `https://www.trayport.com/`
+fallbacks: 25 leaf destinations plus the
 five clickable section roots. Each fallback is isolated to its link value and can be reversed to an
 internal path when that route enters a later acceptance slice; this closes navigation without
 claiming direct-navigation content parity for those bodies.

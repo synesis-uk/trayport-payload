@@ -14,6 +14,7 @@ const sourceHosts = new Set([
 
 export const migrationOwnedPaths = new Set([
   ...pilotScope.roots.map(({ path }) => path),
+  ...pilotScope.acceptedRouteDependencies.map(({ path }) => path),
   '/market-coverage/',
   '/venue/',
 ])
@@ -47,7 +48,7 @@ export const legacyExternalHTTPSDestination = (value: unknown): string | null =>
 /**
  * During incremental migration, keep links internal only when this build owns
  * the destination. Every other same-site link remains a reversible HTTPS bridge
- * to the live WordPress site until that route joins the imported root set.
+ * to the live WordPress site until that route joins the imported accepted set.
  */
 export const migrationDestination = (value: string): string | null => {
   if (/^(?:#|mailto:|tel:)/i.test(value)) {

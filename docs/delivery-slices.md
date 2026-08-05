@@ -10,7 +10,7 @@ WordPress code is not automatically in scope.
 
 The current local implementation includes slices 0, 1, 4, 5, and 6. “Delivered”
 below means the feature has an end-to-end local schema, migration/import,
-frontend, and test boundary. It does not mean that the complete 296-route
+frontend, and test boundary. It does not mean that the complete 297-route
 corpus, external-service acceptance, production infrastructure, or Trayport
 user acceptance is complete.
 
@@ -83,7 +83,7 @@ into public customer accounts.
 
 ### 3. Finish content and launch parity
 
-Load and review the full approved 296-route corpus, complete every listing-linked
+Load and review the full approved 297-route corpus, complete every listing-linked
 detail, repair managed links and redirects, disposition missing media, and review
 SEO/canonical/sitemap output. The Commodities Report remains excluded from the
 accepted route owners.

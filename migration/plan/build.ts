@@ -3,7 +3,7 @@ import crypto from 'node:crypto'
 import type { ProductionInventory, RuntimeInventorySnapshot } from '../inventory/contracts'
 import { inventoryUtilities } from '../inventory/discover'
 import { contentArchitectureContract } from '../mappings/contentArchitecture'
-import { pilotScope, type PilotRoot } from '../scopes/pilot'
+import { pilotScope, type AcceptedRouteDependency, type PilotRoot } from '../scopes/pilot'
 import {
   productionTargetPlanSchema,
   type ProductionTargetPlan,
@@ -50,21 +50,26 @@ const virtualConfigReferences: Record<string, VirtualConfigReference> = {
 const routeKey = (legacyId: number | null, canonicalPath: string): string =>
   legacyId === null ? `virtual:${canonicalPath}` : `wordpress:${legacyId}`
 
-const matchesPilotRoute = (route: TargetPlanRoute, root: PilotRoot): boolean =>
+type AcceptedRoute = PilotRoot | AcceptedRouteDependency
+
+const matchesAcceptedRoute = (route: TargetPlanRoute, accepted: AcceptedRoute): boolean =>
   route.ownerKind === 'payload-document' &&
-  route.legacyId === root.legacyId &&
-  route.sourcePostType === root.postType &&
-  route.authoredPath === root.path &&
-  route.canonicalPath === root.path &&
-  route.archetype === root.archetype &&
-  route.targetCollection === root.targetOwner
+  route.legacyId === accepted.legacyId &&
+  route.sourcePostType === accepted.postType &&
+  route.authoredPath === accepted.path &&
+  route.canonicalPath === accepted.path &&
+  route.archetype === accepted.archetype &&
+  route.targetCollection === accepted.targetOwner
 
 const buildRoutes = (inventory: ProductionInventory): TargetPlanRoute[] => {
   const archetypes = new Map(
     contentArchitectureContract.archetypes.map((archetype) => [archetype.id, archetype]),
   )
-  const pilotRootsByID = new Map<number, PilotRoot>(
-    pilotScope.roots.map((root) => [root.legacyId, root]),
+  const acceptedRoutesByID = new Map<number, AcceptedRoute>(
+    [...pilotScope.roots, ...pilotScope.acceptedRouteDependencies].map((route) => [
+      route.legacyId,
+      route,
+    ]),
   )
 
   return inventory.routes
@@ -104,9 +109,9 @@ const buildRoutes = (inventory: ProductionInventory): TargetPlanRoute[] => {
         roles: uniqueSorted(route.roles),
         sources: uniqueSorted(route.sources),
       }
-      const pilotRoot =
-        plannedRoute.legacyId === null ? undefined : pilotRootsByID.get(plannedRoute.legacyId)
-      if (pilotRoot && matchesPilotRoute(plannedRoute, pilotRoot)) {
+      const acceptedRoute =
+        plannedRoute.legacyId === null ? undefined : acceptedRoutesByID.get(plannedRoute.legacyId)
+      if (acceptedRoute && matchesAcceptedRoute(plannedRoute, acceptedRoute)) {
         plannedRoute.contentState = 'poc-ready'
       }
       return plannedRoute
@@ -340,46 +345,52 @@ const verifyPlan = (plan: ProductionTargetPlan, missingTerms: string[]): TargetP
     expectedManagedTaxonomies.find(
       ({ targetCollection }) => targetCollection === 'learning-video-categories',
     )?.count || 0
+  const expectedRouteCount = contentArchitectureContract.approvedProductionScope.publicRouteTotal
+  const expectedVirtualIndexCount = contentArchitectureContract.approvedProductionScope.routeOwners
+    .filter(({ ownership }) => ownership === 'derived-collection-route')
+    .reduce((total, { count }) => total + count, 0)
+  const expectedPayloadDocumentCount = expectedRouteCount - expectedVirtualIndexCount
+  const acceptedRoutes = [...pilotScope.roots, ...pilotScope.acceptedRouteDependencies]
   const assertions = [
-    { id: 'routes', expected: 296, actual: plan.routes.length },
+    { id: 'routes', expected: expectedRouteCount, actual: plan.routes.length },
     {
       id: 'payload-documents',
-      expected: 294,
+      expected: expectedPayloadDocumentCount,
       actual: plan.routes.filter(({ ownerKind }) => ownerKind === 'payload-document').length,
     },
     {
       id: 'virtual-indexes',
-      expected: 2,
+      expected: expectedVirtualIndexCount,
       actual: plan.routes.filter(({ ownerKind }) => ownerKind === 'virtual-index').length,
     },
     {
       id: 'unique-canonical-paths',
-      expected: 296,
+      expected: expectedRouteCount,
       actual: uniqueCanonicalPaths,
     },
     {
       id: 'required-route-policies',
-      expected: 296,
+      expected: expectedRouteCount,
       actual: requiredRoutePolicies,
     },
     {
       id: 'configured-virtual-indexes',
-      expected: 2,
+      expected: expectedVirtualIndexCount,
       actual: configuredVirtualIndexes,
     },
     {
       id: 'poc-ready-documents',
-      expected: pilotScope.roots.length,
+      expected: acceptedRoutes.length,
       actual: plan.routes.filter(({ contentState }) => contentState === 'poc-ready').length,
     },
     {
       id: 'plan-only-documents',
-      expected: 294 - pilotScope.roots.length,
+      expected: expectedPayloadDocumentCount - acceptedRoutes.length,
       actual: plan.routes.filter(({ contentState }) => contentState === 'plan-only').length,
     },
     {
       id: 'system-ready-routes',
-      expected: 2,
+      expected: expectedVirtualIndexCount,
       actual: plan.routes.filter(({ contentState }) => contentState === 'system-ready').length,
     },
     {
@@ -407,7 +418,12 @@ const verifyPlan = (plan: ProductionTargetPlan, missingTerms: string[]): TargetP
     ...pilotScope.roots.map((root) => ({
       id: `poc-root:${root.legacyId}`,
       expected: 1,
-      actual: plan.routes.filter((route) => matchesPilotRoute(route, root)).length,
+      actual: plan.routes.filter((route) => matchesAcceptedRoute(route, root)).length,
+    })),
+    ...pilotScope.acceptedRouteDependencies.map((dependency) => ({
+      id: `accepted-route-dependency:${dependency.legacyId}`,
+      expected: 1,
+      actual: plan.routes.filter((route) => matchesAcceptedRoute(route, dependency)).length,
     })),
     ...expectedManagedTaxonomies.flatMap((taxonomy) => [
       {

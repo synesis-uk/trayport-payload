@@ -124,10 +124,10 @@ Git. Source WordPress data is never changed by the importer.
 `make content-inventory` performs the separate production discovery pass and
 also emits `production-target-plan.json`, its NDJSON form, a verification
 report, and a summary under `migration/work/inventory/<run-id>/`. The plan
-deterministically accounts for 296 routes, but it is planning evidence only.
-The importer acceptance slice covers 27 source roots: 26 rendered content routes
-and `/request-a-demo/` as a reversible `302` to the managed Contact page. The
-other 267 plan-only production documents have not been loaded or
+deterministically accounts for 297 routes, but it is planning evidence only.
+The importer acceptance slice covers 27 source roots plus five Pages required by
+published banners: 31 rendered content routes and `/request-a-demo/` as a
+reversible `302` to the managed Contact page. The other 263 plan-only production documents have not been loaded or
 content-remediated. Navigation and footer destinations outside this slice and
 the two virtual indexes remain explicit HTTPS live-site fallbacks until their
 routes are migrated.
@@ -228,6 +228,6 @@ metadata is optional, so Payload-native content can be created normally after
 the migration.
 
 This foundation clears the cross-collection uniqueness and runtime archetype
-invariant gates. It does not imply production readiness: complete 296-route
+invariant gates. It does not imply production readiness: complete 297-route
 content ownership, planned blocks, managed-link validation, editor-control
 parity, and broader role coverage are still outstanding.

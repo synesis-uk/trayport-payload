@@ -158,6 +158,7 @@ describe('rich-text and imported-link URL security', () => {
 
   it('keeps only bounded migration destinations and rejects credentials before path rewriting', () => {
     expect(migrationDestination('/contact/')).toBe('/contact/')
+    expect(migrationDestination('http://trayport.local/eex-news/')).toBe('/eex-news/')
     expect(migrationDestination('#details')).toBe('#details')
     expect(migrationDestination('mailto:editor@example.com')).toBe('mailto:editor@example.com')
     expect(migrationDestination('tel:+44 20 7960 5500')).toBe('tel:+44 20 7960 5500')

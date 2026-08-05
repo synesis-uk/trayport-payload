@@ -1,6 +1,9 @@
 import type { ArticleRouteDocument, PageRouteDocument } from '@/data/contentRouteProjection'
+import type { Banner } from '@/payload-types'
 
+import type { BannerSlots } from '@/banners/model'
 import { TrayportBlocks } from '@/components/blocks'
+import { BannerSlot } from '@/components/Banners/BannerSlot'
 
 import { formatDate, splitLeadingHero } from './shared'
 
@@ -8,31 +11,40 @@ export const PageView = ({
   document,
   draft = false,
   searchQuery = '',
+  banners,
 }: {
   document: PageRouteDocument
   draft?: boolean
   searchQuery?: string
+  banners?: BannerSlots<Banner>
 }) => {
-  const hasHero = (document.layout || []).some(({ blockType }) => blockType === 'trayportHero')
+  const layout = document.layout || []
+  const hasHero = layout.some(({ blockType }) => blockType === 'trayportHero')
   const presentation = document.pageType === 'homepage' ? 'home' : document.pageType
 
   return (
-    <main
-      className={`trayport-page trayport-page--${presentation}`}
-      data-page-path={document.path}
-      data-page-type={document.pageType}
-      id="main-content"
-    >
-      {!hasHero ? (
-        <header className="trayport-page-header">
-          <div className="trayport-container trayport-container--standard">
-            <p className="trayport-eyebrow">Trayport</p>
-            <h1>{document.title}</h1>
-          </div>
-        </header>
-      ) : null}
-      <TrayportBlocks blocks={document.layout} draft={draft} searchQuery={searchQuery} />
-    </main>
+    <>
+      <BannerSlot banners={banners?.first} />
+      <main
+        className={`trayport-page trayport-page--${presentation}`}
+        data-page-path={document.path}
+        data-page-type={document.pageType}
+        id="main-content"
+      >
+        {!hasHero ? (
+          <header className="trayport-page-header">
+            <div className="trayport-container trayport-container--standard">
+              <p className="trayport-eyebrow">Trayport</p>
+              <h1>{document.title}</h1>
+            </div>
+          </header>
+        ) : null}
+        <TrayportBlocks blocks={layout.slice(0, 1)} draft={draft} searchQuery={searchQuery} />
+        <BannerSlot banners={banners?.second} />
+        <TrayportBlocks blocks={layout.slice(1)} draft={draft} searchQuery={searchQuery} />
+      </main>
+      <BannerSlot banners={banners?.last} />
+    </>
   )
 }
 

@@ -27,8 +27,10 @@ export type ProductionVirtualRoute = {
 
 /**
  * Production inventory is deliberately discovery-led. The explicit entries below
- * only cover routes rendered outside the ACF option data, a known public/local
- * navigation difference, and canonical resolution for legacy raw URLs.
+ * only cover routes rendered outside the ACF option data, published reusable
+ * records whose managed links define public Page reachability, a known
+ * public/local navigation difference, and canonical resolution for legacy raw
+ * URLs.
  */
 export const productionScope = {
   name: 'production',
@@ -37,6 +39,7 @@ export const productionScope = {
     footer: 'footer_new',
   },
   candidateStatuses: ['publish', 'private', 'draft'],
+  publishedManagedLinkPostTypes: ['banner'],
   excludedPostTypes: [
     'acf-field',
     'acf-field-group',
@@ -175,9 +178,9 @@ export const productionScope = {
     videos: ['videos'],
   } as Record<string, string[]>,
   expectedInventory: {
-    directPublicRoutes: 53,
+    directPublicRoutes: 54,
     listingRoutes: 243,
-    routes: 296,
+    routes: 297,
     redirects: 50,
     exclusions: 1,
     unknownArchetypes: 0,

@@ -68,6 +68,7 @@ export interface Config {
   blocks: {};
   collections: {
     pages: Page;
+    banners: Banner;
     articles: Article;
     hubs: Hub;
     venues: Venue;
@@ -99,6 +100,7 @@ export interface Config {
   };
   collectionsSelect: {
     pages: PagesSelect<false> | PagesSelect<true>;
+    banners: BannersSelect<false> | BannersSelect<true>;
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
     hubs: HubsSelect<false> | HubsSelect<true>;
     venues: VenuesSelect<false> | VenuesSelect<true>;
@@ -132,12 +134,14 @@ export interface Config {
     footer: Footer;
     'site-settings': SiteSetting;
     'route-indexes': RouteIndex;
+    'payload-jobs-stats': PayloadJobsStat;
   };
   globalsSelect: {
     navigation: NavigationSelect<false> | NavigationSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     'route-indexes': RouteIndexesSelect<false> | RouteIndexesSelect<true>;
+    'payload-jobs-stats': PayloadJobsStatsSelect<false> | PayloadJobsStatsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -146,6 +150,7 @@ export interface Config {
   user: User;
   jobs: {
     tasks: {
+      processBannerNotifications: TaskProcessBannerNotifications;
       schedulePublish: TaskSchedulePublish;
       inline: {
         input: unknown;
@@ -1548,7 +1553,7 @@ export interface DataTableComponent {
   caption?: string | null;
   headers?:
     | {
-        text: string;
+        text?: string | null;
         id?: string | null;
       }[]
     | null;
@@ -1556,7 +1561,7 @@ export interface DataTableComponent {
     | {
         cells?:
           | {
-              text: string;
+              text?: string | null;
               id?: string | null;
             }[]
           | null;
@@ -2014,6 +2019,144 @@ export interface ArticleCategory {
   createdAt: string;
 }
 /**
+ * Schedule reusable announcements across every page or a selected group of pages.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "banners".
+ */
+export interface Banner {
+  id: number;
+  /**
+   * Internal name used to find and manage this banner.
+   */
+  title: string;
+  headline: string;
+  layout: 'small' | 'large';
+  /**
+   * Optional supporting copy for a large banner.
+   */
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Optional background image for a large banner.
+   */
+  image?: (number | null) | Media;
+  link: {
+    label: string;
+    type: 'reference' | 'custom';
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'articles';
+          value: number | Article;
+        } | null)
+      | ({
+          relationTo: 'hubs';
+          value: number | Hub;
+        } | null)
+      | ({
+          relationTo: 'venues';
+          value: number | Venue;
+        } | null)
+      | ({
+          relationTo: 'learning-videos';
+          value: number | LearningVideo;
+        } | null);
+    url?: string | null;
+    newTab?: boolean | null;
+  };
+  tone: 'deep' | 'blue' | 'cyan' | 'orange' | 'yellow' | 'light';
+  dismissible?: boolean | null;
+  /**
+   * Shown from this instant, using the editor’s configured timezone.
+   */
+  startAt: string;
+  /**
+   * Hidden after this instant.
+   */
+  endAt: string;
+  /**
+   * First: above page content. Second: after its first section. Last: below page content.
+   */
+  position: 'first' | 'second' | 'last';
+  /**
+   * Lower numbers appear first when banners share a position.
+   */
+  priority: number;
+  targetMode: 'all' | 'specific';
+  /**
+   * Choose one or more managed Pages.
+   */
+  targetPages?: (number | Page)[] | null;
+  /**
+   * Optional CMS users who receive activation and expiry reminders. Maximum two.
+   */
+  notifyUsers?: (number | User)[] | null;
+  /**
+   * Read-only WordPress recipient evidence. Select matching CMS users above before launch.
+   */
+  migratedRecipientEmails?:
+    | {
+        email: string;
+        id?: string | null;
+      }[]
+    | null;
+  legacySource?: {
+    key?: string | null;
+    source?: string | null;
+    legacyId?: number | null;
+    originalUrl?: string | null;
+    modifiedGmt?: string | null;
+    contentHash?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users".
+ */
+export interface User {
+  id: number;
+  name?: string | null;
+  roles?: ('admin' | 'editor')[] | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'users';
+}
+/**
  * Private CSV history. Create an upload, POST /api/market-data-imports/:id/validate, review GET /:id/preview, then explicitly POST /:id/commit.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2082,33 +2225,6 @@ export interface MarketDataImport {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users".
- */
-export interface User {
-  id: number;
-  name?: string | null;
-  roles?: ('admin' | 'editor')[] | null;
-  updatedAt: string;
-  createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'users';
 }
 /**
  * Provider-neutral customer identity references for future external-service integration. These records are not CMS login accounts.
@@ -2323,7 +2439,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'schedulePublish';
+        taskSlug: 'inline' | 'processBannerNotifications' | 'schedulePublish';
         taskID: string;
         input?:
           | {
@@ -2356,10 +2472,23 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'schedulePublish') | null;
+  taskSlug?: ('inline' | 'processBannerNotifications' | 'schedulePublish') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
+  /**
+   * Used for concurrency control. Jobs with the same key are subject to exclusive/supersedes rules.
+   */
+  concurrencyKey?: string | null;
+  meta?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2373,6 +2502,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'pages';
         value: number | Page;
+      } | null)
+    | ({
+        relationTo: 'banners';
+        value: number | Banner;
       } | null)
     | ({
         relationTo: 'articles';
@@ -3024,6 +3157,54 @@ export interface LearningVideoListingBlockSelect<T extends boolean = true> {
   showCategoryFilter?: T;
   id?: T;
   blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "banners_select".
+ */
+export interface BannersSelect<T extends boolean = true> {
+  title?: T;
+  headline?: T;
+  layout?: T;
+  body?: T;
+  image?: T;
+  link?:
+    | T
+    | {
+        label?: T;
+        type?: T;
+        reference?: T;
+        url?: T;
+        newTab?: T;
+      };
+  tone?: T;
+  dismissible?: T;
+  startAt?: T;
+  endAt?: T;
+  position?: T;
+  priority?: T;
+  targetMode?: T;
+  targetPages?: T;
+  notifyUsers?: T;
+  migratedRecipientEmails?:
+    | T
+    | {
+        email?: T;
+        id?: T;
+      };
+  legacySource?:
+    | T
+    | {
+        key?: T;
+        source?: T;
+        legacyId?: T;
+        originalUrl?: T;
+        modifiedGmt?: T;
+        contentHash?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3832,6 +4013,8 @@ export interface PayloadJobsSelect<T extends boolean = true> {
   queue?: T;
   waitUntil?: T;
   processing?: T;
+  concurrencyKey?: T;
+  meta?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -4519,6 +4702,24 @@ export interface RouteIndex {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs-stats".
+ */
+export interface PayloadJobsStat {
+  id: number;
+  stats?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "navigation_select".
  */
 export interface NavigationSelect<T extends boolean = true> {
@@ -4810,6 +5011,16 @@ export interface RouteIndexesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs-stats_select".
+ */
+export interface PayloadJobsStatsSelect<T extends boolean = true> {
+  stats?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "collections_widget".
  */
 export interface CollectionsWidget {
@@ -4817,6 +5028,21 @@ export interface CollectionsWidget {
     [k: string]: unknown;
   };
   width: 'full';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskProcessBannerNotifications".
+ */
+export interface TaskProcessBannerNotifications {
+  input?: unknown;
+  output: {
+    attempted: number;
+    claimed: number;
+    disabled: boolean;
+    failed: number;
+    scanned: number;
+    sent: number;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -4830,6 +5056,10 @@ export interface TaskSchedulePublish {
       | ({
           relationTo: 'pages';
           value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'banners';
+          value: number | Banner;
         } | null)
       | ({
           relationTo: 'articles';

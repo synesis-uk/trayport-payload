@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-08-05T11:44:33.000Z",
+  "runId": "banner-route-table-semantics-20260805",
+  "sourceHash": "9207fd0ca63fb985c491e0d143663dcb46262ef566c873ba02bf125e4a331d12",
+  "transformedHash": "3a61f1dd2a01e8744106bc3c6733935f8bf12748c70012cdc9e84921769cf6a3",
+  "acceptanceHash": "a044185309ec161fda673d9dca7afb47913764a08e332c3d5fee4d0b076c7305",
+  "source": {
+    "banners": 4,
+    "bannerTargetPages": 4,
+    "bannerActionPages": 1,
+    "bannerDependencyPages": 5,
+    "media": 163
+  },
+  "transformed": {
+    "targetRecords": 471,
+    "banners": 4,
+    "pages": 26,
+    "unresolvedRelationships": 0
+  },
+  "load": {
+    "inserted": 0,
+    "updated": 1,
+    "unchanged": 467,
+    "globalsUpdated": 0,
+    "globalsUnchanged": 3,
+    "unresolved": []
+  },
+  "initialLoad": {
+    "runId": "functional-parity-banners-final-20260805",
+    "insertedBanners": 4,
+    "sourceHash": "08483a55c12f7429996ed5a7b8add4578a85493a05d272d5bd9b472dd1751004",
+    "acceptanceHash": "93122e70de061e27f9e5bd9d2abec79a27d929294994445c5fe4be311e229414"
+  },
+  "databaseAcceptance": {
+    "importedBannerLegacyIds": [11602, 7597, 4363, 4362],
+    "importedDependencyPageLegacyIds": [1930, 1940, 4028, 6773, 11299],
+    "activeBannerLegacyId": 11602,
+    "activeBannerTargetPageLegacyIds": [1940, 6773],
+    "mappedPayloadNotificationUsers": 0
+  },
+  "tableSemanticsAcceptance": {
+    "pageLegacyId": 11299,
+    "pagePath": "/eex-news/",
+    "loadedContentHash": "002bb0cac27310fdb704ed3cf2324470260f6d067bff3ee395c3d89bf007e1a5",
+    "blankSourceCells": 4,
+    "blankCellsLoadedAsEmptyStrings": true,
+    "inventedPlaceholderText": false
+  },
+  "notificationAcceptance": {
+    "deliveryLedgerMigration": "20260805_111442_banner_notification_delivery_ledger",
+    "anonymousRecipientDataExposed": false,
+    "exactScheduleClaim": "passed",
+    "concurrentDeduplication": "passed",
+    "restoredScheduleDeduplication": "passed",
+    "boundedRetry": "passed"
+  },
+  "browserAcceptance": {
+    "verifiedAt": "2026-08-05T11:06:14.627Z",
+    "desktopViewport": "1440x900",
+    "mobileViewport": "390x844",
+    "targetedPaths": [
+      "/products/exchange-trading-system/",
+      "/products/exchange-connectivity/"
+    ],
+    "excludedPath": "/products/data-analytics/",
+    "linkPath": "/eex-news/",
+    "dismissal": "passed",
+    "consoleErrors": 0,
+    "consoleWarnings": 0
+  }
+}
