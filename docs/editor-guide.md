@@ -140,9 +140,12 @@ requests and the public REST API cannot read the Banner collection directly.
 Up to two CMS users can receive reminders 24 hours before start, at start, 24
 hours before end, and at end. Imported WordPress email addresses remain visible
 to CMS users as read-only review evidence; choose the matching current CMS users
-before relying on notifications. Delivery state is private operational data in
-a non-versioned ledger, so restoring a content version does not resend an event
-for the same schedule.
+before relying on notifications. An approved migration recipient who does not
+already have an account is created as a notification-only identity with no CMS
+role. They cannot sign in until an administrator deliberately assigns Editor or
+Administrator and issues a password reset. Delivery state is private operational
+data in a non-versioned ledger, so restoring a content version does not resend an
+event for the same schedule.
 
 ## Media and accessibility
 

@@ -6,37 +6,38 @@ An archetype defines who owns a public route, which content is required, which
 blocks or structured fields are allowed, and what editors can do. It is not
 just a label for a WordPress template.
 
-The machine-readable contract defines 18 content-route archetypes plus the
+The machine-readable contract defines 19 content-route archetypes plus the
 temporary Contact redirect archetype. The content runtime registry contains the
-same 18 content-route IDs. Payload integration tests now prove their
+same 19 content-route IDs. Payload integration tests now prove their
 discriminators, required/forbidden route policies, top-level block policies,
 publication guards, virtual claims, and cross-collection collision behavior.
 This passing runtime gate is narrower than production parity: deferred
-HubSpot/CookieYes integrations and the remaining 263 plan-only documents are
+HubSpot/CookieYes integrations and the remaining 244 plan-only documents are
 still incomplete.
 
 ## Target archetypes
 
-| Archetype | Owner | Route policy | Body/behavior owner | Current state |
-| --- | --- | --- | --- | --- |
-| `page.homepage` | `pages` | Required; exactly `/` | Layout | Passing: only this type may claim `/` |
-| `page.standard` | `pages` | Required | Layout | Passing runtime route/block invariant |
-| `page.product` | `pages` | Required | Layout | Passing runtime route/block invariant |
-| `page.landing` | `pages` | Required | Layout | Passing runtime route/block invariant |
-| `page.legal` | `pages` | Required | Layout and policy semantics | Passing route/block baseline; the accepted cookie-policy page and consent relationship are imported and rendered |
-| `page.conversion` | `pages` | Required | Layout and bounded HubSpot form | Passing guard: draftable but publication is denied until the approved integration exists |
-| `page.interactive-market-matrix` | `pages` | Required | Layout and managed market relationships | Passing: publication requires exactly one managed `marketMatrix` component |
-| `page.content-index` | `pages` | Required | Layout plus generated listing | Passing: publication requires `articleListing`, which is forbidden on other page types |
-| `article.full` | `articles` | Required | Complete article layout | Passing: publication requires a path and non-empty allowed layout |
-| `article.listing-metadata` | `articles` | Forbidden | Listing metadata only | Passing: path and layout are forbidden |
-| `learning-video.public-detail` | `learning-videos` | Required | Video metadata, media, access policy, SEO | Passing guard: public media may publish; restricted modes publish metadata-only gates without protected media or body content |
-| `hub.public-page` | `hubs` | Required | Layout and structured market data | Passing runtime route/block invariant |
-| `hub.map-only` | `hubs` | Forbidden | Structured market data | Passing: path and layout are forbidden |
-| `venue.structured-record` | `venues` | Forbidden | Structured market data | Passing: `relationship-only` mode forbids path and layout |
-| `venue.public-detail` | `venues` | Required | Detail layout and structured market data | Passing: `page` mode has route, preview, renderer, SEO, and minimum-detail validation |
-| `index.venue` | System claim; `route-indexes` config; `venues` query | Required virtual `/venue/` | Derived collection index | Passing: system claim and CMS configuration are implemented |
-| `index.market-coverage` | System claim; `route-indexes` config; `hubs` query | Required virtual `/market-coverage/` | Derived collection index | Passing: system claim and CMS configuration are implemented |
-| `redirect.temporary-contact` | `redirects` | Required `/request-a-demo/` source | Temporary journey bridge | Passing: imported `302` resolves to managed `/contact/`; reversible when an approved HubSpot-backed demo page exists |
+| Archetype                        | Owner                                                | Route policy                         | Body/behavior owner                                          | Current state                                                                                                                                         |
+| -------------------------------- | ---------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `page.homepage`                  | `pages`                                              | Required; exactly `/`                | Layout                                                       | Passing: only this type may claim `/`                                                                                                                 |
+| `page.standard`                  | `pages`                                              | Required                             | Layout                                                       | Passing runtime route/block invariant                                                                                                                 |
+| `page.product`                   | `pages`                                              | Required                             | Layout                                                       | Passing runtime route/block invariant                                                                                                                 |
+| `page.landing`                   | `pages`                                              | Required                             | Layout                                                       | Passing runtime route/block invariant                                                                                                                 |
+| `page.legal`                     | `pages`                                              | Required                             | Layout and policy semantics                                  | Passing route/block baseline; the accepted cookie-policy page and consent relationship are imported and rendered                                      |
+| `page.conversion`                | `pages`                                              | Required                             | Layout and bounded HubSpot form                              | Passing guard: draftable but publication is denied while the local form mount lacks approved provider/consent behavior                                |
+| `page.interactive-market-matrix` | `pages`                                              | Required                             | Layout and managed market relationships                      | Passing: publication requires exactly one managed `marketMatrix` component                                                                            |
+| `page.content-index`             | `pages`                                              | Required                             | Layout plus generated listing                                | Passing: publication requires `articleListing`, which is forbidden on other page types                                                                |
+| `article.full`                   | `articles`                                           | Required                             | Complete article layout                                      | Passing: publication requires a path and non-empty allowed layout                                                                                     |
+| `article.listing-metadata`       | `articles`                                           | Forbidden                            | Listing metadata only                                        | Passing: path and layout are forbidden                                                                                                                |
+| `person.public-profile`          | `people`                                             | Required                             | Structured profile, team, biography/quote, portrait, and SEO | Passing: all 17 published WordPress People profiles have canonical Payload owners; sparse source profiles remain valid without invented copy or media |
+| `learning-video.public-detail`   | `learning-videos`                                    | Required                             | Video metadata, media, access policy, SEO                    | Passing guard: public media may publish; restricted modes publish metadata-only gates without protected media or body content                         |
+| `hub.public-page`                | `hubs`                                               | Required                             | Layout and structured market data                            | Passing runtime route/block invariant                                                                                                                 |
+| `hub.map-only`                   | `hubs`                                               | Forbidden                            | Structured market data                                       | Passing: path and layout are forbidden                                                                                                                |
+| `venue.structured-record`        | `venues`                                             | Forbidden                            | Structured market data                                       | Passing: `relationship-only` mode forbids path and layout                                                                                             |
+| `venue.public-detail`            | `venues`                                             | Required                             | Detail layout and structured market data                     | Passing: `page` mode has route, preview, renderer, SEO, and minimum-detail validation                                                                 |
+| `index.venue`                    | System claim; `route-indexes` config; `venues` query | Required virtual `/venue/`           | Derived collection index                                     | Passing: system claim and CMS configuration are implemented                                                                                           |
+| `index.market-coverage`          | System claim; `route-indexes` config; `hubs` query   | Required virtual `/market-coverage/` | Derived collection index                                     | Passing: system claim and CMS configuration are implemented                                                                                           |
+| `redirect.temporary-contact`     | `redirects`                                          | Required `/request-a-demo/` source   | Temporary journey bridge                                     | Passing: imported `302` resolves to managed `/contact/`; reversible when an approved HubSpot-backed demo page exists                                  |
 
 “Forbidden” means the record may be publicly readable as data for a managed
 component, but it cannot claim a standalone public path or appear as an
@@ -44,23 +45,25 @@ internal detail destination.
 
 ## Source-template mapping
 
-| WordPress source | Target classification |
-| --- | --- |
-| Front page using `default-new` | `page.homepage` |
-| General `default-new` pages | `page.standard`, `page.product`, `page.landing`, or `page.conversion`, selected by route purpose and content |
-| `article.blade.php` and cookie policy | `page.legal` |
-| Pages whose primary purpose is HubSpot-backed enquiry/demo submission | `page.conversion`; remains draft-only until the bounded integration exists |
-| Current `/request-a-demo/` source root | `redirect.temporary-contact` to managed `/contact/`; no HubSpot form or unused hero media is imported |
-| `market-matrix.blade.php` | `page.interactive-market-matrix` |
-| `articles-list.blade.php` and Learning Hub home | `page.content-index` with a constrained listing behavior |
-| Published `post` details linked by News, Event, or Insights listings | `article.full` |
-| Imported article metadata with no complete internal body | `article.listing-metadata`; never a public route |
-| Published `learning-hub-video` listing children | `learning-video.public-detail` |
-| Published, listing-linked `hub` details | `hub.public-page` |
-| Hub records used only as map/relationship data | `hub.map-only` |
-| Published, listing-linked `venue` details | `venue.public-detail` |
-| Venue records used only as relationships | `venue.structured-record` |
-| WordPress virtual archives | `index.venue` and `index.market-coverage` |
+| WordPress source                                                      | Target classification                                                                                             |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Front page using `default-new`                                        | `page.homepage`                                                                                                   |
+| General `default-new` pages                                           | `page.standard`, `page.product`, `page.landing`, or `page.conversion`, selected by route purpose and content      |
+| `article.blade.php` and cookie policy                                 | `page.legal`                                                                                                      |
+| Pages whose primary purpose is HubSpot-backed enquiry/demo submission | `page.conversion`; remains draft-only until the bounded integration exists                                        |
+| Current `/request-a-demo/` source root                                | `redirect.temporary-contact` to managed `/contact/`; no HubSpot form or unused hero media is imported             |
+| `market-matrix.blade.php`                                             | `page.interactive-market-matrix`                                                                                  |
+| `articles-list.blade.php` and Learning Hub home                       | `page.content-index` with a constrained listing behavior                                                          |
+| Published `post` details linked by News, Event, or Insights listings  | `article.full`                                                                                                    |
+| Published legacy `events` details                                     | Merge into the matching canonical Event Article where one exists; otherwise create `article.full` under `/event/` |
+| Imported article metadata with no complete internal body              | `article.listing-metadata`; never a public route                                                                  |
+| Published `people` details                                            | `person.public-profile`; People blocks query managed relationships or a team rather than copying profile content  |
+| Published `learning-hub-video` listing children                       | `learning-video.public-detail`                                                                                    |
+| Published, listing-linked `hub` details                               | `hub.public-page`                                                                                                 |
+| Hub records used only as map/relationship data                        | `hub.map-only`                                                                                                    |
+| Published, listing-linked `venue` details                             | `venue.public-detail`                                                                                             |
+| Venue records used only as relationships                              | `venue.structured-record`                                                                                         |
+| WordPress virtual archives                                            | `index.venue` and `index.market-coverage`                                                                         |
 
 Template mapping is followed by content validation. For example, the source
 template alone does not distinguish a standard information page from a
@@ -78,19 +81,22 @@ not yet transformed and loaded all 51 documents.
 
 The remaining route ownership is explicit:
 
-| Target owner | Required public routes |
-| --- | ---: |
-| `articles` using `article.full` | 90 |
-| `venues` using `venue.public-detail` | 66 |
-| `hubs` using `hub.public-page` | 72 |
-| `learning-videos` | 15 |
-| Venue and market-coverage virtual indexes | 2 |
-| Temporary Contact redirect sourced from a WordPress page | 1 |
+| Target owner                                             | Required public routes |
+| -------------------------------------------------------- | ---------------------: |
+| `articles` using `article.full`                          |                     93 |
+| `people` using `person.public-profile`                   |                     17 |
+| `venues` using `venue.public-detail`                     |                     66 |
+| `hubs` using `hub.public-page`                           |                     72 |
+| `learning-videos`                                        |                     15 |
+| Venue and market-coverage virtual indexes                |                      2 |
+| Temporary Contact redirect sourced from a WordPress page |                      1 |
 
 Relationship-only venue records, map-only hub records, and article
 listing-metadata records are not counted as public routes. The retained
 [inventory summary](inventory-summary.json) verifies these owner totals against
-the 297-route source corpus.
+the 317-route source corpus. The 93 Articles comprise 31 News, 39 Insights, and
+23 Event owners; the Event count includes 20 canonical posts and three unique
+legacy Event records.
 
 ## Route ownership rules
 
@@ -98,6 +104,7 @@ The target public route namespace is shared by:
 
 - Payload `pages`;
 - Payload `articles`;
+- Payload `people`;
 - Payload `hubs`;
 - Payload `venues`;
 - Payload `learning-videos`;
@@ -139,16 +146,19 @@ The implemented publication hook enforces:
   route claim, sitemap entry, or public detail link;
 - the homepage is the sole owner of `/`;
 - a full article has a non-empty allowed layout;
+- a public Person has a canonical path and managed team classification while
+  allowing genuinely sparse source biography/media fields;
 - every content index uses only the listing behavior allowed for that index;
-- conversion pages cannot publish while their bounded HubSpot form is absent;
+- conversion pages cannot publish while their bounded HubSpot form lacks the
+  approved provider and consent lifecycle;
 - interactive Market Matrix pages require exactly one managed matrix component;
 - a public venue has managed description or layout content;
 - a publishable Learning Hub detail has public access mode, playable
   managed/external media, and required metadata; and
 - imported and native writes use the same route/discriminator rules.
 
-Production still requires the planned form and cookie-consent components,
-complete 297-route managed-link validation, and verification that every
+Production still requires the provider-backed HubSpot and CookieYes behavior,
+complete 317-route managed-link validation, and verification that every
 editor-visible setting affects the frontend. Those requirements remain under
 their separate non-passing gates; the passing archetype gate does not claim
 they are complete.
@@ -169,7 +179,7 @@ page-body data.
   relationship unless a curated override is explicitly required.
 
 The production target requires every internal listing destination to resolve
-through the route registry. Complete validation of all 243 listing-linked
+through the route registry. Complete validation of all 263 listing-linked
 children is not yet implemented, so the listing-detail and managed-link gates
 remain blocked.
 

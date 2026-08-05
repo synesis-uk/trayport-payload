@@ -21,6 +21,7 @@ import './parity-blocks.css'
 import './parity-joule.css'
 import './parity-insights.css'
 import './parity-home.css'
+import './parity-search.css'
 
 const DraftAdminBar = async () => {
   const { isEnabled } = await draftMode()

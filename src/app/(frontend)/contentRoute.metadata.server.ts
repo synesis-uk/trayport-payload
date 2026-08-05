@@ -33,7 +33,7 @@ export const contentRouteMetadata = async ({
   }
 
   return generateMeta({
-    contentType: result.kind === 'article' ? 'article' : 'website',
+    contentType: result.kind === 'article' || result.kind === 'person' ? 'article' : 'website',
     doc: result.document,
     settings,
   })

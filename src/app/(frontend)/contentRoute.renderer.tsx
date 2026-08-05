@@ -14,6 +14,7 @@ import {
   LearningVideoView,
   MarketCoverageIndexView,
   PageView,
+  PersonView,
   VenueIndexView,
   VenueView,
 } from '@/components/content'
@@ -39,6 +40,7 @@ const structuredDataFor = (result: RouteResult): StructuredDataValue => {
     case 'hub':
     case 'learning-video':
     case 'page':
+    case 'person':
     case 'venue':
       return result.document.meta?.structuredData
     default:
@@ -73,6 +75,8 @@ const renderRouteResult = ({
       )
     case 'article':
       return <ArticleView document={result.document} draft={draft} />
+    case 'person':
+      return <PersonView document={result.document} />
     case 'hub':
       return <HubView document={result.document} draft={draft} />
     case 'venue':

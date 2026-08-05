@@ -115,15 +115,15 @@ describe.sequential('post-import acceptance', () => {
       activeNavigationRoots: 5,
       articleCategories: 3,
       assetClasses: 12,
-      articles: 71,
+      articles: 90,
       banners: 4,
       bannerActionPages: 1,
       bannerDependencyPages: 5,
       bannerTargetPages: 4,
       connectedVenues: 21,
-      deferredHubSpotForms: 5,
+      deferredHubSpotForms: 2,
       eexConnections: 37,
-      eventArticles: 1,
+      eventArticles: 20,
       featuredInsights: 4,
       cookieNoticeImported: true,
       footerColumns: 3,
@@ -131,6 +131,7 @@ describe.sequential('post-import acceptance', () => {
       insightsArticles: 39,
       learningListingVideos: 14,
       learningVideos: 15,
+      legacyEvents: 5,
       mapHubs: 72,
       mapMarkers: 62,
       marketMatrixHubs: 72,
@@ -142,20 +143,21 @@ describe.sequential('post-import acceptance', () => {
       newsArticles: 31,
       offices: 4,
       pages: 27,
+      people: 17,
       protectedVideoExcluded: true,
       roots: 27,
       venueTypes: 3,
     })
     expect(transformed.ok).toBe(true)
     expect(transformed.checks).toMatchObject({
-      articles: 71,
+      articles: 93,
       banners: 4,
       bannerActionPages: 1,
       bannerDependencyPages: 5,
       bannerTargetPages: 4,
       commoditiesReportExcluded: true,
       eexConnections: 37,
-      fullArticles: 2,
+      fullArticles: 24,
       globals: 3,
       cookieNoticeImported: true,
       footerLinks: 13,
@@ -165,10 +167,12 @@ describe.sequential('post-import acceptance', () => {
       listingArticles: 69,
       offices: 4,
       pages: 26,
-      deferredHubSpotForms: 7,
+      deferredHubSpotForms: 2,
+      eventArticles: 23,
+      people: 17,
       protectedVideoExcluded: true,
-      redirects: 2,
-      routableDocuments: 32,
+      redirects: 7,
+      routableDocuments: 70,
       marketMatrixAutoTraderConnections: 20,
       marketMatrixConnections: 655,
       marketMatrixDirectConnections: 417,
@@ -186,8 +190,8 @@ describe.sequential('post-import acceptance', () => {
     )
   })
 
-  it('loads 26 Pages, including banner dependencies, and 71 Articles', async () => {
-    const [pages, articles, assetClasses] = await Promise.all([
+  it('loads 26 Pages, including banner dependencies, 93 Articles, and 17 People', async () => {
+    const [pages, articles, people, assetClasses] = await Promise.all([
       payload.find({
         collection: 'pages',
         depth: 0,
@@ -207,6 +211,16 @@ describe.sequential('post-import acceptance', () => {
         },
       }),
       payload.find({
+        collection: 'people',
+        depth: 0,
+        limit: 100,
+        overrideAccess: true,
+        pagination: false,
+        where: {
+          and: [wordpressWhere, { _status: { equals: 'published' } }],
+        },
+      }),
+      payload.find({
         collection: 'asset-classes',
         depth: 0,
         limit: 100,
@@ -217,7 +231,17 @@ describe.sequential('post-import acceptance', () => {
     ])
 
     expect(pages.docs).toHaveLength(26)
-    expect(articles.docs).toHaveLength(71)
+    expect(articles.docs).toHaveLength(93)
+    expect(people.docs).toHaveLength(17)
+    const sparsePerson = documentByLegacyID(people.docs, 11233)
+    expect(sparsePerson).toMatchObject({
+      path: '/people/nicole-rosenberg/',
+      team: 'ceo',
+      title: 'Nicole Rosenberg',
+    })
+    expect(sparsePerson.description).toBeFalsy()
+    expect(sparsePerson.image).toBeFalsy()
+    expect(sparsePerson.jobRole).toBeFalsy()
     expect(
       articles.docs.filter(({ articleType, featured }) => articleType === 'insight' && featured),
     ).toHaveLength(4)
@@ -271,12 +295,16 @@ describe.sequential('post-import acceptance', () => {
 
     const fullArticles = articles.docs.filter(({ contentMode }) => contentMode === 'full')
     const listingArticles = articles.docs.filter(({ contentMode }) => contentMode === 'listing')
-    expect(fullArticles).toHaveLength(2)
+    const eventArticles = articles.docs.filter(({ articleType }) => articleType === 'event')
+    expect(fullArticles).toHaveLength(24)
     expect(listingArticles).toHaveLength(69)
-    expect(fullArticles.map(({ path }) => path).sort()).toEqual([
-      '/event/e-world-2026/',
-      '/insights/on-demand-webinar-data-analytics-for-energy-traders/',
-    ])
+    expect(eventArticles).toHaveLength(23)
+    expect(fullArticles.map(({ path }) => path)).toEqual(
+      expect.arrayContaining([
+        '/event/e-world-2026/',
+        '/insights/on-demand-webinar-data-analytics-for-energy-traders/',
+      ]),
+    )
     expect(listingArticles.every(({ path }) => path === null)).toBe(true)
     expect(
       listingArticles.every(
@@ -338,7 +366,18 @@ describe.sequential('post-import acceptance', () => {
     expect(active.migratedRecipientEmails).toEqual([
       expect.objectContaining({ email: 'sophie.inghamclark@trayport.com' }),
     ])
-    expect(active.notifyUsers).toEqual([])
+    expect(active.notifyUsers).toEqual([
+      expect.objectContaining({
+        email: 'sophie.inghamclark@trayport.com',
+        name: 'Sophie Ingham-Clark',
+        roles: [],
+      }),
+    ])
+
+    const expiredRecipientCounts = banners.docs
+      .filter(({ legacySource }) => legacySource?.legacyId !== 11602)
+      .map(({ notifyUsers }) => notifyUsers?.length || 0)
+    expect(expiredRecipientCounts).toEqual([0, 0, 0])
   })
 
   it('imports the active Home and Joule presentation semantics into typed fields', async () => {
@@ -835,7 +874,21 @@ describe.sequential('post-import acceptance', () => {
       path: '/event/e-world-2026/',
       title: 'Trayport confirms participation at E-World 2026',
     })
-    expect(event.layout).toHaveLength(3)
+    expect(event.layout).toHaveLength(5)
+    expect(
+      (event.layout || []).flatMap((block) =>
+        block.blockType === 'contentSection'
+          ? block.columns.flatMap(({ components }) =>
+              components.flatMap((component) =>
+                component.blockType === 'hubspotForm' ? [component.formId] : [],
+              ),
+            )
+          : [],
+      ),
+    ).toEqual([
+      '8c3a5fef-87b8-43c2-9662-fb663f0f3e9f',
+      'af88756a-8035-4bf7-80a6-db5b6250ebe2',
+    ])
     expect(JSON.stringify(event.layout)).not.toMatch(/"blockType":"form"/)
   })
 

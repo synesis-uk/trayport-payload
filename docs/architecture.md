@@ -3,8 +3,8 @@
 ## Purpose
 
 This repository proves the replacement path for the currently used Trayport
-WordPress site. It currently closes 27 audited source roots: 26 rendered content
-routes and one temporary managed redirect. It does not reproduce every dormant
+WordPress site. The accepted population now closes 70 rendered content routes,
+one temporary managed redirect, and two virtual indexes. It does not reproduce every dormant
 WordPress content type or administration screen. The functional/editorial
 baseline is the live public site and its equivalent local WordPress deployment;
 the [delivery-slice plan](delivery-slices.md) records what the current local
@@ -34,10 +34,12 @@ implementation adds and what remains before launch.
 
 Payload collections:
 
-- `pages`: the 20 accepted homepage, marketing, listing, support, office, region,
+- `pages`: accepted homepage, marketing, listing, support, office, region,
   contact, Market Matrix, and legal roots.
-- `articles`: all records needed by the Insights listing and the scoped article
-  body.
+- `articles`: News, Insights, and 23 canonical Event details. Legacy Event
+  records merge into this family rather than creating a parallel content type.
+- `people`: all 17 public leadership and Careers profiles, with managed teams
+  and route ownership.
 - `hubs`: German Power plus the minimal hub-marker records used by the
   connectivity map.
 - `venues`: public-page or relationship-only venue records used by market
@@ -88,7 +90,8 @@ Deliberately excluded from the production pilot:
   Active HubSpot form identifiers remain in launch scope through a bounded
   Next.js embed integration.
 - Commodities Report pages.
-- The unused WordPress banner system and development theme switches.
+- Dormant development theme switches. Published banner behavior is migrated as
+  scheduled, page-targeted Payload content.
 - WordPress users, shortcodes as a generic content type, and dormant admin
   structures.
 
@@ -124,13 +127,13 @@ Git. Source WordPress data is never changed by the importer.
 `make content-inventory` performs the separate production discovery pass and
 also emits `production-target-plan.json`, its NDJSON form, a verification
 report, and a summary under `migration/work/inventory/<run-id>/`. The plan
-deterministically accounts for 297 routes, but it is planning evidence only.
-The importer acceptance slice covers 27 source roots plus five Pages required by
-published banners: 31 rendered content routes and `/request-a-demo/` as a
-reversible `302` to the managed Contact page. The other 263 plan-only production documents have not been loaded or
-content-remediated. Navigation and footer destinations outside this slice and
-the two virtual indexes remain explicit HTTPS live-site fallbacks until their
-routes are migrated.
+deterministically accounts for 317 routes: 315 Payload documents and two
+virtual indexes. Of those documents, 71 are pilot-ready and 244 remain
+plan-only. The accepted set includes 70 rendered content owners, including all
+17 People and all 23 canonical Events, plus `/request-a-demo/` as a reversible
+`302` to the managed Contact page. Navigation and footer destinations outside
+the accepted set remain explicit HTTPS live-site fallbacks until their routes
+are migrated.
 
 ## Routable-content foundation
 
@@ -147,18 +150,19 @@ retain a published claim while a changed draft path receives a reserved claim.
 Publishing the change requires confirmation and atomically replaces the old
 content claim with a redirect.
 
-The 18 content-route contract archetypes are represented at runtime. The
+The 19 content-route contract archetypes are represented at runtime. The
 temporary Contact redirect is a separate redirects-owned contract archetype.
 Publication hooks
 enforce discriminators, route-required/route-forbidden modes, root ownership,
 top-level block allowlists, minimum content, learning-video media, venue detail
 content, and content-index listing behavior. Conversion pages remain
-unpublishable until the bounded HubSpot integration exists; interactive Market
+unpublishable while the bounded HubSpot component is only an inert local mount
+without approved provider/consent behavior; interactive Market
 Matrix pages must contain exactly one managed `marketMatrix` component.
 
 The Next.js catch-all is registry-first; collection precedence is no longer a
-route ownership mechanism. It renders pages, full articles, public hubs,
-public venues, learning videos, redirects, and the CMS-configured virtual
+route ownership mechanism. It renders pages, full articles, public People,
+public hubs, public venues, learning videos, redirects, and the CMS-configured virtual
 indexes. Published content and virtual claims feed the content sitemap.
 
 Checked-in brand artwork uses the reserved `/brand/*` public namespace. Both content-path
@@ -228,6 +232,6 @@ metadata is optional, so Payload-native content can be created normally after
 the migration.
 
 This foundation clears the cross-collection uniqueness and runtime archetype
-invariant gates. It does not imply production readiness: complete 297-route
+invariant gates. It does not imply production readiness: complete 317-route
 content ownership, planned blocks, managed-link validation, editor-control
 parity, and broader role coverage are still outstanding.

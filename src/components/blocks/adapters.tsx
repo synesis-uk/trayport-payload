@@ -1,5 +1,6 @@
 import RichText from '@/components/RichText'
 import { TrayportMedia } from '@/components/Trayport/TrayportMedia'
+import { HubSpotFormMount } from '@/components/HubSpotForm/HubSpotFormMount'
 
 import {
   normalizeActionsComponent,
@@ -164,6 +165,12 @@ export const DividerComponentAdapter = ({
   block,
 }: TrayportSectionComponentAdapterProps<'divider'>) => (
   <DividerPresentation model={normalizeDividerComponent(block)} />
+)
+
+export const HubSpotFormComponentAdapter = ({
+  block,
+}: TrayportSectionComponentAdapterProps<'hubspotForm'>) => (
+  <HubSpotFormMount formId={block.formId} title={block.title} />
 )
 
 export const EmbedComponentAdapter = ({ block }: TrayportSectionComponentAdapterProps<'embed'>) => (

@@ -35,6 +35,12 @@ const quickActions = [
     label: 'Add a learning video',
   },
   {
+    description: 'Create or update a leadership, team, or careers profile.',
+    href: '/admin/collections/people/create',
+    icon: 'people',
+    label: 'Add a person',
+  },
+  {
     description: 'Upload and organise imagery, video, documents, and other website assets.',
     href: '/admin/collections/media/create',
     icon: 'media',
@@ -79,6 +85,12 @@ const websiteAreas = [
     icon: 'banner',
     label: 'Banners',
   },
+  {
+    description: 'Leadership, team, and careers profiles',
+    href: '/admin/collections/people',
+    icon: 'people',
+    label: 'People',
+  },
 ] as const
 
 const administratorAreas = [
@@ -113,6 +125,7 @@ const collectionLabels = {
   banners: 'Banners',
   'learning-videos': 'Learning videos',
   pages: 'Pages',
+  people: 'People',
 } as const
 
 const formatDate = (value: string): string => {
@@ -135,6 +148,8 @@ const RecentContentRow = ({ item }: { item: DashboardContentItem }) => (
           name={
             item.collection === 'banners'
               ? 'banner'
+              : item.collection === 'people'
+                ? 'people'
               : item.collection === 'learning-videos'
                 ? 'video'
                 : item.collection === 'articles'
@@ -252,7 +267,8 @@ export const DashboardWorkspace = ({
               <DashboardIcon name="page" />
               <p>No recent content yet.</p>
               <span>
-                Your latest page, article, banner, and learning-video edits will appear here.
+                Your latest page, article, banner, people, and learning-video edits will appear
+                here.
               </span>
             </div>
           )}
@@ -265,7 +281,7 @@ export const DashboardWorkspace = ({
         </section>
 
         <aside
-          className="trayport-admin-dashboard__panel trayport-admin-dashboard__attention"
+          className="trayport-admin-dashboard__attention trayport-admin-dashboard__panel"
           aria-labelledby="attention-title"
         >
           <div className="trayport-admin-dashboard__attention-total">
@@ -328,7 +344,7 @@ export const DashboardWorkspace = ({
 
       {isAdministrator ? (
         <section
-          className="trayport-admin-dashboard__section trayport-admin-dashboard__admin-section"
+          className="trayport-admin-dashboard__admin-section trayport-admin-dashboard__section"
           aria-labelledby="administration-title"
         >
           <div className="trayport-admin-dashboard__section-heading">

@@ -52,12 +52,12 @@ const parityFeatureSchema = z.object({
 
 const routeProgressSchema = z.object({
   status: z.literal('partial'),
-  approvedRouteOwners: z.literal(297),
-  acceptedRouteOwners: z.literal(34),
-  acceptedPercent: z.literal(11.4),
-  planOnlyRouteOwners: z.literal(263),
+  approvedRouteOwners: z.literal(317),
+  acceptedRouteOwners: z.literal(73),
+  acceptedPercent: z.literal(23),
+  planOnlyRouteOwners: z.literal(244),
   acceptedBreakdown: z.object({
-    renderedPayloadDocuments: z.literal(31),
+    renderedPayloadDocuments: z.literal(70),
     managedRedirectRouteOwners: z.literal(1),
     virtualIndexRouteOwners: z.literal(2),
   }),

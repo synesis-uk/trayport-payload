@@ -39,6 +39,7 @@ export const productionScope = {
     footer: 'footer_new',
   },
   candidateStatuses: ['publish', 'private', 'draft'],
+  canonicalPostTypes: ['people', 'events'],
   publishedManagedLinkPostTypes: ['banner'],
   excludedPostTypes: [
     'acf-field',
@@ -179,9 +180,9 @@ export const productionScope = {
   } as Record<string, string[]>,
   expectedInventory: {
     directPublicRoutes: 54,
-    listingRoutes: 243,
-    routes: 297,
-    redirects: 50,
+    listingRoutes: 263,
+    routes: 317,
+    redirects: 53,
     exclusions: 1,
     unknownArchetypes: 0,
     unknownLayouts: 0,

@@ -144,13 +144,15 @@ describe('public-shell Font Awesome boundary', () => {
     )
   })
 
-  it('gates production builds on the public-shell chunks and CMS-icon exclusion', () => {
+  it('gates production builds on asset integrity, public-shell chunks and CMS-icon exclusion', () => {
     const packageJSON = JSON.parse(readProjectFile('package.json')) as {
       scripts: Record<string, string>
     }
     const budget = readProjectFile('scripts/check-public-shell-budget.mjs')
 
-    expect(packageJSON.scripts.postbuild).toMatch(/^node scripts\/check-public-shell-budget\.mjs/)
+    expect(packageJSON.scripts.postbuild).toMatch(
+      /^node scripts\/check-build-assets\.mjs && node scripts\/check-public-shell-budget\.mjs/,
+    )
     expect(budget).toContain('MAX_PUBLIC_SHELL_GZIP_BYTES = 60 * 1024')
     expect(budget).toContain("'building-lock', 'chart-waterfall'")
     expect(budget).toContain('entry.endsWith(LAYOUT_ENTRY_SUFFIX)')

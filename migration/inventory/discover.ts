@@ -109,6 +109,12 @@ export const classifyInventoryNode = (
   if (node.postType === 'post') {
     return { archetype: 'article.full', targetOwner: 'articles' }
   }
+  if (node.postType === 'events') {
+    return { archetype: 'article.full', targetOwner: 'articles' }
+  }
+  if (node.postType === 'people') {
+    return { archetype: 'person.public-profile', targetOwner: 'people' }
+  }
   if (node.postType === 'hub') {
     return { archetype: 'hub.public-page', targetOwner: 'hubs' }
   }
@@ -142,6 +148,11 @@ export const discoverProductionInventory = (
   scope: ProductionScope,
 ): ProductionInventory => {
   const nodesByID = new Map(snapshot.nodes.map((node) => [node.legacyId, node]))
+  const canonicalPathForNode = (node: RuntimeInventoryNode): string | null => {
+    const sourcePath = normalizePath(node.path)
+    if (node.postType !== 'events' || !sourcePath) return sourcePath
+    return sourcePath.replace(/^\/events\//, '/event/')
+  }
   const nodesByPath = new Map<string, RuntimeInventoryNode>()
   for (const node of snapshot.nodes) {
     const path = normalizePath(node.path)
@@ -388,6 +399,40 @@ export const discoverProductionInventory = (
     if (recursive) queue.push(node.legacyId)
   }
 
+  const coreEventPaths = new Set(
+    snapshot.nodes
+      .filter(
+        (node) =>
+          node.postType === 'post' &&
+          node.status === 'publish' &&
+          canonicalPathForNode(node)?.startsWith('/event/'),
+      )
+      .flatMap((node) => {
+        const path = canonicalPathForNode(node)
+        return path ? [path] : []
+      }),
+  )
+  for (const node of snapshot.nodes) {
+    if (
+      node.status !== 'publish' ||
+      !node.postTypePublic ||
+      !scope.canonicalPostTypes.includes(
+        node.postType as (typeof scope.canonicalPostTypes)[number],
+      )
+    ) {
+      continue
+    }
+    const canonicalPath = canonicalPathForNode(node)
+    if (!canonicalPath) continue
+    const source = `scope.canonicalPostTypes.${node.postType}`
+    if (node.postType === 'events' && coreEventPaths.has(canonicalPath)) {
+      addDependencyPost(node, 'canonical-event-merge', source)
+      continue
+    }
+    addRoute(node, 'canonical-corpus', source, canonicalPath)
+    listingRouteIDs.add(node.legacyId)
+  }
+
   const addMediaDependency = (legacyId: number, role: string, source: string): void => {
     const current = dependencyMedia.get(legacyId) || {
       roles: new Set<string>(),
@@ -608,7 +653,7 @@ export const discoverProductionInventory = (
 
   const routeList: InventoryRoute[] = [...routes.values()]
     .map((state): InventoryRoute => {
-      const canonicalPath = normalizePath(state.node.path) || '/'
+      const canonicalPath = canonicalPathForNode(state.node) || '/'
       const authored = sortStrings(state.authoredPaths)
       const classification = classifyInventoryNode(state.node)
       const isPublic = state.node.status === 'publish' && state.node.postTypePublic
@@ -749,15 +794,52 @@ export const discoverProductionInventory = (
   }
   dependencies.sort((left, right) => left.key.localeCompare(right.key))
 
+  const legacyEvents = snapshot.nodes.filter(
+    (node) => node.postType === 'events' && node.status === 'publish',
+  )
+  const eventAliasByCanonicalPath = new Map(
+    legacyEvents.flatMap((node) => {
+      const canonicalPath = canonicalPathForNode(node)
+      const from = normalizePath(node.path)
+      return canonicalPath && from ? [[canonicalPath, { from, node }] as const] : []
+    }),
+  )
+  const normalizedEventRedirectPaths = new Set<string>()
   const redirects: InventoryRedirect[] = snapshot.nodes
     .filter(({ postType, status }) => postType === 'redirect' && status === 'publish')
-    .map((node) => ({
-      legacyId: node.legacyId,
-      from: normalizePath(node.redirect?.from),
-      to: node.redirect?.to || null,
-      type: node.redirect?.type || 'unknown',
-      status: node.status,
-    }))
+    .map((node) => {
+      const sourceFrom = normalizePath(node.redirect?.from)
+      const sourceTo = normalizePath(node.redirect?.to)
+      const reversedEventAlias = sourceFrom ? eventAliasByCanonicalPath.get(sourceFrom) : undefined
+      if (reversedEventAlias && sourceTo === reversedEventAlias.from) {
+        normalizedEventRedirectPaths.add(reversedEventAlias.from)
+        return {
+          legacyId: node.legacyId,
+          from: reversedEventAlias.from,
+          to: sourceFrom,
+          type: '301',
+          status: node.status,
+        }
+      }
+      return {
+        legacyId: node.legacyId,
+        from: sourceFrom,
+        to: node.redirect?.to || null,
+        type: node.redirect?.type || 'unknown',
+        status: node.status,
+      }
+    })
+  for (const [canonicalPath, alias] of eventAliasByCanonicalPath) {
+    if (normalizedEventRedirectPaths.has(alias.from)) continue
+    redirects.push({
+      legacyId: alias.node.legacyId,
+      from: alias.from,
+      to: canonicalPath,
+      type: '301',
+      status: 'publish',
+    })
+  }
+  redirects
     .sort(
       (left, right) =>
         (left.from || '').localeCompare(right.from || '') || left.legacyId - right.legacyId,

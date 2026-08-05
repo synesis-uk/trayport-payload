@@ -17,7 +17,11 @@ import {
 import { migrationConfig } from '../lib/config'
 import { pilotScope } from '../scopes/pilot'
 import type { LegacyReference, TargetCollection, TargetRecord } from '../transform/types'
-import { migrationOwnedPaths } from '../transform/url'
+import {
+  migrationOwnedPaths,
+  ownedPathsFromSource,
+  setMigrationOwnedCorpusPaths,
+} from '../transform/url'
 import { safeExternalHTTPSURL } from '../../src/routing/urlPolicy'
 
 type AcceptanceReport = {
@@ -32,6 +36,26 @@ const pilotTargetPageCount = pilotScope.roots.filter(
   ({ targetOwner }) => targetOwner === 'pages',
 ).length
 const expectedNavigationFooterLiveFallbacks = 30
+
+const expectedPeopleLegacyIDs = [
+  2561, 2563, 2570, 2571, 2667, 2668, 2670, 4145, 4146, 4837, 4839, 4841, 4843, 9253, 10395, 11232,
+  11233,
+]
+
+const expectedCoreEventLegacyIDs = [
+  8213, 8796, 10030, 10070, 10077, 10080, 10093, 10098, 10103, 10105, 10118, 10439, 10960, 10968,
+  10974, 11026, 11041, 11051, 11078, 11465,
+]
+
+const expectedLegacyEventLegacyIDs = [2461, 2463, 2464, 8850, 10476]
+
+const expectedLegacyEventCanonicalOwner = new Map([
+  [2461, 2461],
+  [2463, 2463],
+  [2464, 2464],
+  [8850, 10030],
+  [10476, 10960],
+])
 
 const countBy = <T>(values: T[], key: (value: T) => string): Record<string, number> => {
   const counts: Record<string, number> = {}
@@ -130,6 +154,7 @@ const targetForReferenceKind: Record<LegacyReference['$legacyRef'], TargetCollec
   media: 'media',
   page: 'pages',
   article: 'articles',
+  person: 'people',
   hub: 'hubs',
   venue: 'venues',
   'learning-video': 'learning-videos',
@@ -636,13 +661,35 @@ export const validateSource = (
   assert.deepEqual(sortedNumbers(bannerActionPages.map(({ legacyId }) => legacyId)), [11299])
 
   const articles = posts.filter(({ postType }) => postType === 'post')
-  assert.equal(articles.length, 71)
+  const coreEvents = articles.filter(({ taxonomies }) => taxonomies.category?.includes(119))
+  const legacyEvents = posts.filter(({ postType }) => postType === 'events')
+  assert.equal(articles.length, 90)
   assert.equal(articles.filter(({ scopeRole }) => scopeRole === 'insights-listing').length, 38)
   assert.equal(articles.filter(({ scopeRole }) => scopeRole === 'news-listing').length, 31)
+  assert.equal(articles.filter(({ scopeRole }) => scopeRole === 'event-listing').length, 19)
   assert.equal(articles.filter(({ scopeRole }) => scopeRole === 'root').length, 2)
   assert.equal(articles.filter(({ taxonomies }) => taxonomies.category?.includes(120)).length, 39)
   assert.equal(articles.filter(({ taxonomies }) => taxonomies.category?.includes(111)).length, 31)
-  assert.equal(articles.filter(({ taxonomies }) => taxonomies.category?.includes(119)).length, 1)
+  assert.equal(coreEvents.length, 20)
+  assert.deepEqual(
+    sortedNumbers(coreEvents.map(({ legacyId }) => legacyId)),
+    expectedCoreEventLegacyIDs,
+  )
+  assert.deepEqual(
+    sortedNumbers(legacyEvents.map(({ legacyId }) => legacyId)),
+    expectedLegacyEventLegacyIDs,
+  )
+  assert(
+    legacyEvents.every(
+      ({ scopeRole, status }) => scopeRole === 'event-listing' && status === 'publish',
+    ),
+  )
+  assert.equal(new Set(coreEvents.map(({ slug }) => slug)).size, 20)
+  assert.equal(new Set(legacyEvents.map(({ slug }) => slug)).size, 5)
+  assert.equal(
+    legacyEvents.filter(({ slug }) => coreEvents.some((event) => event.slug === slug)).length,
+    2,
+  )
 
   const featuredInsights = articles
     .filter(({ taxonomies }) => taxonomies.category?.includes(120))
@@ -893,6 +940,9 @@ export const validateSource = (
     sortedNumbers(careersPeople.map(({ legacyId }) => legacyId)),
     [4145, 4146, 4837, 4839, 4841, 4843],
   )
+  const people = reusables.filter(({ postType }) => postType === 'people')
+  assert.deepEqual(sortedNumbers(people.map(({ legacyId }) => legacyId)), expectedPeopleLegacyIDs)
+  assert(people.every(({ path, status }) => status === 'publish' && path?.startsWith('/people/')))
   assert(
     reusables.some(({ legacyId, postType }) => legacyId === 3838 && postType === 'stats-group'),
   )
@@ -947,11 +997,8 @@ export const validateSource = (
     .map(({ legacyId, sourcePath }) => ({ legacyId, sourcePath }))
     .sort((left, right) => (left.sourcePath || '').localeCompare(right.sourcePath || ''))
   assert.deepEqual(deferredForms, [
-    { legacyId: 1926, sourcePath: 'pages.1926.sections_new' },
     { legacyId: 34, sourcePath: 'pages.34.sections_new.1.columns.0.components.1' },
     { legacyId: 34, sourcePath: 'pages.34.sections_new.1.columns.0.components.5' },
-    { legacyId: 10030, sourcePath: 'posts.10030.sections.2' },
-    { legacyId: 10030, sourcePath: 'posts.10030.sections.4' },
   ])
   assert.deepEqual(
     warnings
@@ -977,10 +1024,12 @@ export const validateSource = (
       bannerActionPages: bannerActionPages.length,
       bannerDependencyPages: bannerDependencyPages.length,
       banners: banners.length,
-      articles: 71,
+      articles: 90,
       insightsArticles: 39,
       newsArticles: 31,
-      eventArticles: 1,
+      eventArticles: 20,
+      legacyEvents: 5,
+      people: 17,
       featuredInsights: 4,
       learningVideos: 15,
       learningListingVideos: 14,
@@ -1009,7 +1058,7 @@ export const validateSource = (
       unavailableMedia: media.filter(({ availability }) => availability === 'unavailable').length,
       altTextReview: media.filter(({ needsAltReview }) => needsAltReview).length,
       reusables: reusables.length,
-      deferredHubSpotForms: 5,
+      deferredHubSpotForms: 2,
       protectedVideoExcluded: true,
       activeNavigationRoots: 5,
       footerColumns: 3,
@@ -1041,6 +1090,19 @@ export const validateTransformed = (
     (record): record is Extract<SourceRecord, { entity: 'reusable' }> =>
       record.entity === 'reusable' && record.postType === 'banner',
   )
+  const sourcePeople = sourceRecords.filter(
+    (record): record is Extract<SourceRecord, { entity: 'reusable' }> =>
+      record.entity === 'reusable' && record.postType === 'people' && record.status === 'publish',
+  )
+  const sourceCoreEvents = sourceRecords.filter(
+    (record): record is SourcePost =>
+      record.entity === 'post' &&
+      record.postType === 'post' &&
+      (record.taxonomies.category || []).includes(119),
+  )
+  const sourceLegacyEvents = sourceRecords.filter(
+    (record): record is SourcePost => record.entity === 'post' && record.postType === 'events',
+  )
   const sourceBannerTargetPages = sourceRecords.filter(
     (record): record is SourcePost =>
       record.entity === 'post' && record.scopeRole === 'banner-target',
@@ -1054,7 +1116,8 @@ export const validateTransformed = (
   const counts = countBy(targets, ({ target }) => target)
   assert.deepEqual(counts, {
     pages: expectedPageTargets,
-    articles: 71,
+    articles: 93,
+    people: 17,
     hubs: 72,
     venues: 66,
     'learning-videos': 15,
@@ -1067,7 +1130,7 @@ export const validateTransformed = (
     regions: 4,
     media: sourceMedia.length,
     banners: sourceBanners.length,
-    redirects: 2,
+    redirects: 7,
     global: 3,
   })
 
@@ -1114,7 +1177,20 @@ export const validateTransformed = (
   assert.match(JSON.stringify(cookiePolicy.data.layout), /Our Use Of Cookies/)
   assert.match(JSON.stringify(cookiePolicy.data.layout), /WHAT ARE COOKIES\?/)
   assert.equal(layoutCount('articles', 9351), 9)
-  assert.equal(layoutCount('articles', 10030), 3)
+  assert.equal(layoutCount('articles', 10030), 5)
+  const eWorldArticle = targets.find(
+    ({ legacy, target }) => target === 'articles' && legacy.legacyId === 10030,
+  )
+  assert(eWorldArticle)
+  assert.deepEqual(
+    nestedComponents(eWorldArticle)
+      .filter(({ blockType }) => blockType === 'hubspotForm')
+      .map(({ formId }) => formId),
+    [
+      '8c3a5fef-87b8-43c2-9662-fb663f0f3e9f',
+      'af88756a-8035-4bf7-80a6-db5b6250ebe2',
+    ],
+  )
 
   const marketMatrixPage = targets.find(
     ({ legacy, target }) => target === 'pages' && legacy.legacyId === 2231,
@@ -1217,23 +1293,33 @@ export const validateTransformed = (
       ignoredComponentLayouts?: Record<string, { count?: number; reason?: string }>
     }
   }
-  const deferredHubSpotForms = transformCoverage.coverage?.ignoredComponentLayouts?.form?.count || 0
-  assert.equal(deferredHubSpotForms, 7)
-  assert.match(
-    transformCoverage.coverage?.ignoredComponentLayouts?.form?.reason || '',
-    /HubSpot forms are explicitly deferred/i,
-  )
+  const deferredHubSpotForms = sourceRecords.filter(
+    (record) => record.entity === 'warning' && record.code === 'deferred-hubspot-form',
+  ).length
+  assert.equal(deferredHubSpotForms, 2)
+  assert.equal(transformCoverage.coverage?.ignoredComponentLayouts?.form?.count || 0, 0)
 
   const articles = targets.filter(({ target }) => target === 'articles')
   const fullArticles = articles.filter(({ data }) => data.contentMode === 'full')
   const listingArticles = articles.filter(({ data }) => data.contentMode === 'listing')
-  assert.equal(fullArticles.length, 2)
+  const eventArticles = articles.filter(({ data }) => data.articleType === 'event')
+  assert.equal(fullArticles.length, 24)
   assert.equal(listingArticles.length, 69)
-  assert.deepEqual(sortedNumbers(fullArticles.map(({ legacy }) => legacy.legacyId)), [9351, 10030])
-  assert.deepEqual(fullArticles.map(({ data }) => data.path).sort(), [
-    '/event/e-world-2026/',
-    '/insights/on-demand-webinar-data-analytics-for-energy-traders/',
-  ])
+  assert.equal(eventArticles.length, 23)
+  assert.deepEqual(
+    sortedNumbers(eventArticles.map(({ legacy }) => legacy.legacyId)),
+    [...expectedCoreEventLegacyIDs, 2461, 2463, 2464].sort((left, right) => left - right),
+  )
+  assert(eventArticles.every(({ data }) => data.contentMode === 'full'))
+  assert(eventArticles.every(({ data }) => String(data.path).startsWith('/event/')))
+  assert.equal(new Set(eventArticles.map(({ data }) => data.path)).size, 23)
+  assert(
+    fullArticles.some(
+      ({ data, legacy }) =>
+        legacy.legacyId === 9351 &&
+        data.path === '/insights/on-demand-webinar-data-analytics-for-energy-traders/',
+    ),
+  )
   assert(
     listingArticles.every(
       ({ data }) =>
@@ -1249,7 +1335,7 @@ export const validateTransformed = (
   assert.deepEqual(
     countBy(articles, ({ data }) => String(data.articleType)),
     {
-      event: 1,
+      event: 23,
       insight: 38,
       news: 31,
       webinar: 1,
@@ -1267,7 +1353,55 @@ export const validateTransformed = (
       .filter((legacyId): legacyId is number => legacyId !== null)
   assert.equal(articles.filter((article) => articleCategoryIDs(article).includes(120)).length, 39)
   assert.equal(articles.filter((article) => articleCategoryIDs(article).includes(111)).length, 31)
-  assert.equal(articles.filter((article) => articleCategoryIDs(article).includes(119)).length, 1)
+  assert.equal(articles.filter((article) => articleCategoryIDs(article).includes(119)).length, 23)
+
+  const people = targets.filter(({ target }) => target === 'people')
+  assert.deepEqual(
+    sortedNumbers(people.map(({ legacy }) => legacy.legacyId)),
+    expectedPeopleLegacyIDs,
+  )
+  for (const sourcePerson of sourcePeople) {
+    const person = people.find(({ legacy }) => legacy.legacyId === sourcePerson.legacyId)
+    assert(person, `Missing transformed Person ${sourcePerson.legacyId}`)
+    assert.equal(person.data.path, sourcePerson.path)
+    assert.equal(person.data._status, 'published')
+    assert.equal(person.data.team, sourcePerson.data.team)
+    assert.equal(person.legacy.originalUrl, `http://trayport.local${sourcePerson.path}`)
+  }
+  for (const sparsePersonID of [9253, 11232, 11233]) {
+    const person = people.find(({ legacy }) => legacy.legacyId === sparsePersonID)
+    assert(person)
+    if (!sourcePeople.find(({ legacyId }) => legacyId === sparsePersonID)?.data.job_role) {
+      assert(!Object.hasOwn(person.data, 'jobRole'))
+    }
+  }
+
+  for (const sourceEvent of sourceCoreEvents) {
+    const article = eventArticles.find(({ legacy }) => legacy.legacyId === sourceEvent.legacyId)
+    assert(article, `Missing transformed core Event ${sourceEvent.legacyId}`)
+    assert.equal(article.data.path, sourceEvent.path)
+    assert.equal(article.data._status, 'published')
+  }
+  for (const sourceEvent of sourceLegacyEvents) {
+    const canonicalOwnerID = expectedLegacyEventCanonicalOwner.get(sourceEvent.legacyId)
+    assert(canonicalOwnerID, `Unexpected legacy Event ${sourceEvent.legacyId}`)
+    const article = eventArticles.find(({ legacy }) => legacy.legacyId === canonicalOwnerID)
+    assert(article, `Missing canonical Event owner ${canonicalOwnerID}`)
+    if (canonicalOwnerID === sourceEvent.legacyId) {
+      assert.equal(article.data.path, sourceEvent.path?.replace(/^\/events\//, '/event/'))
+    }
+    const details = objectValue(article.data.eventDetails)
+    assert.equal(details.hideFormsAfterEnd, true)
+    assert.equal(details.showFinishedNotice, true)
+  }
+  assert.equal(
+    eventArticles.find(({ legacy }) => legacy.legacyId === 10974)?.data.path,
+    '/event/commodity-trading-week-2026/',
+  )
+  assert.equal(
+    eventArticles.find(({ legacy }) => legacy.legacyId === 11078)?.data.path,
+    '/event/energy-trading-week-2026/',
+  )
 
   const german = targets.find(({ target, legacy }) => target === 'hubs' && legacy.legacyId === 2495)
   assert(german)
@@ -1658,7 +1792,26 @@ export const validateTransformed = (
   )
 
   const redirects = targets.filter(({ target }) => target === 'redirects')
-  assert.equal(redirects.length, 2)
+  assert.equal(redirects.length, 7)
+  const legacyEventAliases = redirects.filter(({ data }) =>
+    String(data.from || '').startsWith('/events/'),
+  )
+  assert.equal(legacyEventAliases.length, 5)
+  for (const sourceEvent of sourceLegacyEvents) {
+    const alias = legacyEventAliases.find(({ legacy }) => legacy.legacyId === sourceEvent.legacyId)
+    assert(alias, `Missing /events/ alias for legacy Event ${sourceEvent.legacyId}`)
+    assert.equal(alias.data.from, sourceEvent.path)
+    assert.equal(alias.data.type, '301')
+    const aliasTo = objectValue(alias.data.to)
+    const aliasReference = objectValue(aliasTo.reference)
+    assert.equal(aliasTo.type, 'reference')
+    assert.equal(aliasReference.relationTo, 'articles')
+    assert.equal(
+      referenceID(aliasReference.value, 'article'),
+      expectedLegacyEventCanonicalOwner.get(sourceEvent.legacyId),
+    )
+  }
+  assert(!redirects.some(({ data }) => String(data.from || '').startsWith('/event/')))
   const tradingInJouleAlias = redirects.find(({ legacy }) => legacy.legacyId === 8454)
   assert(tradingInJouleAlias)
   assert.equal(tradingInJouleAlias.legacy.legacyId, 8454)
@@ -1746,29 +1899,37 @@ export const validateTransformed = (
     .map(({ data }) => data.path)
     .filter((value): value is string => typeof value === 'string' && value.length > 0)
     .sort()
+  const expectedRoutablePaths = [
+    ...pilotScope.roots
+      .filter(({ targetOwner }) => targetOwner !== 'redirects')
+      .map(({ path }) => path),
+    ...sourceBannerDependencyPages.flatMap(({ path }) => (path ? [path] : [])),
+    ...sourcePeople.flatMap(({ path }) => (path ? [path] : [])),
+    ...sourceCoreEvents.flatMap(({ path }) => (path ? [path] : [])),
+    ...sourceLegacyEvents.flatMap(({ legacyId, path }) =>
+      expectedLegacyEventCanonicalOwner.get(legacyId) === legacyId && path
+        ? [path.replace(/^\/events\//, '/event/')]
+        : [],
+    ),
+  ]
   assert.deepEqual(
     routablePaths,
-    [
-      ...pilotScope.roots
-        .filter(({ targetOwner }) => targetOwner !== 'redirects')
-        .map(({ path }) => path),
-      ...sourceBannerDependencyPages.flatMap(({ path }) => (path ? [path] : [])),
-    ].sort(),
-    'Only agreed pilot owners and required banner Page dependencies may own canonical paths.',
+    [...new Set(expectedRoutablePaths)].sort(),
+    'Only agreed pilot, banner-dependency, People, and Event owners may own canonical paths.',
   )
   assert.equal(new Set(routablePaths).size, routablePaths.length)
 
-  const importedAcceptedOwners = [
-    ...pilotScope.roots,
-    ...pilotScope.acceptedRouteDependencies,
-  ].flatMap((root) => {
-    if (root.targetOwner === 'redirects') return []
-    const owner = targets.find(
-      ({ legacy, target }) => legacy.legacyId === root.legacyId && target === root.targetOwner,
-    )
-    assert(owner)
-    return [owner]
-  })
+  const acceptedRouteKeys = new Set(
+    [...pilotScope.roots, ...pilotScope.acceptedRouteDependencies]
+      .filter(({ targetOwner }) => targetOwner !== 'redirects')
+      .map(({ legacyId, targetOwner }) => `${targetOwner}:${legacyId}`),
+  )
+  const importedAcceptedOwners = targets.filter(
+    ({ data, legacy, target }) =>
+      acceptedRouteKeys.has(`${target}:${legacy.legacyId}`) ||
+      target === 'people' ||
+      (target === 'articles' && data.articleType === 'event'),
+  )
   const contentURLs: string[] = []
   const contentLinkReferences: ManagedLinkReference[] = []
   importedAcceptedOwners.forEach((owner) => {
@@ -1791,23 +1952,22 @@ export const validateTransformed = (
   }
   const relationByTarget: Partial<Record<TargetCollection, string>> = {
     articles: 'articles',
+    people: 'people',
     hubs: 'hubs',
     'learning-videos': 'learning-videos',
     pages: 'pages',
     venues: 'venues',
   }
   for (const reference of contentLinkReferences) {
-    const root = pilotScope.roots.find(({ legacyId }) => legacyId === reference.legacyId)
-    if (root) {
-      assert.notEqual(root.targetOwner, 'redirects')
-      assert.equal(reference.relationTo, relationByTarget[root.targetOwner])
-      continue
-    }
-    assert(
-      sourceBannerDependencyPages.some(({ legacyId }) => legacyId === reference.legacyId),
-      `Managed Page reference ${reference.legacyId} is outside the accepted dependency graph.`,
+    const matchingTarget = targets.find(
+      ({ legacy, target }) =>
+        legacy.legacyId === reference.legacyId &&
+        relationByTarget[target as TargetCollection] === reference.relationTo,
     )
-    assert.equal(reference.relationTo, 'pages')
+    assert(
+      matchingTarget,
+      `Managed ${reference.relationTo} reference ${reference.legacyId} is outside the accepted dependency graph.`,
+    )
   }
 
   const insightsIndex = targets.find(
@@ -1929,9 +2089,11 @@ export const validateTransformed = (
       bannerActionPages: sourceBannerActionPages.length,
       bannerDependencyPages: sourceBannerDependencyPages.length,
       banners: banners.length,
-      articles: 71,
-      fullArticles: 2,
+      articles: 93,
+      fullArticles: 24,
       listingArticles: 69,
+      eventArticles: 23,
+      people: 17,
       hubs: 72,
       venues: 66,
       venueWebsitesHTTPS: true,
@@ -1956,10 +2118,10 @@ export const validateTransformed = (
       germanHeaderMediaBridge:
         sourceMedia.find(({ legacyId }) => legacyId === 9727)?.availability === 'unavailable',
       dataCharts: dataChartCount,
-      routableDocuments: pilotRootCount + sourceBannerDependencyPages.length,
+      routableDocuments: routablePaths.length,
       deferredHubSpotForms,
       protectedVideoExcluded: true,
-      redirects: 2,
+      redirects: 7,
       globals: 3,
       footerLinks: 13,
       importedContentURLs: contentURLs.length,
@@ -2008,6 +2170,7 @@ export const validateRun = (requestedRunId?: string): void => {
     return
   }
   const records = readSourceRecords(runDir)
+  setMigrationOwnedCorpusPaths(ownedPathsFromSource(records))
   const targets = fs
     .readFileSync(path.join(runDir, 'transformed.ndjson'), 'utf8')
     .split(/\r?\n/)

@@ -461,6 +461,16 @@ export const verifyProductionInventory = (
       postType === 'post' &&
       targetOwner === 'articles' &&
       archetype === 'article.full',
+    'legacy-event-details': ({ archetype, legacyId, postType, targetOwner }) =>
+      legacyId !== null &&
+      postType === 'events' &&
+      targetOwner === 'articles' &&
+      archetype === 'article.full',
+    'people-details': ({ archetype, legacyId, postType, targetOwner }) =>
+      legacyId !== null &&
+      postType === 'people' &&
+      targetOwner === 'people' &&
+      archetype === 'person.public-profile',
     'venue-details': ({ archetype, legacyId, postType, targetOwner }) =>
       legacyId !== null &&
       postType === 'venue' &&

@@ -24,7 +24,7 @@ const script = readFileSync(
 describe('public route budget gate', () => {
   it('runs after the existing layout-entry check and before sitemap generation', () => {
     expect(packageJSON.scripts.postbuild).toBe(
-      'node scripts/check-public-shell-budget.mjs && node scripts/check-public-route-budgets.mjs && next-sitemap --config next-sitemap.config.cjs',
+      'node scripts/check-build-assets.mjs && node scripts/check-public-shell-budget.mjs && node scripts/check-public-route-budgets.mjs && next-sitemap --config next-sitemap.config.cjs',
     )
   })
 

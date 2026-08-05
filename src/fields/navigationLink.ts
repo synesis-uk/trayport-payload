@@ -61,7 +61,7 @@ export const navigationLinkField = ({
           path: { exists: true },
         }) satisfies Where,
       maxDepth: 1,
-      relationTo: ['pages', 'articles', 'hubs', 'venues', 'learning-videos'],
+      relationTo: ['pages', 'articles', 'hubs', 'venues', 'learning-videos', 'people'],
       validate: (value: unknown, { siblingData }: { siblingData?: { type?: string } }) => {
         if (!siblingData?.type) return required ? 'Choose a link type.' : true
         return siblingData.type !== 'reference' || value ? true : 'Choose managed content.'

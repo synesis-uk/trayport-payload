@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "verifiedAt": "2026-08-05T11:44:33.000Z",
+  "verifiedAt": "2026-08-05T12:13:22.000Z",
   "runId": "banner-route-table-semantics-20260805",
   "sourceHash": "9207fd0ca63fb985c491e0d143663dcb46262ef566c873ba02bf125e4a331d12",
   "transformedHash": "3a61f1dd2a01e8744106bc3c6733935f8bf12748c70012cdc9e84921769cf6a3",
@@ -20,8 +20,8 @@
   },
   "load": {
     "inserted": 0,
-    "updated": 1,
-    "unchanged": 467,
+    "updated": 0,
+    "unchanged": 468,
     "globalsUpdated": 0,
     "globalsUnchanged": 3,
     "unresolved": []
@@ -37,7 +37,13 @@
     "importedDependencyPageLegacyIds": [1930, 1940, 4028, 6773, 11299],
     "activeBannerLegacyId": 11602,
     "activeBannerTargetPageLegacyIds": [1940, 6773],
-    "mappedPayloadNotificationUsers": 0
+    "mappedPayloadNotificationUsers": 1,
+    "mappedRecipient": {
+      "bannerLegacyId": 11602,
+      "email": "sophie.inghamclark@trayport.com",
+      "cmsAccess": "notification-only-pending-activation"
+    },
+    "expiredBannerRecipientsMapped": 0
   },
   "tableSemanticsAcceptance": {
     "pageLegacyId": 11299,

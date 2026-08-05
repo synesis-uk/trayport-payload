@@ -32,16 +32,16 @@ describe('WordPress to Payload functional-parity contract', () => {
     expect(functionalParityContract.purpose).toContain('does not replace')
   })
 
-  it('rejects duplicate features, unowned decisions, and compensating route-progress drift', () => {
+  it('rejects duplicate features, false completion, and compensating route-progress drift', () => {
     const duplicateFeature = structuredClone(rawContract)
     duplicateFeature.features[1].id = duplicateFeature.features[0].id
     expect(functionalParityContractSchema.safeParse(duplicateFeature).success).toBe(false)
 
-    const unownedDecision = structuredClone(rawContract)
-    const search = unownedDecision.features.find(({ id }) => id === 'site-search')
-    if (!search) throw new Error('Missing site-search fixture')
-    search.decisionRequired = null
-    expect(functionalParityContractSchema.safeParse(unownedDecision).success).toBe(false)
+    const falseCompletion = structuredClone(rawContract)
+    const captions = falseCompletion.features.find(({ id }) => id === 'video-captions')
+    if (!captions) throw new Error('Missing video-captions fixture')
+    captions.status = 'complete'
+    expect(functionalParityContractSchema.safeParse(falseCompletion).success).toBe(false)
 
     const compensatingDrift = structuredClone(rawContract)
     compensatingDrift.routeProgress.acceptedBreakdown.renderedPayloadDocuments += 1
@@ -49,16 +49,16 @@ describe('WordPress to Payload functional-parity contract', () => {
     expect(functionalParityContractSchema.safeParse(compensatingDrift).success).toBe(false)
   })
 
-  it('pins the accepted 34 of 297 route-owner position without redefining the corpus', () => {
+  it('pins the proven accepted 73 of 317 route-owner authority', () => {
     const progress = functionalParityContract.routeProgress
 
     expect(progress).toMatchObject({
-      approvedRouteOwners: 297,
-      acceptedRouteOwners: 34,
-      acceptedPercent: 11.4,
-      planOnlyRouteOwners: 263,
+      approvedRouteOwners: 317,
+      acceptedRouteOwners: 73,
+      acceptedPercent: 23,
+      planOnlyRouteOwners: 244,
       acceptedBreakdown: {
-        renderedPayloadDocuments: 31,
+        renderedPayloadDocuments: 70,
         managedRedirectRouteOwners: 1,
         virtualIndexRouteOwners: 2,
       },
@@ -69,6 +69,10 @@ describe('WordPress to Payload functional-parity contract', () => {
     expect(progress.acceptedRouteOwners + progress.planOnlyRouteOwners).toBe(
       progress.approvedRouteOwners,
     )
+    expect(
+      progress.acceptedBreakdown.renderedPayloadDocuments +
+        progress.acceptedBreakdown.managedRedirectRouteOwners,
+    ).toBe(71)
     expect(inventorySummary.counts.routes).toBe(progress.approvedRouteOwners)
     expect(contentArchitecture.approvedProductionScope.publicRouteTotal).toBe(
       progress.approvedRouteOwners,
@@ -79,6 +83,9 @@ describe('WordPress to Payload functional-parity contract', () => {
         0,
       ),
     ).toBe(progress.approvedRouteOwners)
+    expect(feature('production-route-corpus').dimensions.source.summary).toContain(
+      'people-events-inventory-20260805-1400',
+    )
   })
 
   it('records the audited custom-feature status and launch dispositions', () => {
@@ -104,20 +111,26 @@ describe('WordPress to Payload functional-parity contract', () => {
       'hubspot-forms': 'deferred',
       'cookieyes-consent': 'deferred',
       'tim-customer-access': 'deferred',
-      'site-search': 'decision',
+      'site-search': 'partial',
       redirects: 'partial',
       'video-captions': 'missing',
       'publishing-lifecycle': 'partial',
       analytics: 'missing',
-      'people-details': 'decision',
-      'event-content-routing': 'decision',
+      'people-details': 'partial',
+      'event-content-routing': 'partial',
       'commodities-report': 'excluded',
     })
 
     expect(feature('redirects').boundary).toContain('Fifty published WordPress rules')
     expect(feature('video-captions').dimensions.source.summary).toContain('32 MP4')
     expect(feature('analytics').boundary).toContain('GTM-P8HWX2S')
-    expect(feature('people-details').boundary).toContain('Nine live people detail links')
+    expect(feature('scheduled-page-banners').dimensions.migration.summary).toContain(
+      'Sophie Ingham-Clark',
+    )
+    expect(feature('hubspot-forms').dimensions.schema.status).toBe('complete')
+    expect(feature('hubspot-forms').dimensions.runtime.status).toBe('partial')
+    expect(feature('site-search').targetOwner).toContain('whole-site search')
+    expect(feature('people-details').boundary).toContain('all 17 published People detail routes')
     expect(feature('event-content-routing').boundary).toContain('/event/')
     expect(feature('event-content-routing').boundary).toContain('/events/')
   })
@@ -138,21 +151,65 @@ describe('WordPress to Payload functional-parity contract', () => {
     }
   })
 
-  it('requires an explicit question and next action for every unresolved decision', () => {
+  it('records the approved search, People, and Event directions without unresolved questions', () => {
+    for (const id of ['site-search', 'people-details', 'event-content-routing']) {
+      const item = feature(id)
+      expect(item.status).toBe('partial')
+      expect(item.launchPolicy).toBe('required')
+      expect(item.decisionRequired).toBeNull()
+      expect(item.nextAction).toBeTruthy()
+    }
+
     const decisions = functionalParityContract.features.filter(
       ({ status }) => status === 'decision',
     )
 
-    expect(decisions.map(({ id }) => id).sort()).toEqual([
-      'event-content-routing',
-      'people-details',
-      'site-search',
-    ])
-    for (const item of decisions) {
-      expect(item.launchPolicy).toBe('decision-required')
-      expect(item.decisionRequired).toBeTruthy()
-      expect(item.nextAction).toBeTruthy()
-    }
+    expect(decisions).toEqual([])
+    expect(feature('people-details').nextAction).toContain('all 17 retained profiles')
+    expect(feature('people-details').acceptance.join(' ')).toContain(
+      'Matthew Brief and Nicole Rosenberg retain the source ceo team classification',
+    )
+    expect(feature('event-content-routing').acceptance.join(' ')).toContain('23 unique')
+    expect(feature('event-content-routing').acceptance.join(' ')).toContain(
+      '/event/commodity-trading-week-2026/',
+    )
+  })
+
+  it('pins the mechanically recalculated feature and dimension scorecards', () => {
+    const count = (values: string[]) =>
+      Object.fromEntries(
+        [...new Set(values)]
+          .sort()
+          .map((status) => [status, values.filter((candidate) => candidate === status).length]),
+      )
+
+    expect(count(functionalParityContract.features.map(({ status }) => status))).toEqual({
+      complete: 3,
+      deferred: 3,
+      excluded: 1,
+      missing: 2,
+      partial: 11,
+    })
+
+    expect(
+      Object.fromEntries(
+        ['source', 'schema', 'editor', 'runtime', 'migration', 'verification'].map((dimension) => [
+          dimension,
+          count(
+            functionalParityContract.features.map(
+              ({ dimensions }) => dimensions[dimension as keyof typeof dimensions].status,
+            ),
+          ),
+        ]),
+      ),
+    ).toEqual({
+      source: { complete: 19, partial: 1 },
+      schema: { complete: 16, decision: 1, excluded: 1, missing: 1, partial: 1 },
+      editor: { complete: 15, excluded: 2, missing: 1, partial: 2 },
+      runtime: { complete: 10, deferred: 2, excluded: 1, missing: 2, partial: 5 },
+      migration: { complete: 6, deferred: 1, excluded: 2, missing: 1, partial: 10 },
+      verification: { complete: 4, deferred: 2, missing: 2, partial: 12 },
+    })
   })
 
   it('retains evidence for every feature dimension and resolves repository evidence paths', () => {

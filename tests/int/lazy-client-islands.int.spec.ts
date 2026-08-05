@@ -23,10 +23,6 @@ const dynamicBoundaries = [
     path: 'src/components/Trayport/DynamicLearningVideoListing.client.tsx',
   },
   {
-    implementation: './TrayportVideo.client',
-    path: 'src/components/Trayport/DynamicTrayportVideo.client.tsx',
-  },
-  {
     implementation: './MarketMatrixPresentation.client',
     path: 'src/components/blocks/DynamicMarketMatrixPresentation.client.tsx',
   },
@@ -71,6 +67,12 @@ describe('lazy client islands', () => {
     expect(owners.layoutAdapters).toContain('DynamicLearningVideoListing.client')
     expect(owners.media).toContain('DynamicTrayportVideo.client')
     expect(owners.media).not.toContain("from './TrayportVideo.client'")
+    const videoBoundary = source('src/components/Trayport/DynamicTrayportVideo.client.tsx')
+    expect(videoBoundary.trimStart().startsWith("'use client'")).toBe(true)
+    expect(videoBoundary).toContain("import('./TrayportVideo.client')")
+    expect(videoBoundary).toContain('lazy(')
+    expect(videoBoundary).toContain('<Suspense fallback={null}>')
+    expect(videoBoundary).not.toContain("from 'next/dynamic'")
     expect(owners.serverAdapters).toContain('DynamicMarketMatrixPresentation.client')
     expect(owners.presentation).toContain('DynamicFeatureCarousel.client')
     expect(owners.presentation).not.toContain("from '@/components/site/FeatureCarousel.client'")

@@ -108,7 +108,9 @@ import {
 import { contentRouteMetadata } from '@/app/(frontend)/contentRoute.metadata.server'
 import { normalizeListingSearchQuery } from '@/app/(frontend)/contentRoute.path'
 import { revalidateRoutableContent } from '@/collections/hooks/revalidateContent'
+import { revalidateCacheDependency } from '@/collections/hooks/revalidateDependencies'
 import {
+  cacheDependencyCollectionTag,
   cacheDependencyTag,
   CONTENT_SITEMAP_CACHE_TAG,
   contentRouteCacheTag,
@@ -135,6 +137,11 @@ const document = {
     {
       components: [
         { office: { id: 601 } },
+        {
+          blockType: 'peopleList',
+          people: [{ id: 701 }, { id: 702 }],
+          selectionMode: 'team',
+        },
         {
           link: {
             reference: {
@@ -252,6 +259,9 @@ describe('content route cache boundary', () => {
     expect(routeCacheHarness.cacheTag).toHaveBeenCalledWith(cacheDependencyTag('media', 501))
     expect(routeCacheHarness.cacheTag).toHaveBeenCalledWith(cacheDependencyTag('offices', 601))
     expect(routeCacheHarness.cacheTag).toHaveBeenCalledWith(cacheDependencyTag('pages', 202))
+    expect(routeCacheHarness.cacheTag).toHaveBeenCalledWith(cacheDependencyTag('people', 701))
+    expect(routeCacheHarness.cacheTag).toHaveBeenCalledWith(cacheDependencyTag('people', 702))
+    expect(routeCacheHarness.cacheTag).toHaveBeenCalledWith(cacheDependencyCollectionTag('people'))
     expect(routeCacheHarness.findRouteClaim).toHaveBeenCalledWith({
       draft: false,
       path: '/cache-contract/',
@@ -266,6 +276,27 @@ describe('content route cache boundary', () => {
       overrideAccess: false,
       select: contentRouteSelects.pages,
     })
+  })
+
+  it('invalidates exact and team-list People dependencies when a profile is published', async () => {
+    const dependencyHook = revalidateCacheDependency({ versioned: true })
+
+    await dependencyHook({
+      collection: { slug: 'people' },
+      context: { publicProjectionOperation: 'publish' },
+      doc: { _status: 'published', id: 701 },
+      previousDoc: { _status: 'published', id: 701 },
+      req: { context: {}, query: {}, searchParams: new URLSearchParams() },
+    } as never)
+
+    expect(routeCacheHarness.revalidateTag).toHaveBeenCalledWith(
+      cacheDependencyTag('people', 701),
+      'max',
+    )
+    expect(routeCacheHarness.revalidateTag).toHaveBeenCalledWith(
+      cacheDependencyCollectionTag('people'),
+      'max',
+    )
   })
 
   it('keeps authenticated draft resolution completely outside use cache', async () => {
@@ -347,6 +378,42 @@ describe('content route cache boundary', () => {
     expect(routeCacheHarness.generateMeta).toHaveBeenCalledWith({
       contentType: 'website',
       doc: document,
+      settings: {},
+    })
+  })
+
+  it('loads People metadata through public access and marks the profile as article content', async () => {
+    const person = {
+      _status: 'published',
+      id: 11233,
+      path: '/people/nicole-rosenberg/',
+      team: 'careers',
+      title: 'Nicole Rosenberg',
+    }
+    routeCacheHarness.findRouteClaim.mockResolvedValue({
+      archetype: 'person.public-profile',
+      ownerCollection: 'people',
+      ownerDocumentId: '11233',
+      ownerKind: 'content',
+      path: person.path,
+      state: 'published',
+    })
+    routeCacheHarness.findByID.mockResolvedValue(person)
+
+    await contentRouteMetadata({ segments: ['people', 'nicole-rosenberg'] })
+
+    expect(routeCacheHarness.findByID).toHaveBeenCalledWith({
+      collection: 'people',
+      depth: 3,
+      disableErrors: true,
+      draft: false,
+      id: '11233',
+      overrideAccess: false,
+      select: contentRouteSelects.people,
+    })
+    expect(routeCacheHarness.generateMeta).toHaveBeenCalledWith({
+      contentType: 'article',
+      doc: person,
       settings: {},
     })
   })

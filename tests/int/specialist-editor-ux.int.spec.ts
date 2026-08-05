@@ -270,7 +270,13 @@ describe('specialist editor experience', () => {
       },
     })
 
-    expect(sectionComponents).toHaveLength(20)
+    expect(sectionComponents).toHaveLength(22)
+    expect(sectionComponents.find(({ slug }) => slug === 'peopleList')?.admin?.group).toBe(
+      'Company information',
+    )
+    expect(sectionComponents.find(({ slug }) => slug === 'hubspotForm')?.admin?.group).toBe(
+      'Integrations',
+    )
     for (const component of sectionComponents) {
       expect(component.admin?.group, `${component.slug} needs a selector group`).toBeTruthy()
       expect(component.admin?.components?.Label).toBe(

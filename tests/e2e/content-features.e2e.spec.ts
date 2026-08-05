@@ -342,7 +342,7 @@ test.describe('imported dynamic content', () => {
     expect(geometry.overflows).toBe(false)
   })
 
-  test('desktop site search restores focus and applies its query to Insights', async ({
+  test('desktop site search restores focus and opens whole-site results', async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop-chromium')
@@ -352,7 +352,7 @@ test.describe('imported dynamic content', () => {
     await openSearch.click()
 
     const dialog = page.getByRole('dialog', { name: 'Site Search' })
-    const field = page.getByRole('searchbox', { name: 'Search Trayport insights' })
+    const field = page.getByRole('searchbox', { name: 'Search Trayport' })
     await expect(dialog).toBeVisible()
     await expect(field).toBeFocused()
 
@@ -363,8 +363,11 @@ test.describe('imported dynamic content', () => {
     await openSearch.click()
     await field.fill('energy')
     await field.press('Enter')
-    await expect(page).toHaveURL('/resources/insights/?q=energy')
-    await expect(page.getByRole('searchbox', { name: 'Search insights' })).toHaveValue('energy')
+    await expect(page).toHaveURL('/?s=energy')
+    await expect(page.getByRole('searchbox', { name: 'What are you looking for?' })).toHaveValue(
+      'energy',
+    )
+    await expect(page.getByRole('heading', { name: /results? for “energy”/i })).toBeVisible()
   })
 
   test('Learning Hub renders 15 protected records and filters them by product', async ({

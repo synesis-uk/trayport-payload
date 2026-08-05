@@ -46,6 +46,7 @@ export const RouteRegistry: CollectionConfig = {
       options: [
         { label: 'Pages', value: 'pages' },
         { label: 'Articles', value: 'articles' },
+        { label: 'People', value: 'people' },
         { label: 'Hubs', value: 'hubs' },
         { label: 'Venues', value: 'venues' },
         { label: 'Learning videos', value: 'learning-videos' },

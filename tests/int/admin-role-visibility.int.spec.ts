@@ -27,6 +27,7 @@ describe('admin role visibility', () => {
       banners: 4,
       'learning-videos': 3,
       pages: 1,
+      people: 0,
     }
     const find = vi.fn(
       async (options: { collection: keyof typeof draftTotals; where?: unknown }) =>
@@ -46,7 +47,7 @@ describe('admin role visibility', () => {
     const draftQueries = find.mock.calls
       .map(([options]) => options)
       .filter((options) => options.where)
-    expect(draftQueries).toHaveLength(4)
+    expect(draftQueries).toHaveLength(5)
     expect(draftQueries).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

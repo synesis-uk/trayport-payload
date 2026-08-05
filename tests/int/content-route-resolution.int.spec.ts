@@ -56,6 +56,39 @@ describe('content route owner resolution', () => {
     })
   })
 
+  it('resolves a sparse public People owner with the bounded profile projection', async () => {
+    const person = {
+      id: 11233,
+      path: '/people/nicole-rosenberg/',
+      team: 'careers',
+      title: 'Nicole Rosenberg',
+    }
+    const findByID = vi.fn().mockResolvedValue(person)
+
+    await expect(
+      resolveRouteClaimOwner({
+        claim: routeClaim({
+          archetype: 'person.public-profile',
+          ownerCollection: 'people',
+          ownerDocumentId: '11233',
+          path: '/people/nicole-rosenberg/',
+        }),
+        draft: false,
+        payload: payloadWithFindByID(findByID),
+      }),
+    ).resolves.toEqual({ document: person, kind: 'person' })
+
+    expect(findByID).toHaveBeenCalledWith({
+      collection: 'people',
+      depth: 3,
+      disableErrors: true,
+      draft: false,
+      id: '11233',
+      overrideAccess: false,
+      select: contentRouteSelects.people,
+    })
+  })
+
   it('returns null for a stale redirect owner or inaccessible reference target', async () => {
     const missingRedirect = vi.fn().mockResolvedValue(null)
     await expect(
@@ -211,6 +244,48 @@ describe('content route owner resolution', () => {
       disableErrors: true,
       draft: false,
       id: 8454,
+      overrideAccess: false,
+      select: contentPathSelect,
+    })
+  })
+
+  it('resolves a managed redirect through its People reference', async () => {
+    const findByID = vi
+      .fn()
+      .mockResolvedValueOnce({
+        from: '/leadership/nicole/',
+        id: 112330,
+        to: {
+          reference: { relationTo: 'people', value: 11233 },
+          type: 'reference',
+        },
+        type: '301',
+      })
+      .mockResolvedValueOnce({ id: 11233, path: '/people/nicole-rosenberg/' })
+
+    await expect(
+      resolveRouteClaimOwner({
+        claim: routeClaim({
+          archetype: 'redirect',
+          ownerCollection: 'redirects',
+          ownerDocumentId: '112330',
+          ownerKind: 'redirect',
+          path: '/leadership/nicole/',
+        }),
+        draft: false,
+        payload: payloadWithFindByID(findByID),
+      }),
+    ).resolves.toEqual({
+      destination: '/people/nicole-rosenberg/',
+      kind: 'redirect',
+      status: 301,
+    })
+    expect(findByID).toHaveBeenLastCalledWith({
+      collection: 'people',
+      depth: 0,
+      disableErrors: true,
+      draft: false,
+      id: 11233,
       overrideAccess: false,
       select: contentPathSelect,
     })

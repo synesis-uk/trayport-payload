@@ -70,6 +70,7 @@ export interface Config {
     pages: Page;
     banners: Banner;
     articles: Article;
+    people: Person;
     hubs: Hub;
     venues: Venue;
     'learning-videos': LearningVideo;
@@ -102,6 +103,7 @@ export interface Config {
     pages: PagesSelect<false> | PagesSelect<true>;
     banners: BannersSelect<false> | BannersSelect<true>;
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
+    people: PeopleSelect<false> | PeopleSelect<true>;
     hubs: HubsSelect<false> | HubsSelect<true>;
     venues: VenuesSelect<false> | VenuesSelect<true>;
     'learning-videos': LearningVideosSelect<false> | LearningVideosSelect<true>;
@@ -306,6 +308,10 @@ export interface TrayportHeroBlock {
             | ({
                 relationTo: 'learning-videos';
                 value: number | LearningVideo;
+              } | null)
+            | ({
+                relationTo: 'people';
+                value: number | Person;
               } | null);
           url?: string | null;
           newTab?: boolean | null;
@@ -528,6 +534,37 @@ export interface Article {
    * Optional event, webinar, or reporting location shown with the date.
    */
   location?: string | null;
+  /**
+   * Structured event details used by event pages and whole-site search. Leave fields empty when they are not known.
+   */
+  eventDetails?: {
+    startsAt?: string | null;
+    endsAt?: string | null;
+    venueName?: string | null;
+    city?: string | null;
+    region?: string | null;
+    country?: string | null;
+    coordinates?: {
+      latitude?: number | null;
+      longitude?: number | null;
+    };
+    /**
+     * Heading retained for the associated HubSpot form.
+     */
+    formTitle?: string | null;
+    /**
+     * Existing HubSpot form identifier. Rendering remains governed by the shared form integration.
+     */
+    hubspotFormId?: string | null;
+    /**
+     * After the end date, show the legacy “This event has now finished” notice.
+     */
+    showFinishedNotice?: boolean | null;
+    /**
+     * After the end date, remove HubSpot forms from this event page.
+     */
+    hideFormsAfterEnd?: boolean | null;
+  };
   relatedArticles?: (number | Article)[] | null;
   relatedHubs?: (number | Hub)[] | null;
   meta?: {
@@ -603,10 +640,12 @@ export interface ContentSectionBlock {
       | StatisticsComponent
       | FAQComponent
       | EntityListComponent
+      | PeopleListComponent
       | TimelineComponent
       | DataTableComponent
       | GalleryComponent
       | DividerComponent
+      | HubSpotFormComponent
       | MarketCoverageComponent
       | EmbedComponent
       | DataChartComponent
@@ -732,6 +771,10 @@ export interface ActionsComponent {
             | ({
                 relationTo: 'learning-videos';
                 value: number | LearningVideo;
+              } | null)
+            | ({
+                relationTo: 'people';
+                value: number | Person;
               } | null);
           url?: string | null;
           newTab?: boolean | null;
@@ -1327,6 +1370,115 @@ export interface LearningVideoCategory {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "people".
+ */
+export interface Person {
+  id: number;
+  title: string;
+  jobRole?: string | null;
+  /**
+   * Controls profile presentation and team listings.
+   */
+  team: 'ceo' | 'smt' | 'head' | 'careers';
+  /**
+   * Lower numbers appear first in automatic team listings.
+   */
+  displayOrder: number;
+  image?: (number | null) | Media;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Optional quotation used by careers profiles.
+   */
+  quote?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Optional internal chronology retained from WordPress.
+   */
+  joinedAt?: string | null;
+  /**
+   * Optional complete HTTPS profile URL. The managed Trayport profile remains canonical.
+   */
+  externalProfileURL?: string | null;
+  meta?: {
+    /**
+     * Optional override for search results and browser tabs.
+     */
+    title?: string | null;
+    /**
+     * A concise summary for search results and link previews.
+     */
+    description?: string | null;
+    image?: (number | null) | Media;
+    /**
+     * Only set this when the canonical URL differs from this page. Use a root-relative path or a complete HTTP(S) URL.
+     */
+    canonicalURL?: string | null;
+    noIndex?: boolean | null;
+    noFollow?: boolean | null;
+    /**
+     * Optional validated JSON-LD object. Script tags and executable markup are not accepted.
+     */
+    structuredData?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+  };
+  slug: string;
+  /**
+   * Public path beginning and ending with “/”. Nested paths are supported, for example /company/about-us/.
+   */
+  path: string;
+  /**
+   * Check this before publishing or scheduling a change to an already-live path. Approval is retained for that exact old/new path pair, and the former path becomes a permanent redirect.
+   */
+  confirmPathRedirect?: boolean | null;
+  publishedAt?: string | null;
+  legacySource?: {
+    key?: string | null;
+    source?: string | null;
+    legacyId?: number | null;
+    originalUrl?: string | null;
+    modifiedGmt?: string | null;
+    contentHash?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "TrayportMediaComponent".
  */
 export interface TrayportMediaComponent {
@@ -1390,6 +1542,10 @@ export interface FeatureListComponent {
         | ({
             relationTo: 'learning-videos';
             value: number | LearningVideo;
+          } | null)
+        | ({
+            relationTo: 'people';
+            value: number | Person;
           } | null);
       url?: string | null;
       newTab?: boolean | null;
@@ -1505,6 +1661,10 @@ export interface EntityListComponent {
         | ({
             relationTo: 'learning-videos';
             value: number | LearningVideo;
+          } | null)
+        | ({
+            relationTo: 'people';
+            value: number | Person;
           } | null);
       url?: string | null;
       newTab?: boolean | null;
@@ -1515,6 +1675,25 @@ export interface EntityListComponent {
   id?: string | null;
   blockName?: string | null;
   blockType: 'entityList';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PeopleListComponent".
+ */
+export interface PeopleListComponent {
+  selectionMode: 'specific' | 'team';
+  /**
+   * Selected profiles and their order. Each card always uses the current Person record.
+   */
+  people?: (number | Person)[] | null;
+  /**
+   * Team listings update automatically as published profiles change.
+   */
+  team?: ('ceo' | 'smt' | 'head' | 'careers') | null;
+  presentation: 'leadershipGrid' | 'careersCarousel';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'peopleList';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1598,6 +1777,23 @@ export interface DividerComponent {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HubSpotFormComponent".
+ */
+export interface HubSpotFormComponent {
+  /**
+   * Public heading shown immediately above the form.
+   */
+  title: string;
+  /**
+   * The HubSpot form UUID. The portal remains managed by the site integration.
+   */
+  formId: string;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'hubspotForm';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "MarketCoverageComponent".
  */
 export interface MarketCoverageComponent {
@@ -1659,6 +1855,10 @@ export interface MarketCoverageComponent {
             | ({
                 relationTo: 'learning-videos';
                 value: number | LearningVideo;
+              } | null)
+            | ({
+                relationTo: 'people';
+                value: number | Person;
               } | null);
           url?: string | null;
           newTab?: boolean | null;
@@ -2077,6 +2277,10 @@ export interface Banner {
       | ({
           relationTo: 'learning-videos';
           value: number | LearningVideo;
+        } | null)
+      | ({
+          relationTo: 'people';
+          value: number | Person;
         } | null);
     url?: string | null;
     newTab?: boolean | null;
@@ -2301,7 +2505,7 @@ export interface RouteRegistry {
   id: number;
   path: string;
   ownerKind: 'content' | 'virtual' | 'redirect';
-  ownerCollection: 'pages' | 'articles' | 'hubs' | 'venues' | 'learning-videos' | 'redirects' | 'system';
+  ownerCollection: 'pages' | 'articles' | 'people' | 'hubs' | 'venues' | 'learning-videos' | 'redirects' | 'system';
   ownerDocumentId: string;
   archetype:
     | 'page.homepage'
@@ -2314,6 +2518,7 @@ export interface RouteRegistry {
     | 'page.content-index'
     | 'article.full'
     | 'article.listing-metadata'
+    | 'person.public-profile'
     | 'learning-video.public-detail'
     | 'learning-video.listing-metadata'
     | 'hub.public-page'
@@ -2351,6 +2556,10 @@ export interface Redirect {
       | ({
           relationTo: 'articles';
           value: number | Article;
+        } | null)
+      | ({
+          relationTo: 'people';
+          value: number | Person;
         } | null)
       | ({
           relationTo: 'hubs';
@@ -2510,6 +2719,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'articles';
         value: number | Article;
+      } | null)
+    | ({
+        relationTo: 'people';
+        value: number | Person;
       } | null)
     | ({
         relationTo: 'hubs';
@@ -2729,10 +2942,12 @@ export interface ContentSectionBlockSelect<T extends boolean = true> {
               statistics?: T | StatisticsComponentSelect<T>;
               faq?: T | FAQComponentSelect<T>;
               entityList?: T | EntityListComponentSelect<T>;
+              peopleList?: T | PeopleListComponentSelect<T>;
               timeline?: T | TimelineComponentSelect<T>;
               dataTable?: T | DataTableComponentSelect<T>;
               gallery?: T | GalleryComponentSelect<T>;
               divider?: T | DividerComponentSelect<T>;
+              hubspotForm?: T | HubSpotFormComponentSelect<T>;
               marketCoverage?: T | MarketCoverageComponentSelect<T>;
               embed?: T | EmbedComponentSelect<T>;
               dataChart?: T | DataChartComponentSelect<T>;
@@ -2925,6 +3140,18 @@ export interface EntityListComponentSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PeopleListComponent_select".
+ */
+export interface PeopleListComponentSelect<T extends boolean = true> {
+  selectionMode?: T;
+  people?: T;
+  team?: T;
+  presentation?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "TimelineComponent_select".
  */
 export interface TimelineComponentSelect<T extends boolean = true> {
@@ -2986,6 +3213,16 @@ export interface GalleryComponentSelect<T extends boolean = true> {
  */
 export interface DividerComponentSelect<T extends boolean = true> {
   style?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HubSpotFormComponent_select".
+ */
+export interface HubSpotFormComponentSelect<T extends boolean = true> {
+  title?: T;
+  formId?: T;
   id?: T;
   blockName?: T;
 }
@@ -3231,8 +3468,71 @@ export interface ArticlesSelect<T extends boolean = true> {
   displayDate?: T;
   byline?: T;
   location?: T;
+  eventDetails?:
+    | T
+    | {
+        startsAt?: T;
+        endsAt?: T;
+        venueName?: T;
+        city?: T;
+        region?: T;
+        country?: T;
+        coordinates?:
+          | T
+          | {
+              latitude?: T;
+              longitude?: T;
+            };
+        formTitle?: T;
+        hubspotFormId?: T;
+        showFinishedNotice?: T;
+        hideFormsAfterEnd?: T;
+      };
   relatedArticles?: T;
   relatedHubs?: T;
+  meta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+        canonicalURL?: T;
+        noIndex?: T;
+        noFollow?: T;
+        structuredData?: T;
+      };
+  slug?: T;
+  path?: T;
+  confirmPathRedirect?: T;
+  publishedAt?: T;
+  legacySource?:
+    | T
+    | {
+        key?: T;
+        source?: T;
+        legacyId?: T;
+        originalUrl?: T;
+        modifiedGmt?: T;
+        contentHash?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "people_select".
+ */
+export interface PeopleSelect<T extends boolean = true> {
+  title?: T;
+  jobRole?: T;
+  team?: T;
+  displayOrder?: T;
+  image?: T;
+  description?: T;
+  quote?: T;
+  joinedAt?: T;
+  externalProfileURL?: T;
   meta?:
     | T
     | {
@@ -4097,6 +4397,10 @@ export interface Navigation {
             | ({
                 relationTo: 'learning-videos';
                 value: number | LearningVideo;
+              } | null)
+            | ({
+                relationTo: 'people';
+                value: number | Person;
               } | null);
           url?: string | null;
           newTab?: boolean | null;
@@ -4129,6 +4433,10 @@ export interface Navigation {
                   | ({
                       relationTo: 'learning-videos';
                       value: number | LearningVideo;
+                    } | null)
+                  | ({
+                      relationTo: 'people';
+                      value: number | Person;
                     } | null);
                 url?: string | null;
                 newTab?: boolean | null;
@@ -4163,6 +4471,10 @@ export interface Navigation {
                     | ({
                         relationTo: 'learning-videos';
                         value: number | LearningVideo;
+                      } | null)
+                    | ({
+                        relationTo: 'people';
+                        value: number | Person;
                       } | null);
                   url?: string | null;
                   newTab?: boolean | null;
@@ -4268,6 +4580,10 @@ export interface Navigation {
                   | ({
                       relationTo: 'learning-videos';
                       value: number | LearningVideo;
+                    } | null)
+                  | ({
+                      relationTo: 'people';
+                      value: number | Person;
                     } | null);
                 url?: string | null;
                 newTab?: boolean | null;
@@ -4306,6 +4622,10 @@ export interface Navigation {
             | ({
                 relationTo: 'learning-videos';
                 value: number | LearningVideo;
+              } | null)
+            | ({
+                relationTo: 'people';
+                value: number | Person;
               } | null);
           url?: string | null;
           newTab?: boolean | null;
@@ -4411,6 +4731,10 @@ export interface Footer {
             | ({
                 relationTo: 'learning-videos';
                 value: number | LearningVideo;
+              } | null)
+            | ({
+                relationTo: 'people';
+                value: number | Person;
               } | null);
           url?: string | null;
           newTab?: boolean | null;
@@ -4440,6 +4764,10 @@ export interface Footer {
                   | ({
                       relationTo: 'learning-videos';
                       value: number | LearningVideo;
+                    } | null)
+                  | ({
+                      relationTo: 'people';
+                      value: number | Person;
                     } | null);
                 url?: string | null;
                 newTab?: boolean | null;
@@ -4492,6 +4820,10 @@ export interface Footer {
             | ({
                 relationTo: 'learning-videos';
                 value: number | LearningVideo;
+              } | null)
+            | ({
+                relationTo: 'people';
+                value: number | Person;
               } | null);
           url?: string | null;
           newTab?: boolean | null;
@@ -4596,6 +4928,10 @@ export interface SiteSetting {
           | ({
               relationTo: 'learning-videos';
               value: number | LearningVideo;
+            } | null)
+          | ({
+              relationTo: 'people';
+              value: number | Person;
             } | null);
         url?: string | null;
         newTab?: boolean | null;
@@ -5064,6 +5400,10 @@ export interface TaskSchedulePublish {
       | ({
           relationTo: 'articles';
           value: number | Article;
+        } | null)
+      | ({
+          relationTo: 'people';
+          value: number | Person;
         } | null)
       | ({
           relationTo: 'hubs';

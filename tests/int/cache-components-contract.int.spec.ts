@@ -66,13 +66,14 @@ describe('Next.js Cache Components boundary', () => {
   it('streams data-backed blocks behind close non-landmark fallbacks', () => {
     const registry = source('src/components/blocks/registry.tsx')
 
-    expect(registry.match(/<Suspense\b/g)).toHaveLength(5)
+    expect(registry.match(/<Suspense\b/g)).toHaveLength(6)
     for (const label of [
       'articles',
       'learning videos',
       'market coverage',
       'market data',
       'market matrix',
+      'people',
     ]) {
       expect(registry).toContain(`fallback={<AsyncBlockFallback label="${label}" />}`)
     }

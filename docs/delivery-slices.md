@@ -10,7 +10,7 @@ WordPress code is not automatically in scope.
 
 The current local implementation includes slices 0, 1, 4, 5, and 6. “Delivered”
 below means the feature has an end-to-end local schema, migration/import,
-frontend, and test boundary. It does not mean that the complete 297-route
+frontend, and test boundary. It does not mean that the complete 317-route
 corpus, external-service acceptance, production infrastructure, or Trayport
 user acceptance is complete.
 
@@ -25,9 +25,10 @@ user acceptance is complete.
 - The existing documentation links and TIM auto-login workflow must work at
   launch. They may be hardened or simplified without changing the user-visible
   outcome.
-- Existing HubSpot form identifiers are retained. The first Next.js integration
-  should reproduce those embeds; real submissions are deferred until an
-  approved test destination and consent flow are available.
+- Existing HubSpot form identifiers are retained. The local schema, importer,
+  and inert renderer preserve them without third-party requests; the production
+  Next.js integration must reproduce the live embeds. Real submissions are
+  deferred until an approved test destination and consent flow are available.
 - CookieYes remains the consent provider. The Next.js implementation should
   clone the current categories and behavior rather than introduce a first-party
   consent system.
@@ -44,15 +45,15 @@ user acceptance is complete.
 
 ## Slice status
 
-| Slice | Status | Delivered boundary |
-| --- | --- | --- |
-| 0 — scope and parity contract | Delivered | The source baseline, inclusions/exclusions, system ownership, deferred integrations, and environment sequence are explicit. |
-| 1 — Payload completion and admin experience | Delivered locally | Branded admin entry/dashboard, Administrator and Editor publication permissions, editorial models required by the accepted blocks, and a non-authenticating customer-identity record for later TIM reconciliation. No TIM credentials, tokens, or sessions are stored in Payload. |
-| 2 — HubSpot and CookieYes | Deferred | Retain managed HubSpot identifiers and implement the existing forms as bounded Next.js embeds; clone the live CookieYes consent categories/behavior. Do not send real submissions until an approved test destination exists. |
-| 3 — TIM and review environments | Deferred | Implement TIM sign-in, protected documentation links, and the current auto-login outcome; then deploy the simple controlled AWS review environment. Complete the ECS handoff design after product acceptance. |
-| 4 — market maps | Delivered locally | Payload-managed regions, boundaries, points of interest, Hub metadata, explicit connections, venue/type hierarchy, Asset Class appearance, global connection schematic, regional Mapbox interactions, accessible fallbacks, and period market summaries. |
-| 5 — Market Matrix | Delivered locally | Payload-owned venue-to-Hub connectivity, Asset Class/Region/Hub filters, accessible collapsible venue groups, managed venue links, deterministic CSV, and formatted Excel export. |
-| 6 — charts and market-data operations | Delivered locally | Stable managed Asset Class/Hub keys and aliases, validated preview/commit import workflow and history, transactional application-data upserts, and the bounded volume/price Highcharts presentations. Raw facts are not editable as CMS fields. |
+| Slice                                       | Status                                         | Delivered boundary                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0 — scope and parity contract               | Delivered                                      | The source baseline, inclusions/exclusions, system ownership, deferred integrations, and environment sequence are explicit.                                                                                                                                                                                                                             |
+| 1 — Payload completion and admin experience | Delivered locally                              | Branded admin entry/dashboard, Administrator and Editor publication permissions, editorial models required by the accepted blocks, a routable People collection, canonical Event fields within Articles, and a non-authenticating customer-identity record for later TIM reconciliation. No TIM credentials, tokens, or sessions are stored in Payload. |
+| 2 — HubSpot and CookieYes                   | Partially modelled; external behavior deferred | The bounded `hubspotForm` schema/import/renderer exists with an inert local mount. Add the provider lifecycle and clone the live CookieYes consent categories/behavior. Do not send real submissions until an approved test destination exists.                                                                                                         |
+| 3 — TIM and review environments             | Deferred                                       | Implement TIM sign-in, protected documentation links, and the current auto-login outcome; then deploy the simple controlled AWS review environment. Complete the ECS handoff design after product acceptance.                                                                                                                                           |
+| 4 — market maps                             | Delivered locally                              | Payload-managed regions, boundaries, points of interest, Hub metadata, explicit connections, venue/type hierarchy, Asset Class appearance, global connection schematic, regional Mapbox interactions, accessible fallbacks, and period market summaries.                                                                                                |
+| 5 — Market Matrix                           | Delivered locally                              | Payload-owned venue-to-Hub connectivity, Asset Class/Region/Hub filters, accessible collapsible venue groups, managed venue links, deterministic CSV, and formatted Excel export.                                                                                                                                                                       |
+| 6 — charts and market-data operations       | Delivered locally                              | Stable managed Asset Class/Hub keys and aliases, validated preview/commit import workflow and history, transactional application-data upserts, and the bounded volume/price Highcharts presentations. Raw facts are not editable as CMS fields.                                                                                                         |
 
 ## Remaining delivery order
 
@@ -70,8 +71,9 @@ slices.
 
 ### 2. Complete the external experience
 
-Implement bounded HubSpot embeds from the retained form identifiers and the
-CookieYes Next.js integration from the live configuration. Verify loading,
+Activate the bounded HubSpot provider lifecycle behind the retained form
+identifiers and implement the CookieYes Next.js integration from the live
+configuration. Verify loading,
 blocked/error, accessibility, consent, and analytics behavior before enabling a
 real HubSpot test submission.
 
@@ -83,10 +85,12 @@ into public customer accounts.
 
 ### 3. Finish content and launch parity
 
-Load and review the full approved 297-route corpus, complete every listing-linked
+Load and review the full approved 317-route corpus, complete every listing-linked
 detail, repair managed links and redirects, disposition missing media, and review
-SEO/canonical/sitemap output. The Commodities Report remains excluded from the
-accepted route owners.
+SEO/canonical/sitemap output. The 17 public People routes and 23 canonical Event
+routes are now in the accepted local population; 244 target documents remain
+plan-only. The Commodities Report remains excluded from the accepted route
+owners.
 
 ### 4. Performance and look-and-feel acceptance
 

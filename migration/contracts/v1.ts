@@ -71,6 +71,7 @@ export const sourcePostSchema = baseRecordSchema.extend({
     'insights-listing',
     'news-listing',
     'learning-listing',
+    'event-listing',
     'venue-summary',
   ]),
   featuredOrder: z.number().int().nonnegative().nullable(),

@@ -18,6 +18,7 @@ import { MarketDataImports } from './collections/MarketDataImports'
 import { Media } from './collections/Media'
 import { Offices } from './collections/Offices'
 import { Pages } from './collections/Pages'
+import { People } from './collections/People'
 import { Regions } from './collections/Regions'
 import { RouteRegistry } from './collections/RouteRegistry'
 import { Users } from './collections/Users'
@@ -115,6 +116,7 @@ export default buildConfig({
     Pages,
     Banners,
     Articles,
+    People,
     Hubs,
     Venues,
     LearningVideos,

@@ -50,7 +50,7 @@ describe('Payload admin branding', () => {
 
     const navigation = screen.getByRole('navigation', { name: 'Primary content actions' })
     const links = within(navigation).getAllByRole('link')
-    expect(links).toHaveLength(5)
+    expect(links).toHaveLength(6)
     expect(within(navigation).getByRole('list')).toBeTruthy()
     expect(screen.getByRole('link', { name: /Create a page/ }).getAttribute('href')).toBe(
       '/admin/collections/pages/create',
@@ -63,6 +63,9 @@ describe('Payload admin branding', () => {
     )
     expect(screen.getByRole('link', { name: /Schedule a banner/ }).getAttribute('href')).toBe(
       '/admin/collections/banners/create',
+    )
+    expect(screen.getByRole('link', { name: /Add a person/ }).getAttribute('href')).toBe(
+      '/admin/collections/people/create',
     )
     expect(screen.getByText(/editors and administrators can draft and publish/i)).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Administration' })).toBeNull()
@@ -78,6 +81,7 @@ describe('Payload admin branding', () => {
             banners: 4,
             'learning-videos': 1,
             pages: 3,
+            people: 0,
           },
           recent: [
             {

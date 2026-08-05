@@ -84,6 +84,10 @@ const contentPathFromReference = async (
       const document = await payload.findByID({ ...shared, collection: 'articles' })
       return document?.path || null
     }
+    case 'people': {
+      const document = await payload.findByID({ ...shared, collection: 'people' })
+      return document?.path || null
+    }
     case 'hubs': {
       const document = await payload.findByID({ ...shared, collection: 'hubs' })
       return document?.path || null
@@ -184,6 +188,14 @@ export const resolveRouteClaimOwner = async ({
       })
       return document ? { document, kind: 'article' } : null
     }
+    case 'people': {
+      const document = await payload.findByID({
+        ...shared,
+        collection: 'people',
+        select: contentRouteSelects.people,
+      })
+      return document ? { document, kind: 'person' } : null
+    }
     case 'hubs': {
       const document = await payload.findByID({
         ...shared,
@@ -241,6 +253,8 @@ export const getCachedPublishedContentRoute = async (path: string): Promise<Rout
         ? 'route-indexes'
         : result.kind === 'learning-video'
           ? 'learning-videos'
+        : result.kind === 'person'
+          ? 'people'
           : result.kind === 'article'
             ? 'articles'
             : result.kind === 'hub'

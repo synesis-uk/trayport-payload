@@ -9,7 +9,7 @@ application-owned PostgreSQL tables.
 The implementation follows the currently used live navigation and content rather
 than recreating dormant WordPress administration structures.
 
-## Production-pilot routes
+## Initial production-pilot roots
 
 - `/`
 - `/company/about-us/`
@@ -38,7 +38,7 @@ than recreating dormant WordPress administration structures.
 - `/regions/europe/`
 - `/contact/`
 
-These 26 content routes are the rendered frontend slice. WordPress root 4031 is
+These 26 content routes formed the initial rendered frontend slice. WordPress root 4031 is
 also accepted as a temporary managed `302` from `/request-a-demo/` to
 `/contact/`, giving 27 immutable source roots without importing the unused
 HubSpot form or its presentation media. The redirect is removed when a real
@@ -46,28 +46,32 @@ approved HubSpot-backed submission journey is ready. This route-specific bridge
 does not remove retained HubSpot form identifiers from launch scope.
 
 Five additional Pages required by published banner targeting or internal banner
-CTAs are also imported and rendered. Together with the 27 roots, the accepted
-slice therefore contains 32 route owners: 31 rendered managed documents and the
-temporary redirect.
+CTAs are also imported and rendered. The current accepted population extends
+that initial slice with all 17 public People profiles and all 23 canonical Event
+details. Events consolidate into Articles: 20 come from canonical WordPress
+posts, three are unique legacy Event records, and five legacy `/events/*` aliases
+redirect to `/event/*`. The resulting accepted boundary is 73 route owners: 70
+rendered managed documents, the temporary Request A Demo redirect, and two
+virtual indexes.
 
-The verified production
-source corpus contains 297 canonical routes; those routes are inventoried and
-classified, but they are not all imported or rendered by this frontend yet.
-The deterministic production target plan describes 295 future/current Payload
-document owners and two virtual indexes, but it is planning evidence rather than
-proof that the other 263 plan-only documents have been migrated or remediated.
+The verified production source corpus contains 317 canonical routes. The
+deterministic production target plan describes 315 Payload document owners and
+two virtual indexes: 71 documents are marked accepted/pilot-ready and 244 remain
+plan-only. The plan is inventory evidence; it is not proof that those 244
+remaining documents have been migrated or remediated.
 
-The Insights and News indexes are backed by all 39 and 31 published source
-records respectively. The Learning Hub owns 15 protected metadata records. The
-market graph imports 72 hubs, 62 markers, 66 venues, and 655 normalized
+The Insights, News, and Event families are backed by all 39, 31, and 23
+published canonical records respectively. The Learning Hub owns 15 protected
+metadata records, and the People collection owns all 17 public leadership and
+Careers profiles. The market graph imports 72 hubs, 62 markers, 66 venues, and 655 normalized
 venue-to-hub relationships; German Power retains its 21 derived compatibility
 relationships, while EEX renders 37 unique connected markets.
 
-This is a 26-route acceptance and runtime-closure milestone, not complete live
-navigation content parity. Navigation and footer destinations outside the
-accepted roots and two virtual indexes remain HTTPS links to the live WordPress
-site. Each fallback can be switched back to an internal path when its route is
-imported and accepted.
+The 26 named roots remain the primary visual/golden-route acceptance set; the
+larger People/Event population closes those route families without claiming
+complete live-site content parity. Navigation and footer destinations that are
+still plan-only remain HTTPS links to the live WordPress site. Each fallback can
+be switched back to an internal path when its route is imported and accepted.
 
 The current slice status, locked external-service decisions, and local → simple
 AWS review → Trayport ECS delivery order are recorded in
@@ -76,7 +80,7 @@ AWS review → Trayport ECS delivery order are recorded in
 ## Architecture
 
 - Next.js 16 serves the public site and Payload admin.
-- Payload 3 owns pages, articles, hubs, venues, learning videos and their
+- Payload 3 owns pages, articles, people, hubs, venues, learning videos and their
   categories, taxonomies, navigation, footer, site settings, virtual-index
   configuration, media metadata, non-authenticating customer identities,
   controlled market-data import history, drafts, previews, roles, and publishing.
@@ -99,7 +103,7 @@ migration flow, and [docs/design-direction.md](docs/design-direction.md) for the
 visual and interaction direction. The [proof-of-concept editor
 guide](docs/editor-guide.md) summarizes the available CMS controls. The
 [production content-architecture contract](docs/content-architecture/README.md)
-defines the approved 297-route source scope, target archetypes, Payload
+defines the approved 317-route source scope, target archetypes, Payload
 ownership, block catalogue, editor workflows, and production gates.
 
 The public UI follows the [frontend system contract](docs/frontend-system.md): Tailwind 4 semantic
@@ -251,11 +255,11 @@ canonical owners. Per-run output is written to
 `migration/work/inventory/<run-id>/`; sanitized retained evidence lives in
 [`docs/content-architecture`](docs/content-architecture/README.md).
 
-The generated target plan is deterministic implementation input. Running it
-does not expand the production-pilot importer: the loaded and rendered source
-slice remains the 27 roots plus five published-banner Page dependencies listed
-above, and the full 297-route import, body remediation,
-media/link review, and parity validation remain future work.
+The generated target plan is deterministic implementation input. The accepted
+population is now the original 27 roots, five published-banner Page
+dependencies, 17 People profiles, and the additional canonical Event Articles
+described above. The full 317-route import, the other 244 plan-only document
+bodies, media/link review, and parity validation remain future work.
 
 The loader is idempotent across accepted runs. Loading equivalent source data
 must produce no Payload or market-data writes.
@@ -280,7 +284,7 @@ account becomes an administrator.
 - Administrators manage users, roles, destructive actions, and migration
   provenance.
 - Editors create and update content, media, navigation, and site configuration.
-- Pages, full articles, public hubs, public venues, and learning videos support
+- Pages, full articles, People profiles, public hubs, public venues, and learning videos support
   drafts, authenticated live preview, scheduled publishing, and route-aware
   revalidation.
 - Authenticated and subscriber learning videos may publish as metadata-only gate
@@ -290,8 +294,9 @@ account becomes an administrator.
   structured data only: publication hooks forbid public paths and layouts.
 - The `route-indexes` global controls headings, introductions, and SEO for the
   virtual `/venue/` and `/market-coverage/` routes.
-- Publishing validates the 18 content-route runtime archetypes. Conversion pages
-  remain draft-only until the bounded HubSpot integration exists; interactive Market Matrix
+- Publishing validates the 19 content-route runtime archetypes. Conversion pages
+  remain draft-only while the bounded HubSpot component is an inert local mount
+  without approved provider and consent behavior; interactive Market Matrix
   pages require exactly one managed `marketMatrix` component before publication.
 - A changed published path keeps its current public claim while the draft path
   is reserved; publication requires redirect confirmation and creates the

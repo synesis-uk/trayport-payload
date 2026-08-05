@@ -4,7 +4,7 @@
   "auditedAt": "2026-08-05",
   "catalogueStatus": "partial",
   "launchReadiness": "missing",
-  "purpose": "A feature-level parity contract across source discovery, Payload schema, editor experience, frontend runtime, migration, and verification. It complements the 297-route inventory; it does not replace or redefine route ownership.",
+  "purpose": "A feature-level parity contract across source discovery, Payload schema, editor experience, frontend runtime, migration, and verification. It complements the 317-route inventory; it does not replace or redefine route ownership.",
   "authority": {
     "sourceBaseline": "The live public Trayport site and the equivalent desktop-local WordPress deployment",
     "routeInventory": "docs/content-architecture/inventory-summary.json",
@@ -21,19 +21,20 @@
   },
   "routeProgress": {
     "status": "partial",
-    "approvedRouteOwners": 297,
-    "acceptedRouteOwners": 34,
-    "acceptedPercent": 11.4,
-    "planOnlyRouteOwners": 263,
+    "approvedRouteOwners": 317,
+    "acceptedRouteOwners": 73,
+    "acceptedPercent": 23,
+    "planOnlyRouteOwners": 244,
     "acceptedBreakdown": {
-      "renderedPayloadDocuments": 31,
+      "renderedPayloadDocuments": 70,
       "managedRedirectRouteOwners": 1,
       "virtualIndexRouteOwners": 2
     },
     "evidence": [
       "inventory:docs/content-architecture/inventory-summary.json",
-      "document:docs/content-architecture/README.md",
-      "document:docs/content-architecture/decisions.md"
+      "inventory:docs/content-architecture/verification.json",
+      "migration:migration/mappings/content-architecture.v1.json",
+      "test:tests/int/production-target-plan.int.spec.ts"
     ]
   },
   "features": [
@@ -44,11 +45,11 @@
       "launchPolicy": "required",
       "targetOwner": "Payload route owners, redirects, and two derived indexes",
       "status": "partial",
-      "boundary": "The approved 297 canonical public route owners, distinct from dependencies, aliases, and navigation occurrences.",
+      "boundary": "The approved 317 canonical public route owners, distinct from dependencies, aliases, and navigation occurrences.",
       "dimensions": {
         "source": {
           "status": "complete",
-          "summary": "The reproducible inventory proves 297 unique included route owners with zero unknown archetypes, including the EEX News Page reached from the active published banner.",
+          "summary": "Immutable run people-events-inventory-20260805-1400 proves 317 unique included route owners, 53 redirect candidates, and zero unknown archetypes, including the EEX News Page, 17 People profiles, and three net-new legacy Event owners.",
           "evidence": ["inventory:docs/content-architecture/verification.json"]
         },
         "schema": {
@@ -63,13 +64,16 @@
         },
         "runtime": {
           "status": "partial",
-          "summary": "Thirty-one Payload documents, one redirect owner, and two virtual indexes are accepted; 263 owners remain plan-only.",
-          "evidence": ["document:docs/content-architecture/README.md"]
+          "summary": "Seventy rendered Payload owners, one managed redirect owner, and two virtual indexes are accepted; 244 owners remain plan-only.",
+          "evidence": ["test:tests/int/production-target-plan.int.spec.ts"]
         },
         "migration": {
           "status": "partial",
-          "summary": "The deterministic target plan covers all owners, while the accepted load remains a 34-owner runtime slice.",
-          "evidence": ["migration:migration/scopes/production.ts"]
+          "summary": "The verified target plan from immutable run people-events-inventory-20260805-1400 covers all 317 owners and marks 71 Payload documents plus two virtual indexes as the accepted local slice.",
+          "evidence": [
+            "migration:migration/scopes/production.ts",
+            "test:tests/int/production-target-plan.int.spec.ts"
+          ]
         },
         "verification": {
           "status": "partial",
@@ -78,11 +82,11 @@
         }
       },
       "acceptance": [
-        "All 297 owners load without unresolved relationships or duplicate canonical paths.",
+        "All 317 owners load without unresolved relationships or duplicate canonical paths.",
         "Every listing-linked detail renders complete content and passes route, link, media, SEO, and visual review."
       ],
       "decisionRequired": null,
-      "nextAction": "Extend the immutable import and acceptance review from 34 to all 297 route owners."
+      "nextAction": "Extend import, remediation, and acceptance review from the 73-owner local slice to all 317 route owners."
     },
     {
       "id": "page-block-composition",
@@ -217,20 +221,23 @@
         },
         "migration": {
           "status": "complete",
-          "summary": "Extractor, relationship transform, recipient-review state, load priority, and database migrations exist; the live source run contains four banners plus all five dependent Pages and referenced media.",
+          "summary": "Extractor, relationship transform, load priority, and database migrations exist; the accepted local load maps the active legacy banner to Sophie Ingham-Clark through an inert notification-only identity, leaves the three expired-banner recipients unmapped, and contains all five dependent Pages and referenced media.",
           "evidence": [
             "migration:migration/wp-exporter/export.php",
             "migration:migration/transform/banner.ts",
+            "code:migration/load/bannerRecipients.ts",
             "test:tests/int/migration-banner-transform.int.spec.ts",
+            "test:tests/int/banner-recipient-mapping.int.spec.ts",
             "document:docs/content-architecture/banner-migration-acceptance.json"
           ]
         },
         "verification": {
           "status": "partial",
-          "summary": "Date, targeting, grouping, presentation, transform, notification, source-load, and desktop/mobile browser acceptance pass; production SMTP/scheduler evidence remains open.",
+          "summary": "Date, targeting, grouping, presentation, transform, notification, source-load, Sophie recipient mapping, roleless-login and first-CMS-user bootstrap guards, and desktop/mobile browser acceptance pass locally; production SMTP/scheduler delivery evidence remains open.",
           "evidence": [
             "test:tests/int/banner-model.int.spec.ts",
             "test:tests/int/banner-notification-workflow.int.spec.ts",
+            "test:tests/int/banner-recipient-mapping.int.spec.ts",
             "test:tests/int/migration-banner-transform.int.spec.ts",
             "test:tests/ui/site-banners.ui.spec.tsx",
             "document:docs/content-architecture/banner-migration-acceptance.json"
@@ -244,7 +251,7 @@
         "Configured recipients receive deduplicated before-live, live, before-offline, and offline notifications."
       ],
       "decisionRequired": null,
-      "nextAction": "Complete production scheduler/SMTP recipient acceptance, including the migrated-recipient review workflow and monitoring for the rare stale-lease duplicate window after SMTP acceptance."
+      "nextAction": "Complete production scheduler/SMTP delivery acceptance for the approved Sophie mapping and monitor the rare stale-lease duplicate window after SMTP acceptance."
     },
     {
       "id": "hubspot-forms",
@@ -261,29 +268,43 @@
           "evidence": ["document:docs/content-architecture/scope.md"]
         },
         "schema": {
-          "status": "missing",
-          "summary": "The planned bounded hubspotForm block is not yet configured in Payload.",
-          "evidence": ["document:docs/content-architecture/block-catalogue.md"]
+          "status": "complete",
+          "summary": "A bounded hubspotForm component models a required validated form UUID and editor-facing title while keeping the approved portal identity in the site integration.",
+          "evidence": [
+            "code:src/blocks/Trayport/components.ts",
+            "code:src/integrations/hubSpotForm.ts"
+          ]
         },
         "editor": {
-          "status": "missing",
-          "summary": "Editors cannot yet select an approved portal/form identifier or preview integration states.",
-          "evidence": ["document:docs/content-architecture/editorial-workflows.md"]
+          "status": "complete",
+          "summary": "Editors can add the integration component through the bounded block library, enter a validated HubSpot form UUID, and manage its visible heading without changing the portal boundary.",
+          "evidence": ["code:src/blocks/Trayport/components.ts"]
         },
         "runtime": {
-          "status": "deferred",
-          "summary": "Embed loading, consent, error, and accessibility behavior is deferred to the external-integration slice.",
-          "evidence": ["document:docs/delivery-slices.md"]
+          "status": "partial",
+          "summary": "Valid blocks and structured Event form metadata render an accessible inert mount with the approved portal/form identifiers; no HubSpot script loads and no data submits until CookieYes-gated activation is implemented.",
+          "evidence": [
+            "code:src/components/HubSpotForm/HubSpotFormMount.tsx",
+            "code:src/components/blocks/adapters.tsx",
+            "code:src/components/content/PageArticleViews.tsx"
+          ]
         },
         "migration": {
-          "status": "missing",
-          "summary": "Active form identifiers are not transformed into a target block; route-specific dormant instances are deliberately omitted.",
-          "evidence": ["document:docs/frontend-improvements.md"]
+          "status": "partial",
+          "summary": "Valid WordPress HubSpot UUIDs transform into the bounded component or structured Event metadata and invalid identifiers fail closed; full-corpus form review and load acceptance remain open.",
+          "evidence": [
+            "migration:migration/transform/blocks.ts",
+            "migration:migration/transform/index.ts"
+          ]
         },
         "verification": {
           "status": "deferred",
-          "summary": "Real submission waits for an approved test destination and consent flow.",
-          "evidence": ["document:docs/delivery-slices.md"]
+          "summary": "Focused tests cover UUID validation, transform, single-mount rendering, and suppression after an Event finishes; real script, consent, network, error-state, and submission acceptance wait for an approved test destination and CookieYes flow.",
+          "evidence": [
+            "test:tests/int/people-events-parity.int.spec.ts",
+            "test:tests/ui/people-events-parity.ui.spec.tsx",
+            "document:docs/delivery-slices.md"
+          ]
         }
       },
       "acceptance": [
@@ -291,7 +312,7 @@
         "A production-like test submission reaches an approved HubSpot destination without bypassing consent."
       ],
       "decisionRequired": null,
-      "nextAction": "Implement the bounded block and runtime locally, then connect an approved HubSpot test destination after CookieYes behavior is available."
+      "nextAction": "Add CookieYes-gated HubSpot script loading, blocked/loading/error states, and an approved test destination, then complete submission and full-corpus form acceptance."
     },
     {
       "id": "cookieyes-consent",
@@ -391,10 +412,10 @@
       "id": "site-search",
       "title": "Site search",
       "category": "navigation",
-      "launchPolicy": "decision-required",
-      "targetOwner": "Undecided between a whole-site search index and the current Insights-only filter",
-      "status": "decision",
-      "boundary": "The live modal/search results use Relevanssi across site content; the target modal currently forwards only to the Insights listing query.",
+      "launchPolicy": "required",
+      "targetOwner": "Next.js whole-site search over public Payload route-owner projections",
+      "status": "partial",
+      "boundary": "Replace the temporary Insights-only query with a whole-site search across published, indexable Pages, Articles, People, Hubs, Venues, and Learning Videos, using bounded server-side projections, ranking, excerpts, pagination, and an accessible URL-backed results experience.",
       "dimensions": {
         "source": {
           "status": "complete",
@@ -405,37 +426,50 @@
           ]
         },
         "schema": {
-          "status": "decision",
-          "summary": "No whole-site search projection or indexing contract is defined.",
-          "evidence": ["decision:Choose the launch search corpus and ranking/ownership boundary."]
+          "status": "complete",
+          "summary": "An adapter registry defines the public fields, publication/no-index filters, normalized search document, and relevance contract for every target route-owner collection without exposing private Payload documents.",
+          "evidence": ["code:src/search/publicSearchSources.server.ts", "code:src/search/model.ts"]
         },
         "editor": {
-          "status": "decision",
-          "summary": "Synonyms, exclusions, weighting, and whether editors need controls depend on the chosen search boundary.",
-          "evidence": ["decision:Search editorial controls are not yet scoped."]
+          "status": "complete",
+          "summary": "Editors manage inclusion through normal publish state, route mode, and SEO no-index controls; dedicated synonym or weighting administration is intentionally outside this initial parity boundary.",
+          "evidence": ["code:src/search/publicSearchSources.server.ts"]
         },
         "runtime": {
-          "status": "partial",
-          "summary": "The accessible modal and URL-backed Insights search work, but this is not live whole-site parity.",
-          "evidence": ["code:src/Header/SiteSearchDialog.client.tsx"]
+          "status": "complete",
+          "summary": "The header modal now submits to a URL-backed whole-site results view with normalized multi-field ranking, excerpts, type labels, pagination, and a cached public corpus invalidated by existing collection tags.",
+          "evidence": [
+            "code:src/Header/SiteSearchDialog.client.tsx",
+            "code:src/search/loadSiteSearchCorpus.server.ts",
+            "code:src/search/SiteSearchPage.server.tsx",
+            "code:src/components/Search/SiteSearchView.tsx"
+          ]
         },
         "migration": {
-          "status": "decision",
-          "summary": "Index population and exclusion rules cannot close until the launch corpus is approved.",
-          "evidence": ["decision:No search-index migration contract exists."]
+          "status": "complete",
+          "summary": "No separate index migration is required: the cached corpus is deterministically projected from accepted published Payload route owners and follows their existing migration and revalidation lifecycle.",
+          "evidence": [
+            "code:src/search/loadSiteSearchCorpus.server.ts",
+            "code:src/search/publicSearchSources.server.ts"
+          ]
         },
         "verification": {
           "status": "partial",
-          "summary": "Modal focus and Insights filtering are tested; cross-type relevance and result parity are not.",
-          "evidence": ["test:tests/e2e/content-features.e2e.spec.ts"]
+          "summary": "Query validation, normalization, ranking, public projection, result rendering, and modal accessibility have automated coverage; full-corpus relevance sampling and production-volume acceptance remain open.",
+          "evidence": [
+            "test:tests/int/site-search.int.spec.ts",
+            "test:tests/ui/site-search.ui.spec.tsx",
+            "test:tests/e2e/interaction-accessibility.e2e.spec.ts"
+          ]
         }
       },
       "acceptance": [
-        "A recorded decision defines the indexed content types, exclusions, ranking, result route, and fallback behavior.",
-        "Representative page, article, event, venue, hub, and Learning Hub queries meet the approved result contract."
+        "Only published, route-owning, indexable public documents can appear, and private CMS fields never enter the search corpus.",
+        "Representative page, article, event, person, venue, hub, and Learning Hub queries meet the approved relevance and result contract.",
+        "Search remains accessible, URL-backed, paginated, cache-bounded, and invalidated after public content changes."
       ],
-      "decisionRequired": "Should launch reproduce whole-site Relevanssi behavior, or intentionally replace it with an Insights-only search labelled and designed as such?",
-      "nextAction": "Make the search-scope decision before building an index or presenting the current Insights filter as site search."
+      "decisionRequired": null,
+      "nextAction": "Run representative relevance and performance acceptance as the remaining 244 route owners complete content load and review."
     },
     {
       "id": "redirects",
@@ -688,95 +722,113 @@
       "id": "people-details",
       "title": "People records and public detail links",
       "category": "content",
-      "launchPolicy": "decision-required",
-      "targetOwner": "Undecided between managed public People routes, embedded relationships, or link removal/redirects",
-      "status": "decision",
-      "boundary": "Nine live people detail links are user-visible, while the current approved target treats people only as dependencies and omits public people route owners.",
+      "launchPolicy": "required",
+      "targetOwner": "Payload People collection and managed Next.js profile routes",
+      "status": "partial",
+      "boundary": "Retain all 17 published People detail routes: nine profiles linked explicitly from About content, six careers-tagged profiles, and two additional CEO-tagged profiles; the six private WordPress profiles remain excluded from the public corpus.",
       "dimensions": {
         "source": {
           "status": "complete",
-          "summary": "The audit identifies nine live public people-detail links and their dependency usage.",
+          "summary": "The source audit distinguishes all 17 published People paths and six private profiles; Matthew Brief (11232) and Nicole Rosenberg (11233) retain their source team value of ceo rather than being reclassified as careers.",
           "evidence": ["inventory:docs/content-architecture/route-manifest.csv"]
         },
         "schema": {
-          "status": "missing",
-          "summary": "There is no Payload People collection with an approved route policy.",
-          "evidence": ["document:docs/content-architecture/payload-model.md"]
+          "status": "complete",
+          "summary": "A routable, versioned People collection models the public name, role, team, portrait, biography, careers quotation, route, legacy identity, publication, and SEO fields.",
+          "evidence": ["code:src/collections/People.ts"]
         },
         "editor": {
-          "status": "missing",
-          "summary": "Editors cannot manage reusable people details or a deliberate replacement disposition.",
-          "evidence": ["decision:People have no dedicated target editor workflow."]
+          "status": "complete",
+          "summary": "Editors can draft, preview, schedule, publish, version, and route public profiles through a bounded Profile/SEO workflow; administrators retain deletion control.",
+          "evidence": ["code:src/collections/People.ts"]
         },
         "runtime": {
-          "status": "missing",
-          "summary": "The nine live linked detail outcomes are not owned by the target runtime.",
-          "evidence": ["decision:No public People route renderer exists."]
+          "status": "complete",
+          "summary": "People participate in route ownership, metadata, content projection, responsive profile rendering, cache invalidation, and whole-site search using their canonical /people/ paths.",
+          "evidence": [
+            "code:src/app/(frontend)/contentRoute.loader.server.ts",
+            "code:src/components/content/PersonView.tsx",
+            "code:src/search/publicSearchSources.server.ts"
+          ]
         },
         "migration": {
           "status": "partial",
-          "summary": "Some people content can be flattened into dependent blocks/bylines, but linked identities and destinations are not migrated.",
-          "evidence": ["migration:migration/transform/blocks.ts"]
+          "summary": "Published People records have a deterministic collection/route transform, private profiles remain excluded, and immutable inventory run people-events-inventory-20260805-1400 proves all 17 canonical owners; full production content review remains open.",
+          "evidence": ["migration:migration/transform/index.ts"]
         },
         "verification": {
-          "status": "decision",
-          "summary": "Acceptance cannot close until each live link is assigned a route, replacement, removal, or redirect.",
-          "evidence": ["decision:Disposition all nine public people links."]
+          "status": "partial",
+          "summary": "Inventory, schema, route, projection, sparse-profile rendering, source team classification, and source disposition tests cover the retained behavior; all 17 profiles still require complete content, SEO/privacy, responsive, and visual review.",
+          "evidence": [
+            "test:tests/int/people-events-parity.int.spec.ts",
+            "test:tests/ui/people-events-parity.ui.spec.tsx"
+          ]
         }
       },
       "acceptance": [
-        "Every live people link has an approved managed route, embedded replacement, removal, or redirect.",
-        "If public details remain, their schema, editor, migration, SEO, and privacy review pass."
+        "All 17 published People records own canonical managed /people/ routes while the six private profiles remain unavailable publicly.",
+        "Matthew Brief and Nicole Rosenberg retain the source ceo team classification; the migration does not silently move them into careers.",
+        "Leadership and careers presentations preserve the visible source content and pass schema, editor, migration, SEO, privacy, responsive, and visual review."
       ],
-      "decisionRequired": "Do the nine live people detail pages remain public managed routes, become embedded profiles, or have their links removed/redirected?",
-      "nextAction": "Review the nine linked records with stakeholders and record one disposition before widening the 297-route contract."
+      "decisionRequired": null,
+      "nextAction": "Complete content, SEO, privacy, responsive, and visual acceptance for all 17 retained profiles."
     },
     {
       "id": "event-content-routing",
       "title": "Event content type and route namespace",
       "category": "content",
-      "launchPolicy": "decision-required",
-      "targetOwner": "Payload Articles with event semantics, subject to a source-route decision",
-      "status": "decision",
-      "boundary": "The approved corpus contains 20 event-flavoured core posts under /event/, while a separate Events CPT uses /events/ and two redirects cross the namespaces.",
+      "launchPolicy": "required",
+      "targetOwner": "Payload Articles with event semantics under /event/ plus managed /events/ aliases",
+      "status": "partial",
+      "boundary": "Merge 20 published core event posts and five published legacy Events CPT records into one Article-event corpus under canonical /event/ paths: preserve the distinct Commodity Trading Week and Energy Trading Week core routes, merge the two cross-type slug collisions, add the three unique legacy events, and redirect all five /events/ aliases permanently to their canonical owners.",
       "dimensions": {
         "source": {
-          "status": "partial",
-          "summary": "Both source families and two redirects are identified, but their authoritative launch relationship is ambiguous.",
+          "status": "complete",
+          "summary": "The audit identifies 20 distinct core /event/ posts, five legacy /events/ CPT records, two cross-type slug collisions, three unique legacy records, and two source redirects whose direction conflicts with the approved canonical policy.",
           "evidence": ["inventory:docs/content-architecture/route-manifest.csv"]
         },
         "schema": {
-          "status": "partial",
-          "summary": "Articles model event metadata, but no second Events CPT target or namespace policy is approved.",
+          "status": "complete",
+          "summary": "Articles own one structured event model for dates, place, form identity, and opt-in finished/form-expiry behavior and enforce the canonical /event/ namespace; the separate WordPress CPT is intentionally not reproduced as a second editor model.",
           "evidence": ["code:src/collections/Articles.ts"]
         },
         "editor": {
-          "status": "partial",
-          "summary": "Editors can manage event articles, but cannot see a resolved legacy-CPT merge/redirect policy.",
-          "evidence": ["document:docs/content-architecture/payload-model.md"]
+          "status": "complete",
+          "summary": "Editors manage event identity, dates, location, content, form metadata, legacy finished/form-expiry flags, SEO, preview, publication, and path changes through the single Articles workflow.",
+          "evidence": ["code:src/collections/Articles.ts"]
         },
         "runtime": {
-          "status": "partial",
-          "summary": "A representative /event/ article renders; /events/ ownership and legacy redirect outcomes remain unresolved.",
-          "evidence": ["test:tests/helpers/site.ts"]
+          "status": "complete",
+          "summary": "Structured event dates and location render through Article detail pages at /event/; only migrated legacy-CPT events reproduce the finished notice and post-end form suppression, while core Event posts retain authored forms; managed redirects preserve every legacy /events/ detail path and reverse the two conflicting source aliases.",
+          "evidence": [
+            "code:src/components/content/PageArticleViews.tsx",
+            "code:src/routing/archetypes.ts",
+            "code:src/plugins/index.ts"
+          ]
         },
         "migration": {
           "status": "partial",
-          "summary": "Core event posts are planned as Articles; separate Events CPT records and cross-namespace aliases lack a final disposition.",
-          "evidence": ["migration:migration/inventory/discover.ts"]
+          "summary": "The transform preserves Commodity Trading Week and Energy Trading Week as distinct core routes, merges the two duplicate CPT records into their core Article events, scopes legacy lifecycle flags to CPT records, creates three additional Article events, and emits five /events/ aliases; immutable inventory run people-events-inventory-20260805-1400 proves the resulting 23 canonical owners and 53-candidate redirect graph.",
+          "evidence": ["migration:migration/transform/index.ts"]
         },
         "verification": {
-          "status": "missing",
-          "summary": "No test proves a complete, collision-free event corpus and redirect graph across both source namespaces.",
-          "evidence": ["decision:Event namespace/corpus acceptance is open."]
+          "status": "partial",
+          "summary": "Focused tests cover source counts, deduplication, canonical validation, event presentation, and alias direction; complete migrated-corpus, redirect-graph, SEO, and visual acceptance remains open.",
+          "evidence": [
+            "test:tests/int/people-events-parity.int.spec.ts",
+            "test:tests/ui/people-events-parity.ui.spec.tsx"
+          ]
         }
       },
       "acceptance": [
-        "One authoritative event corpus and canonical namespace are approved.",
-        "All retained event details, listings, SEO paths, and the two redirects migrate without duplicate or missing ownership."
+        "The authoritative corpus contains 23 unique Article events under /event/ with no duplicate owner for the two merged source records.",
+        "Commodity Trading Week remains at /event/commodity-trading-week-2026/ and Energy Trading Week remains at its separate canonical path.",
+        "All five legacy /events/ detail paths redirect permanently to canonical /event/ owners, including reversal of the two conflicting source rules.",
+        "Legacy Events reproduce their post-end notice and form suppression without changing the authored-form lifecycle of core Event posts.",
+        "Retained event details, dates, locations, forms, listings, SEO paths, and redirect graph pass full-corpus acceptance."
       ],
-      "decisionRequired": "Should the separate Events CPT merge into Article events, remain excluded as dormant, or become a distinct target; and which of /event/ or /events/ is canonical?",
-      "nextAction": "Compare live reachability and content overlap for both source families, then record the canonical corpus and redirect policy."
+      "decisionRequired": null,
+      "nextAction": "Complete content loading and run full-corpus redirect-graph, SEO, form-lifecycle, and visual acceptance for the 23 Event owners and five aliases."
     },
     {
       "id": "regional-market-maps",
@@ -947,7 +999,7 @@
         },
         "migration": {
           "status": "partial",
-          "summary": "Accepted-route metadata migrates; the other 263 route owners and their missing-media/link decisions do not.",
+          "summary": "Accepted-route metadata migrates; the other 244 route owners and their missing-media/link decisions do not.",
           "evidence": ["migration:migration/transform/index.ts"]
         },
         "verification": {
@@ -961,7 +1013,7 @@
         "No excluded, draft, redirect-source, duplicate, or missing route leaks into discovery output."
       ],
       "decisionRequired": null,
-      "nextAction": "Run metadata/canonical/sitemap review across all 297 accepted route owners after full import."
+      "nextAction": "Run metadata/canonical/sitemap review across all 317 route owners after full import."
     },
     {
       "id": "commodities-report",
@@ -999,7 +1051,7 @@
         },
         "verification": {
           "status": "complete",
-          "summary": "The inventory asserts its exclusion from the 297 canonical owners.",
+          "summary": "The inventory asserts its exclusion from the 317 canonical owners.",
           "evidence": ["inventory:docs/content-architecture/verification.json"]
         }
       },

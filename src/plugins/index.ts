@@ -72,7 +72,7 @@ const validateRedirectCustomURL: TextFieldSingleValidation = (value, { siblingDa
 
 export const plugins: Plugin[] = [
   redirectsPlugin({
-    collections: ['pages', 'articles', 'hubs', 'venues', 'learning-videos'],
+    collections: ['pages', 'articles', 'people', 'hubs', 'venues', 'learning-videos'],
     redirectTypeFieldOverride: {
       defaultValue: '301',
     },

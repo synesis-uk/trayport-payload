@@ -94,7 +94,7 @@ test.describe('interactive accessibility states', () => {
     await page.keyboard.press('Enter')
 
     const dialog = page.getByRole('dialog', { name: 'Site Search' })
-    const field = page.getByRole('searchbox', { name: 'Search Trayport insights' })
+    const field = page.getByRole('searchbox', { name: 'Search Trayport' })
     const submit = dialog.getByRole('button', { exact: true, name: 'Search' })
     const close = dialog.getByRole('button', { name: 'Close site search' })
 

@@ -96,6 +96,7 @@ export type RuntimeReference = z.infer<typeof runtimeReferenceSchema>
 
 export type InventoryRouteRole =
   | 'banner'
+  | 'canonical-corpus'
   | 'footer'
   | 'listing-item'
   | 'navigation'

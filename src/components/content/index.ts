@@ -1,4 +1,5 @@
 export { ArticleView, PageView } from './PageArticleViews'
+export { PersonView } from './PersonView'
 export { HubView } from './HubView'
 export { LearningVideoView } from './LearningVideoView'
 export { MarketCoverageIndexView, VenueIndexView } from './IndexViews'

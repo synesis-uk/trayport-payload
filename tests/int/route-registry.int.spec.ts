@@ -1,12 +1,12 @@
 // @vitest-environment node
 
-import { getContentSitemap } from '@/app/(frontend)/(sitemaps)/content-sitemap.xml/route'
+import { getContentSitemap } from '@/data/contentSitemap.server'
 import config from '@/payload.config'
 import { ensureSystemRouteClaims, findRouteClaim, systemRouteDefinitions } from '@/routing/registry'
 import { getPayload, type Payload } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-type CleanupCollection = 'articles' | 'hubs' | 'learning-videos' | 'pages' | 'venues'
+type CleanupCollection = 'articles' | 'hubs' | 'learning-videos' | 'pages' | 'people' | 'venues'
 
 type IdentifiedDocument = {
   id: number | string
@@ -106,6 +106,7 @@ const cleanSuiteFixtures = async (): Promise<void> => {
     'hubs',
     'learning-videos',
     'pages',
+    'people',
     'venues',
   ]
 
@@ -455,6 +456,41 @@ describe.sequential('route registry integration', () => {
       ({ loc }) => new URL(loc).pathname === path,
     )
     expect(includesPath).toBe(true)
+  })
+
+  it('includes indexable People routes and omits profiles marked no-index', async () => {
+    const name = 'sitemap-person'
+    const path = fixturePath(name)
+    const person = await payload.create({
+      collection: 'people',
+      context: publishMutationContext,
+      data: {
+        _status: 'published',
+        displayOrder: 0,
+        meta: { noIndex: true },
+        path,
+        slug: fixtureKey(name),
+        team: 'careers',
+        title: `Published ${fixtureKey(name)}`,
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+
+    expect((await getContentSitemap()).some(({ loc }) => new URL(loc).pathname === path)).toBe(
+      false,
+    )
+
+    await payload.update({
+      collection: 'people',
+      context: publishMutationContext,
+      data: { meta: { noIndex: false } },
+      draft: false,
+      id: person.id,
+      overrideAccess: true,
+    })
+
+    expect((await getContentSitemap()).some(({ loc }) => new URL(loc).pathname === path)).toBe(true)
   })
 
   it('protects the virtual system routes and seeds them idempotently', async () => {

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "production",
   "summary": {
-    "reachableNodes": 454,
-    "layoutOccurrences": 2351,
-    "layouts": 40,
+    "reachableNodes": 459,
+    "layoutOccurrences": 2355,
+    "layouts": 41,
     "unknownLayouts": 0,
     "taxonomies": 8,
     "unknownTaxonomies": 0
@@ -12,7 +12,7 @@
   "authoritativeFields": [
     {
       "field": "all-acf-fields",
-      "nodes": 312,
+      "nodes": 317,
       "legacyIds": [
         752,
         753,
@@ -30,6 +30,9 @@
         1866,
         1883,
         1884,
+        2461,
+        2463,
+        2464,
         2471,
         2472,
         2487,
@@ -276,6 +279,7 @@
         8766,
         8767,
         8768,
+        8850,
         9071,
         9253,
         9263,
@@ -287,6 +291,7 @@
         10234,
         10337,
         10395,
+        10476,
         10485,
         10487,
         10489,
@@ -735,6 +740,24 @@
       ]
     },
     {
+      "template": "post-type-default:events",
+      "classification": "post-type-default",
+      "nodes": 5,
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "targetOwners": [
+        "articles"
+      ],
+      "legacyIds": [
+        2461,
+        2463,
+        2464,
+        8850,
+        10476
+      ]
+    },
+    {
       "template": "post-type-default:features",
       "classification": "post-type-default",
       "nodes": 2,
@@ -912,7 +935,7 @@
         "all-acf-fields"
       ],
       "targetOwners": [
-        "unresolved"
+        "people"
       ],
       "legacyIds": [
         2561,
@@ -2106,7 +2129,7 @@
       "classification": "contract-disposition",
       "disposition": "consolidate",
       "targets": [
-        "entityList"
+        "peopleList"
       ],
       "dynamicDependencyPostTypes": [
         "people"
@@ -2232,20 +2255,50 @@
         "statistics"
       ],
       "dynamicDependencyPostTypes": [],
-      "occurrences": 2,
-      "routeCount": 2,
+      "occurrences": 4,
+      "routeCount": 3,
       "postTypes": [
+        "events",
         "page"
       ],
       "targetOwners": [
+        "articles",
         "pages"
       ],
       "authoritativeFields": [
+        "all-acf-fields",
         "sections_new"
       ],
       "sampleLegacyIds": [
         2203,
-        2211
+        2211,
+        2461
+      ]
+    },
+    {
+      "layout": "stats-right",
+      "scope": "component",
+      "classification": "contract-disposition",
+      "disposition": "consolidate",
+      "targets": [
+        "heading",
+        "richText",
+        "statistics"
+      ],
+      "dynamicDependencyPostTypes": [],
+      "occurrences": 2,
+      "routeCount": 1,
+      "postTypes": [
+        "events"
+      ],
+      "targetOwners": [
+        "articles"
+      ],
+      "authoritativeFields": [
+        "all-acf-fields"
+      ],
+      "sampleLegacyIds": [
+        2461
       ]
     },
     {

@@ -82,6 +82,28 @@ describe('populated cache dependency discovery', () => {
     ).toEqual([cacheDependencyTag('media', 8)])
   })
 
+  it('tracks explicit People and the automatic team-list collection dependency', () => {
+    expect(
+      collectCacheDependencyTags(
+        {
+          layout: [
+            {
+              blockType: 'peopleList',
+              people: [{ id: 2561 }, { id: 2563 }],
+              selectionMode: 'team',
+              team: 'careers',
+            },
+          ],
+        },
+        'pages',
+      ),
+    ).toEqual([
+      cacheDependencyCollectionTag('people'),
+      cacheDependencyTag('people', 2561),
+      cacheDependencyTag('people', 2563),
+    ])
+  })
+
   it('uses exact dependency tags through the per-projection budget', () => {
     const tags = collectCacheDependencyTags(
       {

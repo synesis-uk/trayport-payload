@@ -1,27 +1,28 @@
-import * as migration_20260728_201453_initial_schema from './20260728_201453_initial_schema'
-import * as migration_20260730_002734_routable_content_foundation from './20260730_002734_routable_content_foundation'
-import * as migration_20260730_015904_redirect_status from './20260730_015904_redirect_status'
-import * as migration_20260803_175438_production_pilot_content from './20260803_175438_production_pilot_content'
-import * as migration_20260803_181505_optional_managed_links from './20260803_181505_optional_managed_links'
-import * as migration_20260803_184425_production_pilot_safety from './20260803_184425_production_pilot_safety'
-import * as migration_20260803_231412_visual_parity from './20260803_231412_visual_parity'
-import * as migration_20260804_024704_footer_navigation_shell from './20260804_024704_footer_navigation_shell'
-import * as migration_20260804_025213_cookie_policy_url from './20260804_025213_cookie_policy_url'
-import * as migration_20260804_031832_home_joule_presentation_semantics from './20260804_031832_home_joule_presentation_semantics'
-import * as migration_20260804_040104 from './20260804_040104'
-import * as migration_20260804_041753_insights_display_date from './20260804_041753_insights_display_date'
-import * as migration_20260804_044451_home_market_coverage_presentation from './20260804_044451_home_market_coverage_presentation'
-import * as migration_20260804_082210_action_forward_icon from './20260804_082210_action_forward_icon'
-import * as migration_20260804_093914_market_matrix_component from './20260804_093914_market_matrix_component'
-import * as migration_20260804_103936_data_chart_asset_class from './20260804_103936_data_chart_asset_class'
-import * as migration_20260804_104200_data_chart_asset_class_backfill from './20260804_104200_data_chart_asset_class_backfill'
-import * as migration_20260804_113221_data_chart_semantics from './20260804_113221_data_chart_semantics'
-import * as migration_20260804_224938 from './20260804_224938'
-import * as migration_20260804_225535_market_data_legacy_upsert_compat from './20260804_225535_market_data_legacy_upsert_compat'
-import * as migration_20260805_104353_scheduled_page_banners from './20260805_104353_scheduled_page_banners'
-import * as migration_20260805_104915_banner_recipient_migration_review from './20260805_104915_banner_recipient_migration_review'
-import * as migration_20260805_105208_banner_notification_jobs from './20260805_105208_banner_notification_jobs'
-import * as migration_20260805_111442_banner_notification_delivery_ledger from './20260805_111442_banner_notification_delivery_ledger'
+import * as migration_20260728_201453_initial_schema from './20260728_201453_initial_schema';
+import * as migration_20260730_002734_routable_content_foundation from './20260730_002734_routable_content_foundation';
+import * as migration_20260730_015904_redirect_status from './20260730_015904_redirect_status';
+import * as migration_20260803_175438_production_pilot_content from './20260803_175438_production_pilot_content';
+import * as migration_20260803_181505_optional_managed_links from './20260803_181505_optional_managed_links';
+import * as migration_20260803_184425_production_pilot_safety from './20260803_184425_production_pilot_safety';
+import * as migration_20260803_231412_visual_parity from './20260803_231412_visual_parity';
+import * as migration_20260804_024704_footer_navigation_shell from './20260804_024704_footer_navigation_shell';
+import * as migration_20260804_025213_cookie_policy_url from './20260804_025213_cookie_policy_url';
+import * as migration_20260804_031832_home_joule_presentation_semantics from './20260804_031832_home_joule_presentation_semantics';
+import * as migration_20260804_040104 from './20260804_040104';
+import * as migration_20260804_041753_insights_display_date from './20260804_041753_insights_display_date';
+import * as migration_20260804_044451_home_market_coverage_presentation from './20260804_044451_home_market_coverage_presentation';
+import * as migration_20260804_082210_action_forward_icon from './20260804_082210_action_forward_icon';
+import * as migration_20260804_093914_market_matrix_component from './20260804_093914_market_matrix_component';
+import * as migration_20260804_103936_data_chart_asset_class from './20260804_103936_data_chart_asset_class';
+import * as migration_20260804_104200_data_chart_asset_class_backfill from './20260804_104200_data_chart_asset_class_backfill';
+import * as migration_20260804_113221_data_chart_semantics from './20260804_113221_data_chart_semantics';
+import * as migration_20260804_224938 from './20260804_224938';
+import * as migration_20260804_225535_market_data_legacy_upsert_compat from './20260804_225535_market_data_legacy_upsert_compat';
+import * as migration_20260805_104353_scheduled_page_banners from './20260805_104353_scheduled_page_banners';
+import * as migration_20260805_104915_banner_recipient_migration_review from './20260805_104915_banner_recipient_migration_review';
+import * as migration_20260805_105208_banner_notification_jobs from './20260805_105208_banner_notification_jobs';
+import * as migration_20260805_111442_banner_notification_delivery_ledger from './20260805_111442_banner_notification_delivery_ledger';
+import * as migration_20260805_130343_people_events_search_parity from './20260805_130343_people_events_search_parity';
 
 export const migrations = [
   {
@@ -144,4 +145,9 @@ export const migrations = [
     down: migration_20260805_111442_banner_notification_delivery_ledger.down,
     name: '20260805_111442_banner_notification_delivery_ledger',
   },
-]
+  {
+    up: migration_20260805_130343_people_events_search_parity.up,
+    down: migration_20260805_130343_people_events_search_parity.down,
+    name: '20260805_130343_people_events_search_parity'
+  },
+];

@@ -1,3 +1,4 @@
+import type { SourceRecord } from '../contracts/v1'
 import { pilotScope } from '../scopes/pilot'
 import {
   externalHTTPSDestinationPolicy,
@@ -12,12 +13,51 @@ const sourceHosts = new Set([
   'www.trayport.com',
 ])
 
-export const migrationOwnedPaths = new Set([
+const baselineMigrationOwnedPaths = [
   ...pilotScope.roots.map(({ path }) => path),
   ...pilotScope.acceptedRouteDependencies.map(({ path }) => path),
   '/market-coverage/',
   '/venue/',
-])
+]
+
+export const migrationOwnedPaths = new Set(baselineMigrationOwnedPaths)
+
+export const ownedPathsFromSource = (records: readonly SourceRecord[]): string[] => {
+  const owned = new Set<string>()
+
+  for (const record of records) {
+    if (
+      record.entity === 'reusable' &&
+      record.postType === 'people' &&
+      record.status === 'publish' &&
+      record.path
+    ) {
+      owned.add(normalizeMigrationPath(record.path))
+      continue
+    }
+
+    if (record.entity !== 'post' || record.status !== 'publish') continue
+
+    if (record.postType === 'post' && (record.taxonomies.category || []).includes(119)) {
+      const slug = record.legacyId === 10974 ? 'commodity-trading-week-2026' : record.slug
+      owned.add(normalizeMigrationPath(`/event/${slug}/`))
+      continue
+    }
+
+    if (record.postType === 'events') {
+      if (record.path) owned.add(normalizeMigrationPath(record.path))
+      owned.add(normalizeMigrationPath(`/event/${record.slug}/`))
+    }
+  }
+
+  return [...owned].sort()
+}
+
+export const setMigrationOwnedCorpusPaths = (paths: Iterable<string>): void => {
+  migrationOwnedPaths.clear()
+  baselineMigrationOwnedPaths.forEach((path) => migrationOwnedPaths.add(path))
+  for (const path of paths) migrationOwnedPaths.add(path)
+}
 
 export const normalizeMigrationPath = (value: string): string => {
   const url = new URL(value, 'http://trayport.local')

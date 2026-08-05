@@ -75,7 +75,7 @@
     ]
   },
   "approvedProductionScope": {
-    "publicRouteTotal": 297,
+    "publicRouteTotal": 317,
     "inventoryEvidenceStatus": "verified",
     "reachableTermSubtypes": [
       "asset-class",
@@ -151,6 +151,20 @@
         "ownership": "payload-document"
       },
       {
+        "id": "legacy-event-details",
+        "count": 3,
+        "sourceType": "events",
+        "targetOwner": "articles",
+        "ownership": "payload-document"
+      },
+      {
+        "id": "people-details",
+        "count": 17,
+        "sourceType": "people",
+        "targetOwner": "people",
+        "ownership": "payload-document"
+      },
+      {
         "id": "venue-details",
         "count": 66,
         "sourceType": "venue",
@@ -215,7 +229,9 @@
         "office",
         "marketMatrix",
         "checklist",
-        "lifecycle"
+        "lifecycle",
+        "hubspotForm",
+        "peopleList"
       ]
     },
     "planned": [
@@ -232,24 +248,6 @@
         ],
         "implementationStatus": "planned",
         "description": "Normalize a nested legacy column into contentSection.columns rather than introducing a presentational renderer block."
-      },
-      {
-        "id": "hubspot-form",
-        "kind": "block",
-        "placement": "section-component",
-        "targetBlockType": "hubspotForm",
-        "sourceLayouts": [
-          {
-            "scope": "component",
-            "source": "form"
-          },
-          {
-            "scope": "article-top-level",
-            "source": "form"
-          }
-        ],
-        "implementationStatus": "planned",
-        "description": "Retain approved HubSpot form identifiers and reproduce active page and article forms through one bounded Next.js embed lifecycle."
       },
       {
         "id": "cookie-preferences",
@@ -489,6 +487,24 @@
       "contentOwner": "listing-metadata-only",
       "allowedTopLevelBlocks": [],
       "editorCapabilities": ["manage-editorial-metadata", "manage-taxonomy", "draft"],
+      "implementationStatus": "passing",
+      "gap": null
+    },
+    {
+      "id": "person.public-profile",
+      "collection": "people",
+      "discriminator": null,
+      "routePolicy": "required",
+      "contentOwner": "structured-profile",
+      "allowedTopLevelBlocks": [],
+      "editorCapabilities": [
+        "manage-profile",
+        "manage-seo",
+        "preview",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
       "implementationStatus": "passing",
       "gap": null
     },
@@ -790,6 +806,14 @@
     },
     {
       "scope": "component",
+      "source": "stats-right",
+      "disposition": "consolidate",
+      "targets": ["heading", "richText", "statistics"],
+      "observedCount": 2,
+      "reason": "Preserve the legacy Event stats-right heading, prose, and any authored structured statistics in managed section components."
+    },
+    {
+      "scope": "component",
       "source": "faqs",
       "disposition": "map",
       "targets": ["faq"],
@@ -799,8 +823,8 @@
       "scope": "component",
       "source": "people",
       "disposition": "consolidate",
-      "targets": ["entityList"],
-      "reason": "Flatten reusable people records into the shared entity-list shape."
+      "targets": ["peopleList"],
+      "reason": "Keep explicit People relationships or a live team query so current profiles, ordering, biographies, quotations, portraits, and links remain managed."
     },
     {
       "scope": "component",
@@ -1041,6 +1065,14 @@
       "contentResponsibility": "Insight metadata, taxonomy, listing behavior, and complete public article bodies."
     },
     {
+      "resource": "people",
+      "kind": "payload-collection",
+      "systemOfRecord": "payload",
+      "domainOwner": "editorial",
+      "routeNamespace": "public-site",
+      "contentResponsibility": "Public leadership and careers profiles with source-faithful sparse profile support."
+    },
+    {
       "resource": "hubs",
       "kind": "payload-collection",
       "systemOfRecord": "payload",
@@ -1196,7 +1228,7 @@
   "editorCapabilities": [
     {
       "resourceGroup": "routable-content",
-      "resources": ["pages", "articles", "hubs", "learning-videos"],
+      "resources": ["pages", "articles", "people", "hubs", "learning-videos"],
       "administrator": [
         "create",
         "read",
@@ -1359,7 +1391,7 @@
       "severity": "blocker",
       "status": "passing",
       "enforcement": "production-inventory-verification",
-      "assertion": "A reproducible production inventory proves the approved 297 public routes: 52 WordPress page identities (51 target Pages plus one temporary Redirect), two virtual indexes, 90 posts, 66 venues, 72 hubs, and 15 learning videos, with FAQ and the published-banner-reachable EEX News Page included and Commodities Report excluded.",
+      "assertion": "A reproducible production inventory proves the approved 317 public routes: 52 WordPress page identities (51 target Pages plus one temporary Redirect), two virtual indexes, 90 posts, three unique legacy Event records, 17 People profiles, 66 venues, 72 hubs, and 15 learning videos, with FAQ and the published-banner-reachable EEX News Page included and Commodities Report excluded.",
       "evidence": [
         "migration/scopes/production.ts",
         "migration/inventory/contracts.ts",
@@ -1454,14 +1486,15 @@
       "severity": "blocker",
       "status": "blocked",
       "enforcement": "contract-only",
-      "assertion": "Structural columns, checklist, and lifecycle are implemented; the retained HubSpot form and CookieYes preference targets still require schemas, importer mappings, renderers, and behavior tests.",
+      "assertion": "Structural columns, checklist, lifecycle, and the retained HubSpot form are implemented; the CookieYes preference target still requires its schema, importer mapping, renderer, and behavior tests.",
       "evidence": [
         "migration/mappings/content-architecture.v1.json",
         "migration/transform/blocks.ts",
         "src/blocks/Trayport/components.ts",
-        "src/components/Trayport/BlockRenderer.tsx"
+        "src/components/blocks/registry.tsx",
+        "src/components/HubSpotForm/HubSpotFormMount.tsx"
       ],
-      "remediation": "Implement the retained HubSpot form identifiers through one bounded page/article embed lifecycle and reproduce [wcc_category_list] through CookieYes preference behavior rather than generic shortcode execution."
+      "remediation": "Reproduce [wcc_category_list] through CookieYes preference behavior rather than generic shortcode execution."
     },
     {
       "id": "managed-internal-link-integrity",
@@ -1476,7 +1509,7 @@
         "src/blocks/Trayport/components.ts",
         "migration/transform/blocks.ts"
       ],
-      "remediation": "Reuse one managed link field for CTA-bearing blocks and all five content owner collections, preserve internal source references during transformation, validate rich-text links, and reject missing, private, chained, looped, or unsafe redirect destinations."
+      "remediation": "Reuse one managed link field for CTA-bearing blocks and all six content owner collections, preserve internal source references during transformation, validate rich-text links, and reject missing, private, chained, looped, or unsafe redirect destinations."
     },
     {
       "id": "editor-controls-have-runtime-effect",

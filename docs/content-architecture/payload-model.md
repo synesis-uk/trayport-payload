@@ -3,7 +3,7 @@
 ## Baseline and target
 
 The current implementation includes Payload collections for pages, articles,
-hubs, venues, learning videos, learning-video categories, media, taxonomies,
+people, hubs, venues, learning videos, learning-video categories, media, taxonomies,
 users, non-authenticating customer identities, controlled market-data imports,
 and the protected route registry; globals for navigation, footer, site settings,
 and virtual-index configuration; and the redirects plugin. It stores bulk
@@ -16,30 +16,31 @@ admin structure.
 
 ## Resource model
 
-| Resource | System of record | Public-route role | Production responsibility |
-| --- | --- | --- | --- |
-| `pages` | Payload | Routable | Homepage, standard, product, landing, legal, conversion, interactive, and content-index pages |
-| `articles` | Payload | Routable for full articles | Complete News, Event, and Insights detail bodies and listing metadata |
-| `hubs` | Payload | Routable or map-only by mode | Public market details, map markers, relationships, and `/market-coverage/` index configuration |
-| `venues` | Payload | Routable or relationship-only by mode | Complete public venue details, connectivity data, and `/venue/` index configuration |
-| `learning-videos` | Payload | Routable | Learning Hub watch details, media, taxonomy, access policy, and SEO |
-| `learning-video-categories` | Payload | Non-routable taxonomy | Managed `lh-category` values and Learning Hub filtering order |
-| `media` | Payload + object storage | Non-routable asset | Files, derivatives, captions, attribution, focal point, alt/decorative state, review provenance |
-| `article-categories` | Payload | Non-routable taxonomy | News/Event/Insights discovery and filtering |
-| `asset-classes` | Payload | Non-routable taxonomy | Market classification and stable market-data key |
-| `venue-types` | Payload | Non-routable taxonomy | Broker/exchange/clearing grouping |
-| `regions` | Payload | Non-routable taxonomy | Managed boundaries, centers, points of interest, map grouping, and default view configuration |
-| `navigation` | Payload global | Links to route owners | Primary roots, dropdowns, shared actions, utility links |
-| `footer` | Payload global | Links to route owners | Footer columns, legal links, certification marks, copyright |
-| `site-settings` | Payload global | None | Brand, default SEO, contact, social, notices, consent integration |
-| `route-indexes` | Payload global | Configures two virtual claims | Venue and market-coverage index headings, introductions, and SEO |
-| `redirects` | Payload plugin collection | Claims legacy source paths | URL continuity with validated destinations |
-| `route-registry` | Payload + PostgreSQL | Authoritative route namespace | Protected content, redirect, and virtual claims with a globally unique normalized path |
-| `users` | Payload auth collection | None | CMS authentication and administrator/editor roles |
-| `customer-identities` | Payload | None | Non-authenticating TIM reconciliation/status metadata; never credentials, tokens, sessions, or passwords |
-| `market-data-imports` | Payload + application PostgreSQL | None | Administrator-controlled validation/preview/commit history for transactional market-fact ingestion |
-| `legacySource` | Migration-owned field group | None | Stable source key, legacy ID, original URL, source timestamp, content hash |
-| `app.market_volume_monthly` | Application PostgreSQL | None | Normalized market-volume facts read by the frontend |
+| Resource                    | System of record                 | Public-route role                     | Production responsibility                                                                                |
+| --------------------------- | -------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `pages`                     | Payload                          | Routable                              | Homepage, standard, product, landing, legal, conversion, interactive, and content-index pages            |
+| `articles`                  | Payload                          | Routable for full articles            | Complete News, Event, and Insights detail bodies and listing metadata                                    |
+| `people`                    | Payload                          | Routable                              | Public leadership and Careers profiles, team ordering, biography/quote, portrait, and SEO                |
+| `hubs`                      | Payload                          | Routable or map-only by mode          | Public market details, map markers, relationships, and `/market-coverage/` index configuration           |
+| `venues`                    | Payload                          | Routable or relationship-only by mode | Complete public venue details, connectivity data, and `/venue/` index configuration                      |
+| `learning-videos`           | Payload                          | Routable                              | Learning Hub watch details, media, taxonomy, access policy, and SEO                                      |
+| `learning-video-categories` | Payload                          | Non-routable taxonomy                 | Managed `lh-category` values and Learning Hub filtering order                                            |
+| `media`                     | Payload + object storage         | Non-routable asset                    | Files, derivatives, captions, attribution, focal point, alt/decorative state, review provenance          |
+| `article-categories`        | Payload                          | Non-routable taxonomy                 | News/Event/Insights discovery and filtering                                                              |
+| `asset-classes`             | Payload                          | Non-routable taxonomy                 | Market classification and stable market-data key                                                         |
+| `venue-types`               | Payload                          | Non-routable taxonomy                 | Broker/exchange/clearing grouping                                                                        |
+| `regions`                   | Payload                          | Non-routable taxonomy                 | Managed boundaries, centers, points of interest, map grouping, and default view configuration            |
+| `navigation`                | Payload global                   | Links to route owners                 | Primary roots, dropdowns, shared actions, utility links                                                  |
+| `footer`                    | Payload global                   | Links to route owners                 | Footer columns, legal links, certification marks, copyright                                              |
+| `site-settings`             | Payload global                   | None                                  | Brand, default SEO, contact, social, notices, consent integration                                        |
+| `route-indexes`             | Payload global                   | Configures two virtual claims         | Venue and market-coverage index headings, introductions, and SEO                                         |
+| `redirects`                 | Payload plugin collection        | Claims legacy source paths            | URL continuity with validated destinations                                                               |
+| `route-registry`            | Payload + PostgreSQL             | Authoritative route namespace         | Protected content, redirect, and virtual claims with a globally unique normalized path                   |
+| `users`                     | Payload auth collection          | None                                  | CMS authentication and administrator/editor roles                                                        |
+| `customer-identities`       | Payload                          | None                                  | Non-authenticating TIM reconciliation/status metadata; never credentials, tokens, sessions, or passwords |
+| `market-data-imports`       | Payload + application PostgreSQL | None                                  | Administrator-controlled validation/preview/commit history for transactional market-fact ingestion       |
+| `legacySource`              | Migration-owned field group      | None                                  | Stable source key, legacy ID, original URL, source timestamp, content hash                               |
+| `app.market_volume_monthly` | Application PostgreSQL           | None                                  | Normalized market-volume facts read by the frontend                                                      |
 
 ## Shared document fields
 
@@ -94,8 +95,9 @@ archetype and enforce required paths, root ownership, allowed top-level blocks,
 minimum publishable layout, and content-index listing placement.
 
 The homepage is a singleton and must own `/`. Content indexes require their
-approved listing behavior. Conversion pages remain draft-only until the bounded
-HubSpot embed exists and has approved consent/error behavior. Interactive pages
+approved listing behavior. Conversion pages remain draft-only while the bounded
+HubSpot component is an inert local mount and until it has approved provider,
+consent, and error behavior. Interactive pages
 can publish only with exactly one managed `marketMatrix` component. Legal cookie
 content can use the current route/layout foundation, but the CookieYes Next.js
 integration remains an external-service gate.
@@ -106,24 +108,49 @@ globally reserved.
 
 ## Articles
 
-All 90 listing-linked posts must import as complete `article.full` documents.
-They require:
+The target owns 93 complete `article.full` documents: 90 listing-linked posts
+plus three unique legacy Event records. They require:
 
 - source category/type: News, Event, or Insights;
 - title, excerpt, image, publication/editorial date;
 - complete typed body converted from authoritative `sections`;
 - category relationships;
 - featured flag and order where used;
-- byline and event location where present;
+- byline and, for Events, structured start/end dates, venue/location,
+  coordinates, lifecycle behavior, and retained HubSpot form identity where
+  present;
 - related articles/hubs where present;
 - canonical path and SEO; and
 - redirect/destination handling for any intentional external article.
 
 The `contentMode=listing` state is enforced as non-routable metadata: it cannot
 own a path or layout. A full article requires a path and non-empty allowed
-layout before publication. The current article-type choices must still be
-reconciled with the three observed public index families, including Event, and
-the other production bodies still need migration/remediation.
+layout before publication. All 23 Event owners use `/event/<slug>/`: 20 come
+from canonical WordPress posts and three from unique legacy `events` records.
+When both source types describe the same event, the legacy structured fields
+enrich the canonical Article rather than creating a second owner. All five
+legacy `/events/<slug>/` paths are redirect aliases to the canonical namespace.
+
+The inert local `hubspotForm` component preserves validated source form IDs and
+editor-facing titles, but it does not load HubSpot or submit data. Only Events
+whose legacy source explicitly supplied the expired-event lifecycle flags show
+the finished notice and suppress forms after the end date; ordinary canonical
+Event Articles retain their authored body behavior.
+
+## People
+
+`people` is a versioned, routable Payload collection rather than an embedded
+page-body snapshot. All 17 published WordPress profiles retain their canonical
+paths and source-authored team, role, ordering, portrait, biography, Careers
+quote, external profile, and SEO where present. Optional source fields remain
+optional so a sparse live profile is reproduced without invented copy or a
+placeholder portrait.
+
+The `peopleList` section component supports explicit managed relationships and
+team-backed queries. It therefore preserves curated lists when WordPress names
+specific people while allowing leadership/Careers lists to update from one
+profile record. Public detail rendering, preview, sitemap, route-registry,
+whole-site search, and cache invalidation all use the same collection owner.
 
 ## Hubs
 
@@ -242,10 +269,11 @@ Keep only taxonomies that drive the target experience:
 - regions.
 
 Legacy `post_tag` is omitted unless a documented target filter requires it.
-`product-feature` semantics are absorbed into feature blocks. Reusable people,
-clients, products, offices, lifecycle items, and legacy videos should become
-typed embedded content or first-class relationships only where reuse and
-editorial updates justify a collection. They do not gain routes by default.
+`product-feature` semantics are absorbed into feature blocks. Published People
+are first-class route owners; reusable clients, products, offices, lifecycle
+items, and legacy videos become typed embedded content or relationships only
+where reuse and editorial updates justify a collection. Those other reusable
+records do not gain routes by default.
 
 ## Site configuration
 
@@ -264,8 +292,8 @@ Dropdown roots may intentionally have no link. The import must not turn legacy
 `for_page` values into anchors when `menu_block` exists.
 
 During incremental migration, a navigation or footer destination remains
-root-relative only when one of the 27 accepted roots, five published-banner Page
-dependencies, or two virtual routes owns it. Every other same-site destination is rewritten to its canonical
+root-relative only when its route is in the accepted population or is one of
+the two virtual routes. Every other same-site destination is rewritten to its canonical
 `https://www.trayport.com/` URL. Acceptance currently validates exactly 30 unique
 live fallback paths: 25 leaf destinations plus the five clickable section roots.
 This bridge is removed per route when that destination
@@ -317,7 +345,7 @@ use one shared link shape:
 - email/telephone; and
 - `newTab` plus accessible label where applicable.
 
-The registry and redirect plugin support page, article, hub, venue, and
+The registry and redirect plugin support page, article, person, hub, venue, and
 learning-video route owners. Navigation and other managed-link field shapes
 still need consistent support for all those owners; replacing remaining
 free-text internal URLs and validating every reference is a separate blocked

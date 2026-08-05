@@ -216,16 +216,19 @@ describe('deployment configuration contract', () => {
       'src/database/migrations/20260805_111442_banner_notification_delivery_ledger.ts',
     )
 
-    expect(deploymentSchema.payloadMigrations.slice(-6, -4)).toEqual([
+    expect(deploymentSchema.payloadMigrations.slice(-7, -5)).toEqual([
       '20260804_224938',
       '20260804_225535_market_data_legacy_upsert_compat',
     ])
-    expect(deploymentSchema.payloadMigrations.slice(-4)).toEqual([
+    expect(deploymentSchema.payloadMigrations.slice(-5, -1)).toEqual([
       '20260805_104353_scheduled_page_banners',
       '20260805_104915_banner_recipient_migration_review',
       '20260805_105208_banner_notification_jobs',
       '20260805_111442_banner_notification_delivery_ledger',
     ])
+    expect(deploymentSchema.payloadMigrations.at(-1)).toBe(
+      '20260805_130343_people_events_search_parity',
+    )
     expect(sliceSchema).toContain('CREATE TABLE "app"."market_data_import_staging"')
     expect(sliceSchema).toContain('CREATE UNIQUE INDEX "market_volume_monthly_stable_scope_unique"')
     expect(sliceSchema).toContain('ADD CONSTRAINT "market_volume_monthly_source_import_id_fk"')

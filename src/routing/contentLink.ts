@@ -1,13 +1,13 @@
 import { safeDestination } from './urlPolicy'
 
-type ReferenceValue =
+export type ReferenceValue =
   { _status?: string | null; path?: string | null } | number | string | null | undefined
 
 export type ContentLink = {
   label?: string | null
   type?: 'custom' | 'reference' | null
   reference?: {
-    relationTo?: 'articles' | 'hubs' | 'learning-videos' | 'pages' | 'venues' | null
+    relationTo?: 'articles' | 'hubs' | 'learning-videos' | 'pages' | 'people' | 'venues' | null
     value?: ReferenceValue
   } | null
   url?: string | null

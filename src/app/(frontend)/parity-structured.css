@@ -491,3 +491,125 @@
     min-height: 3rem;
   }
 }
+
+/* Managed people profiles */
+
+.trayport-person {
+  background: var(--color-surface-soft);
+  min-height: 70vh;
+}
+
+.trayport-person--careers {
+  background: linear-gradient(145deg, var(--color-brand-deep), var(--color-brand));
+}
+
+.trayport-person__stage {
+  margin-inline: auto;
+  max-width: 72rem;
+  padding: clamp(3rem, 8vw, 7rem) var(--gutter);
+}
+
+.trayport-person__profile {
+  background: #fff;
+  box-shadow: 0 1.5rem 4rem rgb(0 29 73 / 12%);
+  display: grid;
+  gap: 0;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.trayport-person__identity {
+  align-self: end;
+  padding: clamp(2rem, 5vw, 4.5rem);
+}
+
+.trayport-person__identity h1 {
+  color: var(--color-ink);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+  margin: 0.7rem 0 1.25rem;
+}
+
+.trayport-person__role {
+  color: var(--color-text-muted);
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  margin: 0;
+}
+
+.trayport-person__portrait {
+  aspect-ratio: 4 / 5;
+  background: var(--color-surface-soft);
+  max-height: 38rem;
+  overflow: hidden;
+}
+
+.trayport-person__portrait > div,
+.trayport-person__portrait picture,
+.trayport-person__portrait img {
+  height: 100%;
+  width: 100%;
+}
+
+.trayport-person__portrait img {
+  object-fit: cover;
+  object-position: 50% 20%;
+}
+
+.trayport-person__rule {
+  background: linear-gradient(
+    90deg,
+    var(--color-brand) 0 33%,
+    var(--color-cyan) 33% 66%,
+    var(--color-orange) 66%
+  );
+  height: 0.5rem;
+}
+
+.trayport-person__content {
+  display: grid;
+  gap: 2rem;
+  max-width: 52rem;
+  padding: clamp(2rem, 5vw, 4.5rem);
+}
+
+.trayport-person__quote {
+  background: var(--color-brand-deep);
+  border-left: 0.35rem solid var(--color-orange);
+  color: #fff;
+  font-size: clamp(1.15rem, 2vw, 1.5rem);
+  margin: 0;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.trayport-person__quote p:last-child {
+  margin-bottom: 0;
+}
+
+.trayport-person__external {
+  width: fit-content;
+}
+
+.trayport-person__external svg {
+  height: 1rem;
+  width: 1rem;
+}
+
+@media (min-width: 48rem) {
+  .trayport-person__profile {
+    grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+  }
+
+  .trayport-person__portrait {
+    aspect-ratio: auto;
+  }
+
+  .trayport-person--no-portrait .trayport-person__profile {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trayport-person__rule,
+  .trayport-person__content {
+    grid-column: 1 / -1;
+  }
+}

@@ -4,6 +4,7 @@ import { Articles } from '@/collections/Articles'
 import { Hubs } from '@/collections/Hubs'
 import { LearningVideos } from '@/collections/LearningVideos'
 import { Pages } from '@/collections/Pages'
+import { People } from '@/collections/People'
 import { Venues } from '@/collections/Venues'
 import config from '@/payload.config'
 import {
@@ -19,7 +20,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { contentArchitectureContract } from '../../migration/mappings/contentArchitecture'
 
 type CleanupCollection =
-  'articles' | 'asset-classes' | 'hubs' | 'learning-videos' | 'pages' | 'venues'
+  'articles' | 'asset-classes' | 'hubs' | 'learning-videos' | 'pages' | 'people' | 'venues'
 
 type FieldLike = {
   fields?: unknown[]
@@ -248,7 +249,7 @@ describe.sequential('route archetype invariants', () => {
 
   afterAll(cleanSuiteFixtures, 60_000)
 
-  it('keeps the content-route runtime registry aligned with its 18 contract archetypes', () => {
+  it('keeps the content-route runtime registry aligned with its 19 contract archetypes', () => {
     const contractIDs = contentArchitectureContract.archetypes
       .filter(({ collection }) =>
         contentRouteCollections.includes(collection as ContentRouteCollection),
@@ -257,8 +258,8 @@ describe.sequential('route archetype invariants', () => {
       .sort()
     const runtimeIDs = [...routeArchetypeIDs].sort()
 
-    expect(routeArchetypeIDs).toHaveLength(18)
-    expect(new Set(routeArchetypeIDs)).toHaveLength(18)
+    expect(routeArchetypeIDs).toHaveLength(19)
+    expect(new Set(routeArchetypeIDs)).toHaveLength(19)
     expect(runtimeIDs).toEqual(contractIDs)
   })
 
@@ -293,6 +294,7 @@ describe.sequential('route archetype invariants', () => {
       hubs: Hubs,
       'learning-videos': LearningVideos,
       pages: Pages,
+      people: People,
       venues: Venues,
     }
 

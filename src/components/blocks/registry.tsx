@@ -10,6 +10,7 @@ import {
   FeatureListComponentAdapter,
   GalleryComponentAdapter,
   HeadingComponentAdapter,
+  HubSpotFormComponentAdapter,
   MediaComponentAdapter,
   OfficeComponentAdapter,
   RichTextComponentAdapter,
@@ -19,6 +20,7 @@ import {
   TrayportHeroBlockAdapter,
 } from './adapters'
 import { ContentSectionBlockAdapter } from './layoutAdapters'
+import { PeopleListComponentAdapter } from './peopleListAdapter.server'
 import { ChecklistComponentAdapter, LifecycleComponentAdapter } from './checklistLifecycleAdapters'
 import {
   ArticleListingBlockAdapter,
@@ -39,6 +41,7 @@ import type {
 
 export const trayportSectionComponentAdapterRegistry = {
   heading: HeadingComponentAdapter,
+  hubspotForm: HubSpotFormComponentAdapter,
   richText: RichTextComponentAdapter,
   actions: ActionsComponentAdapter,
   media: MediaComponentAdapter,
@@ -58,6 +61,7 @@ export const trayportSectionComponentAdapterRegistry = {
   checklist: ChecklistComponentAdapter,
   lifecycle: LifecycleComponentAdapter,
   office: OfficeComponentAdapter,
+  peopleList: PeopleListComponentAdapter,
 } satisfies TrayportSectionComponentAdapterRegistry
 
 type KeyedTrayportBlock = {
@@ -104,6 +108,8 @@ const renderTrayportSectionComponent = (
   switch (component.blockType) {
     case 'heading':
       return <HeadingComponentAdapter block={component} index={index} key={key} />
+    case 'hubspotForm':
+      return <HubSpotFormComponentAdapter block={component} index={index} key={key} />
     case 'richText':
       return <RichTextComponentAdapter block={component} index={index} key={key} />
     case 'actions':
@@ -154,6 +160,12 @@ const renderTrayportSectionComponent = (
       return <LifecycleComponentAdapter block={component} index={index} key={key} />
     case 'office':
       return <OfficeComponentAdapter block={component} index={index} key={key} />
+    case 'peopleList':
+      return (
+        <Suspense fallback={<AsyncBlockFallback label="people" />} key={key}>
+          <PeopleListComponentAdapter block={component} draft={draft} index={index} />
+        </Suspense>
+      )
   }
 
   return assertNever(component, 'Trayport section component')

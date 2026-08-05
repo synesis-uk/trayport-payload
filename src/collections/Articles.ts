@@ -3,12 +3,14 @@ import type { CollectionConfig } from 'payload'
 import { admins, adminsOrEditors, publicOrCMSUsers } from '@/access/roles'
 import { trayportLayoutBlocks } from '@/blocks/Trayport/config'
 import { contentPathField } from '@/fields/contentPath'
+import { coordinatesField } from '@/fields/coordinates'
 import { createLegacySourceField } from '@/fields/legacySource'
 import { imageOrVideoUploadField } from '@/fields/mediaUpload'
 import { publishedAtField } from '@/fields/publishedAt'
 import { confirmPathRedirectField } from '@/fields/routeControls'
 import { seoField } from '@/fields/seo'
 import { trayportSlugField } from '@/fields/slug'
+import { validateOptionalHubSpotFormID } from '@/integrations/hubSpotForm'
 import { validateRoutableDocument } from '@/routing/archetypes'
 import { releaseRoutableRoute, syncRoutableRoute } from '@/routing/registry'
 import {
@@ -219,6 +221,104 @@ export const Articles: CollectionConfig = {
               admin: {
                 description: 'Optional event, webinar, or reporting location shown with the date.',
               },
+            },
+            {
+              name: 'eventDetails',
+              type: 'group',
+              admin: {
+                condition: (data) => data?.articleType === 'event',
+                description:
+                  'Structured event details used by event pages and whole-site search. Leave fields empty when they are not known.',
+              },
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'startsAt',
+                      type: 'date',
+                      admin: {
+                        date: { pickerAppearance: 'dayOnly' },
+                        width: '50%',
+                      },
+                    },
+                    {
+                      name: 'endsAt',
+                      type: 'date',
+                      admin: {
+                        date: { pickerAppearance: 'dayOnly' },
+                        width: '50%',
+                      },
+                    },
+                  ],
+                },
+                {
+                  name: 'venueName',
+                  type: 'text',
+                },
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'city',
+                      type: 'text',
+                      admin: { width: '50%' },
+                    },
+                    {
+                      name: 'region',
+                      type: 'text',
+                      admin: { width: '50%' },
+                    },
+                  ],
+                },
+                {
+                  name: 'country',
+                  type: 'text',
+                },
+                coordinatesField(),
+                {
+                  name: 'formTitle',
+                  type: 'text',
+                  admin: {
+                    description: 'Heading retained for the associated HubSpot form.',
+                  },
+                },
+                {
+                  name: 'hubspotFormId',
+                  type: 'text',
+                  admin: {
+                    description:
+                      'Existing HubSpot form identifier. Rendering remains governed by the shared form integration.',
+                  },
+                  index: true,
+                  validate: validateOptionalHubSpotFormID,
+                },
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'showFinishedNotice',
+                      type: 'checkbox',
+                      admin: {
+                        description:
+                          'After the end date, show the legacy “This event has now finished” notice.',
+                        width: '50%',
+                      },
+                      defaultValue: false,
+                    },
+                    {
+                      name: 'hideFormsAfterEnd',
+                      type: 'checkbox',
+                      admin: {
+                        description:
+                          'After the end date, remove HubSpot forms from this event page.',
+                        width: '50%',
+                      },
+                      defaultValue: false,
+                    },
+                  ],
+                },
+              ],
             },
             {
               name: 'relatedArticles',

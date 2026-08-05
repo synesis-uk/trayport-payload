@@ -6,6 +6,7 @@ import { validateExternalHTTPSURL } from './urlPolicy'
 export const contentRouteCollections = [
   'pages',
   'articles',
+  'people',
   'hubs',
   'venues',
   'learning-videos',
@@ -24,6 +25,7 @@ export const routeArchetypeIDs = [
   'page.content-index',
   'article.full',
   'article.listing-metadata',
+  'person.public-profile',
   'learning-video.public-detail',
   'learning-video.listing-metadata',
   'hub.public-page',
@@ -108,6 +110,10 @@ export const resolveArchetype = (
     return document.contentMode === 'full'
       ? { archetype: 'article.full', policy: 'required' }
       : { archetype: 'article.listing-metadata', policy: 'forbidden' }
+  }
+
+  if (collection === 'people') {
+    return { archetype: 'person.public-profile', policy: 'required' }
   }
 
   if (collection === 'hubs') {
@@ -535,6 +541,27 @@ export const validateRoutableDocument = (
     }
     if (resolution.archetype !== 'page.homepage' && nextPath === '/') {
       throw new APIError('Only the homepage can own the root path (/).', 400)
+    }
+
+    if (
+      published &&
+      collection === 'articles' &&
+      next.articleType === 'event' &&
+      !nextPath?.startsWith('/event/')
+    ) {
+      throw new APIError('Published events must use the canonical /event/ namespace.', 400)
+    }
+
+    if (collection === 'articles' && next.articleType === 'event') {
+      const eventDetails =
+        next.eventDetails && typeof next.eventDetails === 'object' && !Array.isArray(next.eventDetails)
+          ? (next.eventDetails as UnknownRecord)
+          : {}
+      const startsAt = Date.parse(text(eventDetails.startsAt))
+      const endsAt = Date.parse(text(eventDetails.endsAt))
+      if (Number.isFinite(startsAt) && Number.isFinite(endsAt) && startsAt > endsAt) {
+        throw new APIError('An event cannot end before it starts.', 400)
+      }
     }
 
     validateLayout(resolution.archetype, layout, published)

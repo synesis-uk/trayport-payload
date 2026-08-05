@@ -3,6 +3,7 @@ import type {
   HubRouteDocument,
   LearningVideoRouteDocument,
   PageRouteDocument,
+  PersonRouteDocument,
   RouteIndexRouteDocument,
   VenueRouteDocument,
 } from '@/data/contentRouteProjection'
@@ -12,6 +13,7 @@ export type ContentResult =
   | { document: HubRouteDocument; kind: 'hub' }
   | { document: LearningVideoRouteDocument; kind: 'learning-video' }
   | { document: PageRouteDocument; kind: 'page' }
+  | { document: PersonRouteDocument; kind: 'person' }
   | { document: VenueRouteDocument; kind: 'venue' }
 
 export type VirtualResult =

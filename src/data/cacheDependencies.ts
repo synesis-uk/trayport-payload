@@ -62,6 +62,7 @@ const relationshipTarget = (
   if (field === 'relatedArticles') return 'articles'
   if (field === 'relatedHubs' || field === 'hub') return 'hubs'
   if (field === 'policyPage') return 'pages'
+  if (field === 'people') return 'people'
   if (field === 'venue') return 'venues'
 
   if (field === 'categories') {
@@ -122,6 +123,11 @@ export const collectProjectionCacheDependencyTags = (
     if (visitedSources?.has(currentSource)) return
     if (visitedSources) visitedSources.add(currentSource)
     else visited.set(current, new Set([currentSource]))
+
+    if (current.blockType === 'peopleList' && current.selectionMode === 'team') {
+      tags.add(cacheDependencyCollectionTag('people'))
+      taggedCollections.add('people')
+    }
 
     const polymorphicCollection = cacheDependencyCollection(current.relationTo)
     if (polymorphicCollection && 'value' in current) {

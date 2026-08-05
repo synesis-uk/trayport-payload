@@ -25,6 +25,7 @@ export const cacheDependencyCollections = [
   'media',
   'offices',
   'pages',
+  'people',
   'regions',
   'venue-types',
   'venues',

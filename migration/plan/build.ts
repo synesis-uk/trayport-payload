@@ -61,6 +61,12 @@ const matchesAcceptedRoute = (route: TargetPlanRoute, accepted: AcceptedRoute): 
   route.archetype === accepted.archetype &&
   route.targetCollection === accepted.targetOwner
 
+const isAcceptedCorpusRoute = (route: TargetPlanRoute): boolean =>
+  route.ownerKind === 'payload-document' &&
+  (route.sourcePostType === 'people' ||
+    route.sourcePostType === 'events' ||
+    (route.sourcePostType === 'post' && route.canonicalPath.startsWith('/event/')))
+
 const buildRoutes = (inventory: ProductionInventory): TargetPlanRoute[] => {
   const archetypes = new Map(
     contentArchitectureContract.archetypes.map((archetype) => [archetype.id, archetype]),
@@ -111,7 +117,10 @@ const buildRoutes = (inventory: ProductionInventory): TargetPlanRoute[] => {
       }
       const acceptedRoute =
         plannedRoute.legacyId === null ? undefined : acceptedRoutesByID.get(plannedRoute.legacyId)
-      if (acceptedRoute && matchesAcceptedRoute(plannedRoute, acceptedRoute)) {
+      if (
+        (acceptedRoute && matchesAcceptedRoute(plannedRoute, acceptedRoute)) ||
+        isAcceptedCorpusRoute(plannedRoute)
+      ) {
         plannedRoute.contentState = 'poc-ready'
       }
       return plannedRoute
@@ -351,6 +360,16 @@ const verifyPlan = (plan: ProductionTargetPlan, missingTerms: string[]): TargetP
     .reduce((total, { count }) => total + count, 0)
   const expectedPayloadDocumentCount = expectedRouteCount - expectedVirtualIndexCount
   const acceptedRoutes = [...pilotScope.roots, ...pilotScope.acceptedRouteDependencies]
+  const acceptedDocumentKeys = new Set(
+    plan.routes
+      .filter(
+        (route) =>
+          isAcceptedCorpusRoute(route) ||
+          acceptedRoutes.some((accepted) => matchesAcceptedRoute(route, accepted)),
+      )
+      .map(({ key }) => key),
+  )
+  const acceptedDocumentCount = acceptedDocumentKeys.size
   const assertions = [
     { id: 'routes', expected: expectedRouteCount, actual: plan.routes.length },
     {
@@ -380,12 +399,12 @@ const verifyPlan = (plan: ProductionTargetPlan, missingTerms: string[]): TargetP
     },
     {
       id: 'poc-ready-documents',
-      expected: acceptedRoutes.length,
+      expected: acceptedDocumentCount,
       actual: plan.routes.filter(({ contentState }) => contentState === 'poc-ready').length,
     },
     {
       id: 'plan-only-documents',
-      expected: expectedPayloadDocumentCount - acceptedRoutes.length,
+      expected: expectedPayloadDocumentCount - acceptedDocumentCount,
       actual: plan.routes.filter(({ contentState }) => contentState === 'plan-only').length,
     },
     {
@@ -412,7 +431,7 @@ const verifyPlan = (plan: ProductionTargetPlan, missingTerms: string[]): TargetP
     },
     {
       id: 'redirect-candidates',
-      expected: 50,
+      expected: 53,
       actual: plan.redirects.length,
     },
     ...pilotScope.roots.map((root) => ({

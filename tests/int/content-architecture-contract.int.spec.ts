@@ -171,7 +171,7 @@ describe('production content-architecture contract', () => {
       ),
     )
     const implementedArticleLayouts = sorted(capture(articleMapper, /layout === '([^']+)'/g))
-    const plannedArticleLayouts = ['form', 'table']
+    const plannedArticleLayouts = ['table']
     const plannedComponentLayouts = contentArchitectureContract.blocks.planned.flatMap(
       ({ sourceLayouts }) =>
         sourceLayouts.filter(({ scope }) => scope === 'component').map(({ source }) => source),
@@ -197,9 +197,32 @@ describe('production content-architecture contract', () => {
         )
         .map(({ observedCount, source }) => [source, observedCount]),
     )
-    expect(plannedArticleCounts).toEqual({
-      form: 16,
-      table: 1,
+    expect(plannedArticleCounts).toEqual({ table: 1 })
+  })
+
+  it('pins the People and stats-right migrations to their managed Payload blocks', () => {
+    const dispositions = Object.fromEntries(
+      contentArchitectureContract.legacyLayoutDispositions
+        .filter(({ scope, source }) =>
+          scope === 'component' && ['people', 'stats-right'].includes(source),
+        )
+        .map(({ disposition, observedCount, source, targets }) => [
+          source,
+          { disposition, observedCount, targets },
+        ]),
+    )
+
+    expect(dispositions).toEqual({
+      people: {
+        disposition: 'consolidate',
+        observedCount: undefined,
+        targets: ['peopleList'],
+      },
+      'stats-right': {
+        disposition: 'consolidate',
+        observedCount: 2,
+        targets: ['heading', 'richText', 'statistics'],
+      },
     })
   })
 
@@ -300,12 +323,7 @@ describe('production content-architecture contract', () => {
       .map(({ targetBlockType }) => targetBlockType)
       .filter((value): value is string => Boolean(value))
 
-    expect(plannedSources).toEqual([
-      'article-top-level:form',
-      'component:column',
-      'component:form',
-      'shortcode:wcc_category_list',
-    ])
+    expect(plannedSources).toEqual(['component:column', 'shortcode:wcc_category_list'])
     expect(plannedBlockTypes.filter((blockType) => implemented.has(blockType))).toEqual([])
     expect(
       contentArchitectureContract.blocks.planned.every(
@@ -315,20 +333,22 @@ describe('production content-architecture contract', () => {
     expect(dispositionSources('shortcode')).toEqual(['wcc_category_list'])
   })
 
-  it('records verified evidence for the approved 297-route source scope', () => {
+  it('records verified evidence for the approved 317-route source scope', () => {
     const scope = contentArchitectureContract.approvedProductionScope
     const routeOwners = Object.fromEntries(
       scope.routeOwners.map(({ count, id, targetOwner }) => [id, { count, targetOwner }]),
     )
 
-    expect(scope.publicRouteTotal).toBe(297)
-    expect(scope.routeOwners.reduce((total, { count }) => total + count, 0)).toBe(297)
+    expect(scope.publicRouteTotal).toBe(317)
+    expect(scope.routeOwners.reduce((total, { count }) => total + count, 0)).toBe(317)
     expect(routeOwners).toEqual({
       'editorial-posts': { count: 90, targetOwner: 'articles' },
       'hub-details': { count: 72, targetOwner: 'hubs' },
       'learning-video-details': { count: 15, targetOwner: 'learning-videos' },
+      'legacy-event-details': { count: 3, targetOwner: 'articles' },
       'market-coverage-index': { count: 1, targetOwner: 'hubs' },
       'page-documents': { count: 51, targetOwner: 'pages' },
+      'people-details': { count: 17, targetOwner: 'people' },
       'temporary-contact-redirect': { count: 1, targetOwner: 'redirects' },
       'venue-details': { count: 66, targetOwner: 'venues' },
       'venue-index': { count: 1, targetOwner: 'venues' },
@@ -384,9 +404,9 @@ describe('production content-architecture contract', () => {
     expect(summary.counts).toMatchObject({
       directAuthoredRouteStrings: 55,
       directPublicRoutes: 54,
-      listingRoutes: 243,
-      routes: 297,
-      redirects: 50,
+      listingRoutes: 263,
+      routes: 317,
+      redirects: 53,
       exclusions: 1,
       unknownArchetypes: 0,
     })
@@ -395,7 +415,7 @@ describe('production content-architecture contract', () => {
     expect(verification.failures).toEqual([])
     expect(verification.assertions.every(({ passed }: { passed: boolean }) => passed)).toBe(true)
     expect(layoutCoverage.summary).toMatchObject({
-      layouts: 40,
+      layouts: 41,
       unknownLayouts: 0,
       taxonomies: 8,
       unknownTaxonomies: 0,
@@ -431,17 +451,19 @@ describe('production content-architecture contract', () => {
       'route-owner:editorial-posts': { actual: 90, expected: 90 },
       'route-owner:hub-details': { actual: 72, expected: 72 },
       'route-owner:learning-video-details': { actual: 15, expected: 15 },
+      'route-owner:legacy-event-details': { actual: 3, expected: 3 },
       'route-owner:market-coverage-index': { actual: 1, expected: 1 },
       'route-owner:page-documents': { actual: 51, expected: 51 },
+      'route-owner:people-details': { actual: 17, expected: 17 },
       'route-owner:temporary-contact-redirect': { actual: 1, expected: 1 },
       'route-owner:venue-details': { actual: 66, expected: 66 },
       'route-owner:venue-index': { actual: 1, expected: 1 },
     })
 
     const manifestRows = routeManifest.trimEnd().split('\n').slice(1)
-    expect(manifestRows.filter((row) => /,included,\d+$/.test(row))).toHaveLength(297)
+    expect(manifestRows.filter((row) => /,included,\d+$/.test(row))).toHaveLength(317)
     expect(manifestRows.filter((row) => /,excluded,\d+$/.test(row))).toHaveLength(1)
-    expect(manifestRows.filter((row) => /,redirect,\d+$/.test(row))).toHaveLength(50)
+    expect(manifestRows.filter((row) => /,redirect,\d+$/.test(row))).toHaveLength(53)
     expect(
       manifestRows.some(
         (row) =>
@@ -472,6 +494,7 @@ describe('production content-architecture contract', () => {
     const expectedResources = [
       'pages',
       'articles',
+      'people',
       'hubs',
       'venues',
       'learning-videos',
@@ -518,6 +541,7 @@ describe('production content-architecture contract', () => {
       'page.legal',
       'page.conversion',
       'page.interactive-market-matrix',
+      'person.public-profile',
       'redirect.temporary-contact',
       'learning-video.public-detail',
       'venue.public-detail',

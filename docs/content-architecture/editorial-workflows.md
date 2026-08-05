@@ -32,7 +32,8 @@ Publication validates:
 
 Interactive Market Matrix pages publish with exactly one managed matrix block.
 Conversion pages can be composed and previewed, but publication remains guarded
-until the bounded HubSpot embed is available. CookieYes behavior and complete
+while the bounded HubSpot component is an inert local mount without approved
+provider and consent behavior. CookieYes behavior and complete
 managed-link validation remain production work under separate gates.
 
 Changing a published path keeps the old route live and reserves the new draft
@@ -56,6 +57,29 @@ published article must fail validation or unpublish the destination.
 
 Index pages query article metadata automatically. Editors do not maintain
 duplicate card content on each index.
+
+Event Articles use the canonical `/event/<slug>/` namespace. Editors manage
+structured start/end dates, venue/location, coordinates, and the retained form
+identity alongside the normal Article body. The five imported
+`/events/<slug>/` paths are aliases, not additional documents. Legacy Event
+records may opt into a finished notice and post-end form suppression; those
+lifecycle flags are not applied globally to ordinary Event posts.
+
+## Manage People
+
+Editors manage each public Person once in the versioned `people` collection:
+
+- canonical profile path and team;
+- role and display order;
+- portrait, biography, and optional Careers quote;
+- optional external profile; and
+- SEO, preview, publication, and scheduling.
+
+The source contains valid sparse profiles, so portrait, role, and biography are
+not invented merely to fill a CMS field. A `peopleList` component either keeps
+an explicit ordered set of managed People relationships or selects a managed
+team. Editing a profile therefore updates its detail and every team-backed list
+without copying prose into Pages.
 
 ## Manage market coverage
 
@@ -237,13 +261,14 @@ accepted, replaced, or removed.
 
 ## HubSpot forms and CookieYes consent
 
-Active legacy form identifiers are retained and will be presented through one
-bounded HubSpot integration rather than a generic embed or a replacement form
-builder. Editors select an approved identifier and manage nearby copy; the
-integration owns loading, blocked, validation/error, consent, success, and
-accessibility states. Real submissions remain disabled until an approved test
-destination and consent flow are available. Conversion pages stay draft-only
-until that boundary exists.
+Active legacy form identifiers are retained through one bounded
+`hubspotForm` component rather than a generic embed or a replacement form
+builder. Editors can select the validated identifier and manage its title. The
+current local mount is intentionally inert: it makes no HubSpot request and
+cannot submit data. The production integration must own loading, blocked,
+validation/error, consent, success, and accessibility states. Real submissions
+remain disabled until an approved test destination and consent flow are
+available. Conversion pages stay draft-only until that boundary exists.
 
 CookieYes remains the consent provider. The Next.js integration must clone the
 live categories and user-visible behavior, preserve policy links, and expose a
@@ -297,7 +322,7 @@ The production content import follows a repeatable pipeline:
    internal CTAs from every published banner, explicit inclusions, virtual
    indexes, recursive dependencies, terminal content links, listing children,
    and redirects.
-3. **Scope validation:** prove the 297-route formula, FAQ and published-banner
+3. **Scope validation:** prove the 317-route formula, FAQ and published-banner
    EEX News inclusion, Commodities
    exclusion, known archetypes, and unique route ownership.
 4. **Extract:** read through the local WordPress runtime so ACF relationships,
@@ -316,8 +341,8 @@ The production content import follows a repeatable pipeline:
 9. **Rerun:** prove equivalent source input does not create duplicates or
    unintended changes.
 10. **Review:** clear or explicitly disposition missing media, accessibility
-   fallbacks, stale links, exclusions, SEO differences, forms, gated video, and
-   interactive behavior.
+    fallbacks, stale links, exclusions, SEO differences, forms, gated video, and
+    interactive behavior.
 
 Run stages 2 and 3 with `make content-inventory` after the WordPress source
 container is available. This inventory command validates the source site
@@ -334,17 +359,17 @@ Inventory run IDs are immutable and cannot be reused; `latest-run.txt` advances
 only after both inventory and target-plan verification pass. Editors do not
 maintain those artifacts.
 
-The target plan is deterministic planning evidence: it accounts for 297 source
-routes including two virtual indexes. It does not load the remaining 263
-plan-only documents. The actual acceptance slice is the 27-root production
-pilot plus five published-banner Page dependencies documented in the repository
-README: 31 rendered content routes plus the temporary Request A Demo redirect.
+The target plan is deterministic planning evidence: it accounts for 317 source
+routes, comprising 315 Payload documents and two virtual indexes. Of those
+documents, 71 are marked pilot-ready and 244 remain plan-only. The accepted
+route-owner boundary is 70 rendered content routes, the temporary Request A
+Demo redirect, and the two virtual indexes.
 
 ## Launch validation
 
 Editorial launch approval requires:
 
-- all 297 source routes accounted for (now verified) and rendered by their
+- all 317 source routes accounted for (now verified) and rendered by their
   assigned target owner (not yet complete);
 - no empty listing-linked detail;
 - no unknown layout or silently dropped source content;
@@ -359,7 +384,7 @@ Editorial launch approval requires:
   evidence.
 
 These are production gates, not conditions for calling the architecture design
-milestone complete. Cross-collection uniqueness and the 18 content-route runtime archetype
+milestone complete. Cross-collection uniqueness and the 19 content-route runtime archetype
 invariants now pass; production readiness remains blocked by complete article
 bodies, complete listing-linked route ownership, deferred HubSpot/CookieYes
 integrations, managed links, editor-control effects, and full editor-role

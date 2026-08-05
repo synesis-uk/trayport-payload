@@ -11,20 +11,20 @@
     },
     {
       "id": "listingRoutes",
-      "expected": 243,
-      "actual": 243,
+      "expected": 263,
+      "actual": 263,
       "passed": true
     },
     {
       "id": "routes",
-      "expected": 297,
-      "actual": 297,
+      "expected": 317,
+      "actual": 317,
       "passed": true
     },
     {
       "id": "redirects",
-      "expected": 50,
-      "actual": 50,
+      "expected": 53,
+      "actual": 53,
       "passed": true
     },
     {
@@ -91,6 +91,18 @@
       "id": "route-owner:editorial-posts",
       "expected": 90,
       "actual": 90,
+      "passed": true
+    },
+    {
+      "id": "route-owner:legacy-event-details",
+      "expected": 3,
+      "actual": 3,
+      "passed": true
+    },
+    {
+      "id": "route-owner:people-details",
+      "expected": 17,
+      "actual": 17,
       "passed": true
     },
     {

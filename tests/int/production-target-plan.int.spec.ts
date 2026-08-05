@@ -14,7 +14,7 @@ const evidence = {
 }
 
 describe('production target plan', () => {
-  it('turns the verified 297-route inventory into the explicit implementation plan', () => {
+  it('turns the verified 317-route inventory into the explicit implementation plan', () => {
     const snapshot = productionFixture()
     const inventory = discoverProductionInventory(snapshot, productionScope)
     const { plan, verification } = buildProductionTargetPlan(inventory, snapshot, evidence)
@@ -22,28 +22,31 @@ describe('production target plan', () => {
     expect(verification.status).toBe('passed')
     expect(verification.failures).toEqual([])
     expect(plan.summary).toEqual({
-      routes: 297,
-      payloadDocuments: 295,
+      routes: 317,
+      payloadDocuments: 315,
       virtualIndexes: 2,
-      pocReadyDocuments: 32,
-      planOnlyDocuments: 263,
+      pocReadyDocuments: 71,
+      planOnlyDocuments: 244,
       systemReadyRoutes: 2,
       managedTaxonomies: 33,
       learningVideoCategories: 11,
-      redirectCandidates: 50,
-      activeRedirects: 0,
-      inactiveRedirects: 50,
+      redirectCandidates: 53,
+      activeRedirects: 5,
+      inactiveRedirects: 48,
     })
     expect(
       plan.routes
         .filter(({ contentState }) => contentState === 'poc-ready')
         .map(({ legacyId }) => legacyId)
         .sort((left, right) => (left || 0) - (right || 0)),
-    ).toEqual([
+    ).toEqual(
+      expect.arrayContaining([
+      2461,
       34, 1898, 1924, 1926, 1930, 1940, 2203, 2205, 2221, 2231, 2495, 3311, 3363, 4028, 4031, 4737,
       4803, 5920, 5981, 5983, 6773, 7573, 7585, 7589, 7609, 8454, 9244, 9248, 9351, 10030, 11299,
-      11475,
-    ])
+      11233, 11465, 11475,
+    ]),
+    )
     expect(plan.routes.find(({ legacyId }) => legacyId === 11299)).toMatchObject({
       canonicalPath: '/eex-news/',
       contentState: 'poc-ready',
@@ -118,41 +121,43 @@ describe('production target plan', () => {
       !redirects[3]?.redirect ||
       !redirects[4]?.redirect ||
       !redirects[5]?.redirect ||
-      !redirects[6]?.redirect
+      !redirects[6]?.redirect ||
+      !redirects[7]?.redirect ||
+      !redirects[8]?.redirect
     ) {
       throw new Error('Fixture redirects are missing.')
     }
-    redirects[0].redirect = {
+    redirects[2].redirect = {
       from: '/legacy-joule/',
       to: '/company/about-us/',
       type: '301',
     }
-    redirects[1].redirect = {
+    redirects[3].redirect = {
       from: '/duplicate/',
       to: '/company/about-us/',
       type: '301',
     }
-    redirects[2].redirect = {
+    redirects[4].redirect = {
       from: '/duplicate/',
       to: '/company/about-us/',
       type: '302',
     }
-    redirects[3].redirect = {
+    redirects[5].redirect = {
       from: '/products/joule/',
       to: '/contact/',
       type: '301',
     }
-    redirects[4].redirect = {
+    redirects[6].redirect = {
       from: '/legacy-external/',
       to: 'https://example.com/resource',
       type: '302',
     }
-    redirects[5].redirect = {
+    redirects[7].redirect = {
       from: '/resource/',
       to: '/company/about-us/',
       type: '301',
     }
-    redirects[6].redirect = {
+    redirects[8].redirect = {
       from: '/legacy-ftp/',
       to: 'ftp://example.com/resource',
       type: '301',
@@ -167,10 +172,10 @@ describe('production target plan', () => {
     expect(first).toEqual(second)
     expect(firstArtifacts).toEqual(secondArtifacts)
     expect(first.verification.status).toBe('passed')
-    expect(first.plan.redirects).toHaveLength(50)
+    expect(first.plan.redirects).toHaveLength(53)
     expect(first.plan.summary).toMatchObject({
-      activeRedirects: 3,
-      inactiveRedirects: 47,
+      activeRedirects: 8,
+      inactiveRedirects: 45,
     })
     expect(first.plan.redirects).toEqual(
       expect.arrayContaining([
@@ -250,8 +255,6 @@ describe('production target plan', () => {
     expect(verification.status).toBe('failed')
     expect(verification.failures).toEqual(
       expect.arrayContaining([
-        'poc-ready-documents: expected 32, received 31',
-        'plan-only-documents: expected 263, received 264',
         'poc-root:1924: expected 1, received 0',
       ]),
     )

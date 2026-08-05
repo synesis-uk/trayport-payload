@@ -12,10 +12,10 @@
   "counts": {
     "directAuthoredRouteStrings": 55,
     "directPublicRoutes": 54,
-    "listingRoutes": 243,
-    "routes": 297,
-    "dependencies": 720,
-    "redirects": 50,
+    "listingRoutes": 263,
+    "routes": 317,
+    "dependencies": 705,
+    "redirects": 53,
     "exclusions": 1,
     "issues": 270,
     "unknownArchetypes": 0,
@@ -27,11 +27,11 @@
   },
   "hashes": {
     "snapshot": "5e979983f2b096bf34bcae70477b13245a871244f44c755ec488e50868a9c36a",
-    "inventory": "24bae8cf1f34baf37b54ffdc031d1be2234832edf22b52550828fed36395e76d",
-    "ndjson": "74e3113cfb571e5b9535119865b17a2063daaafcb36326696c945fe216d055be",
-    "routeManifest": "ea2b3f7d2d2e542799849c6b11cb0f5041a859ed95a0d12b4664a0feb332d55f",
-    "layoutCoverage": "8eca255d581ee669c960da5e32891b720b12c4bf1fc3df3411a5aaa6b12614f8",
-    "verification": "270deed931a5e00f2fa642c49359dcd7270dec6818187cbad0261acf88ada278"
+    "inventory": "62852d44b6218440002130bee1b61c121fc6e59a273028dd8780059fe0df4b36",
+    "ndjson": "c7bbff5977b874515b188dbf4c85fb9182c5af996df471c0da646e2e24a05e50",
+    "routeManifest": "07c2e9422a992244eb985fd5d7ba8d069b37185055cd31ae01f88c5929fbd57f",
+    "layoutCoverage": "99df75d6db2dd0bc2ee8e2ac307bf41e9263f871f868d0f7e2ecff0ca0e49bd7",
+    "verification": "4da07ac27c78340ebf915df6d987a1c3b9e25ccb2a4accae5170a32f440969b0"
   },
   "artifacts": {
     "sourceSnapshot": "source-snapshot.json",

@@ -2,7 +2,13 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { normalizeTrayportSlug } from '../../src/fields/slug'
-import { sourceRecordSchema, type SourcePost, type SourceRecord } from '../contracts/v1'
+import { normalizeHubSpotFormID } from '../../src/integrations/hubSpotForm'
+import {
+  sourceRecordSchema,
+  type SourcePost,
+  type SourceRecord,
+  type SourceReusable,
+} from '../contracts/v1'
 import { assertRunNotAccepted, atomicWriteText, sealAcceptedRun } from '../lib/acceptedRun'
 import { migrationConfig } from '../lib/config'
 import { pilotScope, type AcceptedRouteDependency, type PilotRoot } from '../scopes/pilot'
@@ -26,11 +32,18 @@ import { mapLifecycleReusable } from './lifecycle'
 import {
   mapArticleLayout,
   mapPageLayout,
+  statsRightComponentsFromWordPress,
   type ManagedLinkLookup,
   type ReusableLookup,
 } from './blocks'
 import type { LegacyReference, TargetRecord, TransformCoverage } from './types'
-import { legacyExternalHTTPSDestination, migrationDestination, normalizeMigrationPath } from './url'
+import {
+  legacyExternalHTTPSDestination,
+  migrationDestination,
+  normalizeMigrationPath,
+  ownedPathsFromSource,
+  setMigrationOwnedCorpusPaths,
+} from './url'
 
 const pilotRootByLegacyId = new Map<number, PilotRoot>(
   pilotScope.roots.map((root) => [root.legacyId, root]),
@@ -163,7 +176,9 @@ const truncateAtWord = (value: string, maxLength: number): string => {
   return `${shortened.trimEnd()}…`
 }
 
-const seoFrom = (post: SourcePost): Record<string, unknown> => {
+const seoFrom = (
+  post: Pick<SourcePost, 'acf' | 'featuredMediaId' | 'title'>,
+): Record<string, unknown> => {
   const settings = asObject(post.acf.page_settings)
   const canonical = asObject(settings.canonical)
   const indexFollow = asObject(settings.index_follow)
@@ -197,6 +212,218 @@ const seoFrom = (post: SourcePost): Record<string, unknown> => {
     structuredData,
   }
 }
+
+const wordpressDate = (value: unknown): string | null => {
+  const source = asString(value).trim()
+  if (/^\d{8}$/.test(source)) {
+    return `${source.slice(0, 4)}-${source.slice(4, 6)}-${source.slice(6, 8)}T00:00:00.000Z`
+  }
+  const timestamp = Date.parse(source)
+  return Number.isNaN(timestamp) ? null : new Date(timestamp).toISOString()
+}
+
+type EventDetails = {
+  city?: string
+  coordinates?: { latitude: number; longitude: number }
+  country?: string
+  endsAt: string | null
+  formTitle?: string
+  hideFormsAfterEnd?: boolean
+  hubspotFormId?: string
+  region?: string
+  showFinishedNotice?: boolean
+  startsAt: string | null
+  venueName?: string
+}
+
+export const eventDetailsFromWordPress = (
+  source: Pick<SourcePost, 'acf'> & Partial<Pick<SourcePost, 'postType'>>,
+): EventDetails => {
+  const location = asObject(source.acf.latlng)
+  const latitude = Number(location.lat)
+  const longitude = Number(location.lng)
+  const coordinates =
+    Number.isFinite(latitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    Number.isFinite(longitude) &&
+    longitude >= -180 &&
+    longitude <= 180
+      ? { latitude, longitude }
+      : undefined
+  const startsAt = wordpressDate(source.acf.start_date || source.acf.display_date)
+  const endsAt = wordpressDate(source.acf.date) || startsAt
+  const formId = normalizeHubSpotFormID(source.acf.hubspot_form_id)
+  const legacyLifecycle = source.postType === 'events'
+  const legacyLocation = htmlToPlainText(source.acf.location)
+
+  return {
+    startsAt,
+    endsAt,
+    ...(asString(location.name) ? { venueName: asString(location.name) } : {}),
+    ...(asString(location.city) && asString(location.city) !== asString(location.name)
+      ? { city: asString(location.city) }
+      : !asString(location.name) && legacyLocation
+        ? { city: legacyLocation }
+        : {}),
+    ...(asString(location.state) ? { region: asString(location.state) } : {}),
+    ...(asString(location.country) ? { country: asString(location.country) } : {}),
+    ...(coordinates ? { coordinates } : {}),
+    ...(asString(source.acf.form_title)
+      ? { formTitle: htmlToPlainText(source.acf.form_title) }
+      : {}),
+    ...(formId ? { hubspotFormId: formId } : {}),
+    ...(legacyLifecycle ? { hideFormsAfterEnd: true, showFinishedNotice: true } : {}),
+  }
+}
+
+export const canonicalEventArticleSlug = (post: Pick<SourcePost, 'legacyId' | 'slug'>): string =>
+  post.legacyId === 10974 ? 'commodity-trading-week-2026' : normalizeTrayportSlug(post.slug)
+
+export const canonicalEventPath = (slug: string): string => `/event/${normalizeTrayportSlug(slug)}/`
+
+const readingSection = (components: Array<Record<string, unknown>>): Record<string, unknown> => ({
+  blockType: 'contentSection',
+  surfaceTone: 'white',
+  wrapperTheme: 'none',
+  backgroundOpacity: 'none',
+  surfaceRadius: 'default',
+  surfacePadding: 'none',
+  width: 'reading',
+  spacingTop: 'tight',
+  spacingBottom: 'tight',
+  columnGap: 'regular',
+  columns: [
+    {
+      span: '12',
+      horizontalAlign: 'left',
+      verticalAlign: 'start',
+      heightMode: 'fill',
+      componentGap: 'regular',
+      padding: 'none',
+      surface: 'none',
+      border: 'none',
+      backgroundOpacity: 'none',
+      radius: 'default',
+      components,
+    },
+  ],
+})
+
+const legacyEventLayout = (post: SourcePost): Array<Record<string, unknown>> => {
+  const heading = htmlToPlainText(post.acf.name) || post.title
+  const description = asString(post.acf.description)
+  const eventDetails = eventDetailsFromWordPress(post)
+  const form = eventDetails.hubspotFormId
+    ? {
+        blockType: 'hubspotForm',
+        formId: eventDetails.hubspotFormId,
+        title: eventDetails.formTitle || 'Contact the Trayport team',
+      }
+    : null
+  const layout: Array<Record<string, unknown>> = [
+    {
+      blockType: 'trayportHero',
+      heading,
+      body: asString(post.acf.short_description)
+        ? htmlToLexical(post.acf.short_description)
+        : undefined,
+      media: mediaToken(post.featuredMediaId),
+      actions: [],
+      appearance: post.featuredMediaId ? 'image' : 'light',
+    },
+  ]
+
+  if (description) {
+    layout.push(
+      readingSection([
+        {
+          blockType: 'richText',
+          body: htmlToLexical(description),
+          size: 'regular',
+        },
+      ]),
+    )
+  }
+  for (const sectionValue of asArray(asObject(post.acf.page_content).sections)) {
+    const section = asObject(sectionValue)
+    for (const layoutValue of asArray(section.layout)) {
+      const statsLayout = asObject(layoutValue)
+      if (asString(statsLayout.acf_fc_layout) !== 'stats-right') continue
+      const components = statsRightComponentsFromWordPress(statsLayout)
+      if (components.length) layout.push(readingSection(components))
+    }
+  }
+  if (form) layout.push(readingSection([form]))
+  return layout
+}
+
+const mapLegacyEventPost = (post: SourcePost): TargetRecord => {
+  const slug = normalizeTrayportSlug(post.slug)
+  const data = {
+    title: htmlToPlainText(post.acf.name) || post.title,
+    slug,
+    path: canonicalEventPath(slug),
+    externalDestination: null,
+    excerpt: htmlToPlainText(post.acf.short_description),
+    heroMedia: mediaToken(post.featuredMediaId),
+    displayDate: wordpressDate(post.acf.start_date) || post.publishedAt,
+    publishedAt: post.publishedAt,
+    location: htmlToPlainText(asObject(post.acf.latlng).address),
+    categories: [legacyRef('article-category', 119)],
+    articleType: 'event',
+    eventDetails: eventDetailsFromWordPress(post),
+    contentMode: 'full',
+    featured: false,
+    featuredOrder: null,
+    layout: legacyEventLayout(post),
+    meta: seoFrom(post),
+    _status: post.status === 'publish' ? 'published' : 'draft',
+  }
+  return finalizeTarget({ target: 'articles', legacy: baseLegacy(post), data })
+}
+
+export const personDataFromWordPress = (person: SourceReusable): Record<string, unknown> => {
+  const featuredMediaId = referenceId(person.data.image, 'media')
+  const description = asString(person.data.description)
+  const quote = asString(person.data.quote)
+  const team = asString(person.data.team)
+  const jobRole = htmlToPlainText(person.data.job_role)
+  const image = mediaToken(person.data.image)
+
+  return {
+    title: htmlToPlainText(person.data.name) || person.title,
+    slug: normalizeTrayportSlug(person.path?.split('/').filter(Boolean).at(-1) || person.title),
+    path: person.path || `/people/${normalizeTrayportSlug(person.title)}/`,
+    ...(jobRole ? { jobRole } : {}),
+    team: ['ceo', 'smt', 'head', 'careers'].includes(team) ? team : 'head',
+    displayOrder: Math.max(0, person.menuOrder || 0),
+    ...(image ? { image } : {}),
+    ...(description ? { description: htmlToLexical(description) } : {}),
+    ...(quote ? { quote: htmlToLexical(quote) } : {}),
+    joinedAt: wordpressDate(person.data.date),
+    externalProfileURL: legacyExternalHTTPSDestination(person.data.external_link) || undefined,
+    publishedAt: person.publishedAt || null,
+    meta: seoFrom({
+      acf: { page_settings: person.data.page_settings },
+      featuredMediaId,
+      title: htmlToPlainText(person.data.name) || person.title,
+    }),
+    _status: person.status === 'publish' ? 'published' : 'draft',
+  }
+}
+
+const mapPersonReusable = (person: SourceReusable): TargetRecord =>
+  finalizeTarget({
+    target: 'people',
+    legacy: {
+      source: 'wordpress',
+      legacyId: person.legacyId,
+      originalUrl: sourceURL(person.path),
+      modifiedGmt: person.modifiedAt || null,
+    },
+    data: personDataFromWordPress(person),
+  })
 
 /**
  * Keep venue index copy and visible editorial content separate from SEO metadata.
@@ -371,6 +598,7 @@ const mapPost = (
   allMapHubs: Map<number, Extract<SourceRecord, { entity: 'map-hub' }>>,
   reusables: ReusableLookup,
   links: ManagedLinkLookup,
+  legacyEvent?: SourcePost,
 ): TargetRecord | null => {
   if (post.postType === 'page') {
     const acceptedRoute = acceptedRouteByLegacyId.get(post.legacyId)
@@ -438,7 +666,8 @@ const mapPost = (
 
   if (post.postType === 'post') {
     const root = pilotRootByLegacyId.get(post.legacyId)
-    const isFullArticle = root?.archetype === 'article.full'
+    const isEvent = (post.taxonomies.category || []).includes(119)
+    const isFullArticle = root?.archetype === 'article.full' || post.scopeRole === 'event-listing'
     if (!isFullArticle && !post.path) {
       throw new Error(
         `Listing-only WordPress article ${post.legacyId} has no source path for its live-site destination.`,
@@ -455,15 +684,19 @@ const mapPost = (
     const isFeatured = asBoolean(post.acf.featured)
     const articleType = (post.taxonomies.category || []).includes(111)
       ? 'news'
-      : (post.taxonomies.category || []).includes(119)
+      : isEvent
         ? 'event'
         : post.legacyId === 9351
           ? 'webinar'
           : 'insight'
     const data = {
       title: articleTitle || post.title,
-      slug: normalizeTrayportSlug(post.slug),
-      path: isFullArticle ? post.path || `/insights/${post.slug}/` : null,
+      slug: isEvent ? canonicalEventArticleSlug(post) : normalizeTrayportSlug(post.slug),
+      path: isFullArticle
+        ? isEvent
+          ? canonicalEventPath(canonicalEventArticleSlug(post))
+          : post.path || `/insights/${post.slug}/`
+        : null,
       externalDestination: isFullArticle ? null : liveSourceURL(post.path),
       excerpt: post.excerpt,
       heroMedia: mediaToken(post.featuredMediaId),
@@ -471,6 +704,7 @@ const mapPost = (
       location: asString(post.acf.location),
       categories,
       articleType,
+      ...(isEvent ? { eventDetails: eventDetailsFromWordPress(legacyEvent || post) } : {}),
       contentMode: isFullArticle ? 'full' : 'listing',
       featured: isFeatured,
       featuredOrder: isFeatured ? post.featuredOrder : null,
@@ -1074,6 +1308,18 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
       )
       .map((record) => [record.legacyId, record]),
   )
+  const coreEvents = records.filter(
+    (record): record is SourcePost =>
+      record.entity === 'post' &&
+      record.postType === 'post' &&
+      (record.taxonomies.category || []).includes(119),
+  )
+  const coreEventBySourceSlug = new Map(coreEvents.map((record) => [record.slug, record]))
+  const legacyEvents = records.filter(
+    (record): record is SourcePost => record.entity === 'post' && record.postType === 'events',
+  )
+  const legacyEventBySlug = new Map(legacyEvents.map((record) => [record.slug, record]))
+  setMigrationOwnedCorpusPaths(ownedPathsFromSource(records))
   const videoPosterByMediaId = new Map<number, number>(
     records
       .filter(
@@ -1102,13 +1348,28 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
       )
       .map((record) => [record.regionLegacyId, record]),
   )
-  const managedLinks: ManagedLinkLookup = new Map(
-    records
+  const managedLinks: ManagedLinkLookup = new Map([
+    ...records
       .filter(
         (record): record is Extract<SourceRecord, { entity: 'post' }> => record.entity === 'post',
       )
       .flatMap((record): Array<[number, ManagedLinkTarget]> => {
         const root = pilotRootByLegacyId.get(record.legacyId)
+        if (record.postType === 'post' && (record.taxonomies.category || []).includes(119)) {
+          return [[record.legacyId, { kind: 'article', relationTo: 'articles' }]]
+        }
+        if (record.postType === 'events') {
+          return [
+            [
+              record.legacyId,
+              {
+                kind: 'article',
+                legacyId: coreEventBySourceSlug.get(record.slug)?.legacyId || record.legacyId,
+                relationTo: 'articles',
+              },
+            ],
+          ]
+        }
         if (!root && record.postType === 'page') {
           return [[record.legacyId, { kind: 'page' as const, relationTo: 'pages' as const }]]
         }
@@ -1130,10 +1391,20 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
                     : null
         return target ? [[record.legacyId, target]] : []
       }),
-  )
+    ...[...reusables.values()]
+      .filter((record) => record.postType === 'people' && record.status === 'publish')
+      .map((record): [number, ManagedLinkTarget] => [
+        record.legacyId,
+        { kind: 'person', relationTo: 'people' },
+      ]),
+  ])
 
   for (const record of records) {
     if (record.entity === 'post') {
+      if (record.postType === 'events') {
+        if (!coreEventBySourceSlug.has(record.slug)) targets.push(mapLegacyEventPost(record))
+        continue
+      }
       const target = mapPost(
         record,
         coverage,
@@ -1142,6 +1413,7 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
         mapHubs,
         reusables,
         managedLinks,
+        record.postType === 'post' ? legacyEventBySlug.get(record.slug) : undefined,
       )
       if (target) targets.push(target)
       continue
@@ -1149,6 +1421,15 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
 
     if (record.entity === 'reusable' && record.postType === 'banner') {
       targets.push(mapBannerReusable(record))
+      continue
+    }
+
+    if (
+      record.entity === 'reusable' &&
+      record.postType === 'people' &&
+      record.status === 'publish'
+    ) {
+      targets.push(mapPersonReusable(record))
       continue
     }
 
@@ -1332,6 +1613,27 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
         }),
       )
     }
+  }
+
+  for (const legacyEvent of legacyEvents) {
+    const canonicalOwner = coreEventBySourceSlug.get(legacyEvent.slug) || legacyEvent
+    targets.push(
+      finalizeTarget({
+        target: 'redirects',
+        legacy: baseLegacy(legacyEvent),
+        data: {
+          from: `/events/${normalizeTrayportSlug(legacyEvent.slug)}/`,
+          to: {
+            type: 'reference',
+            reference: {
+              relationTo: 'articles',
+              value: legacyRef('article', canonicalOwner.legacyId),
+            },
+          },
+          type: '301',
+        },
+      }),
+    )
   }
 
   const tradingInJoule = records.find(

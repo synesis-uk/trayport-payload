@@ -80,6 +80,11 @@ export const adminsOrFirstUser: Access = async ({ req }) => {
   const { totalDocs } = await req.payload.count({
     collection: 'users',
     overrideAccess: true,
+    where: {
+      roles: {
+        in: ['admin', 'editor'],
+      },
+    },
   })
 
   return totalDocs === 0

@@ -768,10 +768,19 @@ function tp_export_curated_reusables(array &$mediaIds, array &$termIds): void
         );
     }
 
-    foreach ([2561, 2563, 2570, 2571, 2667, 2668, 2670, 4145, 4146, 4837, 4839, 4841, 4843, 9253, 10395] as $personId) {
+    $personIds = get_posts([
+        'post_type' => 'people',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'fields' => 'ids',
+        'orderby' => 'ID',
+        'order' => 'ASC',
+        'no_found_rows' => true,
+    ]);
+    foreach ($personIds as $personId) {
         tp_export_reusable(
-            $personId,
-            ['image', 'name', 'date', 'team', 'job_role', 'description', 'quote', 'external_link'],
+            (int) $personId,
+            ['image', 'name', 'date', 'team', 'job_role', 'description', 'quote', 'external_link', 'page_settings'],
             $mediaIds,
             $termIds
         );
@@ -1251,7 +1260,7 @@ foreach ($rootIds as $postId) {
             $mediaIds,
             $termIds,
             ['article_header', 'location', 'display_date', 'featured', 'sections', 'page_settings'],
-            false,
+            true,
             'root'
         );
     } elseif ($postType === 'hub') {
@@ -1404,6 +1413,71 @@ foreach ($insightsIds as $articleId) {
     );
 }
 
+$eventArticleIds = get_posts([
+    'post_type' => 'post',
+    'post_status' => 'publish',
+    'posts_per_page' => -1,
+    'fields' => 'ids',
+    'category' => 119,
+    'orderby' => 'ID',
+    'order' => 'ASC',
+    'no_found_rows' => true,
+]);
+foreach ($eventArticleIds as $articleId) {
+    if (in_array((int) $articleId, $rootIds, true)) {
+        continue;
+    }
+    tp_export_post(
+        (int) $articleId,
+        $mediaIds,
+        $termIds,
+        [
+            'tag_text',
+            'article_header',
+            'location',
+            'display_date',
+            'show_contents',
+            'show_related',
+            'show_social',
+            'sections',
+            'page_settings',
+        ],
+        true,
+        'event-listing'
+    );
+}
+
+$legacyEventIds = get_posts([
+    'post_type' => 'events',
+    'post_status' => 'publish',
+    'posts_per_page' => -1,
+    'fields' => 'ids',
+    'orderby' => 'ID',
+    'order' => 'ASC',
+    'no_found_rows' => true,
+]);
+foreach ($legacyEventIds as $eventId) {
+    tp_export_post(
+        (int) $eventId,
+        $mediaIds,
+        $termIds,
+        [
+            'name',
+            'latlng',
+            'start_date',
+            'date',
+            'short_description',
+            'description',
+            'page_content',
+            'form_title',
+            'hubspot_form_id',
+            'page_settings',
+        ],
+        true,
+        'event-listing'
+    );
+}
+
 if ($hubId > 0) {
     tp_emit([
         'entity' => 'hub-connections',
@@ -1443,27 +1517,6 @@ tp_emit_warning(
     'Commodities Report (page 2233) is excluded from the PoC navigation by policy.',
     2233,
     'options.dropdown'
-);
-tp_emit_warning(
-    'deferred-hubspot-form',
-    'info',
-    'Tradesignal legacy HubSpot form is intentionally omitted because HubSpot forms are outside the pilot scope.',
-    1926,
-    'pages.1926.sections_new'
-);
-tp_emit_warning(
-    'deferred-hubspot-form',
-    'info',
-    'E-World meeting-request HubSpot form is intentionally omitted from the pilot.',
-    10030,
-    'posts.10030.sections.2'
-);
-tp_emit_warning(
-    'deferred-hubspot-form',
-    'info',
-    'E-World secondary HubSpot form is intentionally omitted from the pilot.',
-    10030,
-    'posts.10030.sections.4'
 );
 tp_emit_warning(
     'deferred-hubspot-form',

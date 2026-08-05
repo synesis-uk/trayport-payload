@@ -324,17 +324,34 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
       page.legacyId === 10140 ? null : page.legacyId,
     ),
   )
-  const postIDs = [9351, 10030, ...Array.from({ length: 88 }, (_, index) => 20_000 + index)]
-  const posts = postIDs.map((legacyId, index) =>
-    inventoryNode(
-      legacyId,
-      'post',
-      legacyId === 9351
-        ? '/insights/on-demand-webinar-data-analytics-for-energy-traders/'
-        : legacyId === 10030
-          ? '/event/e-world-2026/'
-          : `/insights/article-${index}/`,
-      {
+  const eventPosts = [
+    [8213, 'back-at-e-world-trayport-showcases-the-future-of-energy-trading-in-2025'],
+    [8796, 'celebrating-with-our-clients-at-trayports-inaugural-spring-party-2025'],
+    [10030, 'e-world-2026'],
+    [10070, 'devex-meetup-improving-developer-experience-from-the-trenches'],
+    [10077, 'etcsee-2024'],
+    [10080, 'x-energy-exchanges-2024'],
+    [10093, 'flame-conference-2024'],
+    [10098, 'rec-market-meeting-2024'],
+    [10103, 'north-american-carbon-world'],
+    [10105, 'ippsa-30th-annual-conference'],
+    [10118, 'e-world-2024'],
+    [10439, 'e-world-the-heartbeat-of-global-commodity-markets'],
+    [10960, 'trayport-spring-party-2026'],
+    [10968, 'x-energy-exchanges-2026'],
+    [10974, 'commodity-trading-week-2026'],
+    [11026, 'energy-trading-leaders-summit-2026'],
+    [11041, 'etcsee-2026'],
+    [11051, 'nordic-energy-day-2026'],
+    [11078, 'energy-trading-week-2026'],
+    [11465, 'connect-with-trayport-in-madrid'],
+  ] as const
+  const posts = [
+    inventoryNode(9351, 'post', '/insights/on-demand-webinar-data-analytics-for-energy-traders/', {
+      authoritativeField: 'sections',
+    }),
+    ...eventPosts.map(([legacyId, slug]) =>
+      inventoryNode(legacyId, 'post', `/event/${slug}/`, {
         authoritativeField: 'sections',
         componentLayouts: [
           {
@@ -343,9 +360,47 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
             sourcePath: `posts.${legacyId}.acf.sections[0]`,
           },
         ],
-      },
+      }),
     ),
-  )
+    ...Array.from({ length: 69 }, (_, index) =>
+      inventoryNode(20_000 + index, 'post', `/insights/article-${index + 1}/`, {
+        authoritativeField: 'sections',
+        componentLayouts: [
+          {
+            layout: 'paragraph',
+            scope: 'article-top-level',
+            sourcePath: `posts.${20_000 + index}.acf.sections[0]`,
+          },
+        ],
+      }),
+    ),
+  ]
+  const people = [
+    [2561, 'peter-conroy'],
+    [2563, 'stephen-marcantonio'],
+    [2570, 'bobbie-lambert'],
+    [2571, 'elliott-pickard'],
+    [2667, 'damien-oconnor'],
+    [2668, 'sean-beck'],
+    [2670, 'andreas-hoff'],
+    [4145, 'someone-in-careers-02'],
+    [4146, 'someone-in-careers-03'],
+    [4837, 'daniel-masters'],
+    [4839, 'fuad-arohunfara'],
+    [4841, 'roshni-mistry'],
+    [4843, 'toby-smith'],
+    [9253, 'tmx'],
+    [10395, 'david-robinette'],
+    [11232, 'matthew-brief'],
+    [11233, 'nicole-rosenberg'],
+  ].map(([legacyId, slug]) => inventoryNode(Number(legacyId), 'people', `/people/${slug}/`))
+  const legacyEvents = [
+    [2461, 'eworld-2025'],
+    [2463, 'women-of-silicon-roundabout-2024'],
+    [2464, 'fia-expo-2024'],
+    [8850, 'e-world-2026'],
+    [10476, 'trayport-spring-party-2026'],
+  ].map(([legacyId, slug]) => inventoryNode(Number(legacyId), 'events', `/events/${slug}/`))
   const venues = Array.from({ length: 66 }, (_, index) =>
     inventoryNode(
       index === 0 ? 3363 : 30_000 + index,
@@ -381,10 +436,20 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
       sourcePath: `posts.${learningVideos[0].legacyId}.taxonomies.${taxonomy}`,
     }))
   const redirects = Array.from({ length: 50 }, (_, index) =>
-    inventoryNode(60_000 + index, 'redirect', null, {
+    inventoryNode(index === 0 ? 10233 : index === 1 ? 10967 : 60_000 + index, 'redirect', null, {
       redirect: {
-        from: `/old-${index + 1}/`,
-        to: `/new-${index + 1}/`,
+        from:
+          index === 0
+            ? '/event/e-world-2026/'
+            : index === 1
+              ? '/event/trayport-spring-party-2026/'
+              : `/old-${index + 1}/`,
+        to:
+          index === 0
+            ? '/events/e-world-2026/'
+            : index === 1
+              ? '/events/trayport-spring-party-2026/'
+              : `/new-${index + 1}/`,
         type: '301',
       },
     }),
@@ -482,6 +547,8 @@ export const productionFixture = (): RuntimeInventorySnapshot => {
     nodes: [
       ...pages,
       ...posts,
+      ...people,
+      ...legacyEvents,
       ...venues,
       ...hubs,
       ...learningVideos,

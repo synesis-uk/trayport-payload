@@ -13,7 +13,7 @@
     "content:recover-media": "cross-env TMPDIR=/tmp tsx migration/cli.ts recover-media",
     "content:transform": "cross-env TMPDIR=/tmp tsx migration/cli.ts transform",
     "content:validate": "cross-env TMPDIR=/tmp tsx migration/cli.ts validate",
-    "postbuild": "node scripts/check-public-shell-budget.mjs && node scripts/check-public-route-budgets.mjs && next-sitemap --config next-sitemap.config.cjs",
+    "postbuild": "node scripts/check-build-assets.mjs && node scripts/check-public-shell-budget.mjs && node scripts/check-public-route-budgets.mjs && next-sitemap --config next-sitemap.config.cjs",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "dev:prod": "cross-env NODE_OPTIONS=--no-deprecation rm -rf .next && corepack pnpm build && corepack pnpm start",
     "deploy:migrate": "node scripts/run-migrations.mjs",

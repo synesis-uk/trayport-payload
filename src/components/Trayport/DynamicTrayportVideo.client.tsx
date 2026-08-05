@@ -1,14 +1,17 @@
 'use client'
 
-import dynamic from 'next/dynamic'
+import { lazy, Suspense } from 'react'
 
 import type { TrayportVideoProps } from './TrayportVideo.client'
 
-const TrayportVideoImplementation = dynamic(
-  () => import('./TrayportVideo.client').then((module) => module.TrayportVideo),
-  { ssr: true },
+const LazyTrayportVideo = lazy(() =>
+  import('./TrayportVideo.client').then(({ TrayportVideo }) => ({ default: TrayportVideo })),
 )
 
 export function DynamicTrayportVideo(props: TrayportVideoProps) {
-  return <TrayportVideoImplementation {...props} />
+  return (
+    <Suspense fallback={null}>
+      <LazyTrayportVideo {...props} />
+    </Suspense>
+  )
 }

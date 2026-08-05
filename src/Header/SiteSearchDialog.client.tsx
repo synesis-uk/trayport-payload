@@ -47,25 +47,26 @@ export const SiteSearchDialog = () => {
                 </button>
               </DialogClose>
             </div>
-            <form action="/resources/insights/" method="get" role="search">
+            <form action="/" method="get" role="search">
               <label className="sr-only" htmlFor="site-search-input">
-                Search Trayport insights
+                Search Trayport
               </label>
               <ShellIcon aria-hidden height={20} name="search" width={20} />
               <input
+                autoComplete="off"
                 id="site-search-input"
-                name="q"
-                placeholder="Search insights…"
+                maxLength={100}
+                minLength={2}
+                name="s"
+                placeholder="Search Trayport…"
                 ref={searchInput}
+                required
                 type="search"
               />
               <button type="submit">Search</button>
             </form>
             <DialogDescription asChild>
-              <p>
-                Search currently covers the migrated insight library. Broader content search can be
-                enabled as additional routes are migrated.
-              </p>
+              <p>Search across all public Trayport content.</p>
             </DialogDescription>
           </DialogContent>
         </DialogOverlay>

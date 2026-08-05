@@ -16,8 +16,8 @@ There are three levels:
 “Observed” means present in the approved local WordPress source corpus. A
 layout disposition can be complete in the architecture contract while its
 target implementation is still planned. The retained
-[layout-coverage report](layout-coverage.json) records 453 reachable source
-nodes, 2,325 layout occurrences, 40 layout/scope combinations, and zero unknown
+[layout-coverage report](layout-coverage.json) records 459 reachable source
+nodes, 2,355 layout occurrences, 41 layout/scope combinations, and zero unknown
 layouts for the verified snapshot. It also records all eight reachable taxonomy
 types and their dispositions, with zero unknown taxonomies.
 
@@ -25,37 +25,39 @@ types and their dispositions, with zero unknown taxonomies.
 
 ### Top-level blocks
 
-| Block | Purpose | Principal source |
-| --- | --- | --- |
-| `trayportHero` | Page proposition, copy, media/video, actions, appearance | `hero` |
-| `contentSection` | Theme, width, spacing, anchor, and controlled responsive columns | `columns`, `single`, and article reading sections |
-| `articleListing` | Generated article listing with heading, intro, page size, and filter behavior | Article-list index behavior |
-| `learningVideoListing` | Generated Learning Hub listing with heading, intro, page size, and bounded filters | Learning Hub index behavior |
+| Block                  | Purpose                                                                            | Principal source                                  |
+| ---------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `trayportHero`         | Page proposition, copy, media/video, actions, appearance                           | `hero`                                            |
+| `contentSection`       | Theme, width, spacing, anchor, and controlled responsive columns                   | `columns`, `single`, and article reading sections |
+| `articleListing`       | Generated article listing with heading, intro, page size, and filter behavior      | Article-list index behavior                       |
+| `learningVideoListing` | Generated Learning Hub listing with heading, intro, page size, and bounded filters | Learning Hub index behavior                       |
 
 ### Section components
 
-| Component | Purpose | Principal source layouts |
-| --- | --- | --- |
-| `heading` | Eyebrow and controlled H2–H4 heading | `header`, `subheader`, `preheader`, article `index-point` and top-level `header` |
-| `richText` | Semantic Lexical body with controlled text size; imported H2-H4 headings, ordered/unordered lists, and nested lists remain structured nodes | `paragraph`, curated article `post-content` |
-| `actions` | Managed calls to action | `buttons` |
-| `media` | Managed image/video/file or validated external video | `image`, `videos`, article `media` |
-| `featureList` | Grid, carousel, or lead-plus-carousel feature items with bounded plain, image, or icon displays and opt-in actions | `features`, `products`, `regions`, product-feature semantics |
-| `standaloneIcon` | Bounded gas, power, or emissions icon | `icon` |
-| `statistics` | Structured value/label/description items | `stats` |
-| `faq` | Structured questions and answers | `faqs` |
-| `entityList` | People, clients, venues, or general entities | `people`, `clients` |
-| `timeline` | Ordered labelled milestones | `timeline` |
-| `checklist` | Structured accessible checklist with bounded marker style | `checklist` |
-| `lifecycle` | Ordered lifecycle stages with managed supporting content | `lifecycle` |
-| `dataTable` | Accessible caption, headers, rows, and cells | `table` |
-| `gallery` | Ordered managed media and captions | `gallery` |
-| `divider` | Semantic line or spacing break | `divider` |
-| `marketCoverage` | Global connection schematic or full regional connectivity view backed by managed regions/hubs/venues | `connections`, `markets-map` |
-| `embed` | Validated external embed with poster | compatible legacy video/embed semantics |
-| `dataChart` | Bounded volume/price chart query related to managed imported Asset Class and Hub records, backed by application PostgreSQL | `charts-new` |
-| `office` | Structured managed office relationship with address, contact, and map behavior | `office` |
-| `marketMatrix` | Filtered, accessible connectivity matrix with CSV and formatted Excel export | Market Matrix page behavior backed by managed hub, venue, taxonomy, and region records |
+| Component        | Purpose                                                                                                                                     | Principal source layouts                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `heading`        | Eyebrow and controlled H2–H4 heading                                                                                                        | `header`, `subheader`, `preheader`, article `index-point` and top-level `header`       |
+| `richText`       | Semantic Lexical body with controlled text size; imported H2-H4 headings, ordered/unordered lists, and nested lists remain structured nodes | `paragraph`, curated article `post-content`                                            |
+| `actions`        | Managed calls to action                                                                                                                     | `buttons`                                                                              |
+| `media`          | Managed image/video/file or validated external video                                                                                        | `image`, `videos`, article `media`                                                     |
+| `featureList`    | Grid, carousel, or lead-plus-carousel feature items with bounded plain, image, or icon displays and opt-in actions                          | `features`, `products`, `regions`, product-feature semantics                           |
+| `standaloneIcon` | Bounded gas, power, or emissions icon                                                                                                       | `icon`                                                                                 |
+| `statistics`     | Structured value/label/description items                                                                                                    | `stats`                                                                                |
+| `faq`            | Structured questions and answers                                                                                                            | `faqs`                                                                                 |
+| `entityList`     | Clients, venues, or general entities                                                                                                        | `clients` and compatible relationship lists                                            |
+| `peopleList`     | Explicit managed People relationships or a team-backed profile query                                                                        | `people`                                                                               |
+| `timeline`       | Ordered labelled milestones                                                                                                                 | `timeline`                                                                             |
+| `checklist`      | Structured accessible checklist with bounded marker style                                                                                   | `checklist`                                                                            |
+| `lifecycle`      | Ordered lifecycle stages with managed supporting content                                                                                    | `lifecycle`                                                                            |
+| `dataTable`      | Accessible caption, headers, rows, and cells                                                                                                | `table`                                                                                |
+| `gallery`        | Ordered managed media and captions                                                                                                          | `gallery`                                                                              |
+| `divider`        | Semantic line or spacing break                                                                                                              | `divider`                                                                              |
+| `marketCoverage` | Global connection schematic or full regional connectivity view backed by managed regions/hubs/venues                                        | `connections`, `markets-map`                                                           |
+| `embed`          | Validated external embed with poster                                                                                                        | compatible legacy video/embed semantics                                                |
+| `dataChart`      | Bounded volume/price chart query related to managed imported Asset Class and Hub records, backed by application PostgreSQL                  | `charts-new`                                                                           |
+| `office`         | Structured managed office relationship with address, contact, and map behavior                                                              | `office`                                                                               |
+| `marketMatrix`   | Filtered, accessible connectivity matrix with CSV and formatted Excel export                                                                | Market Matrix page behavior backed by managed hub, venue, taxonomy, and region records |
+| `hubspotForm`    | Validated HubSpot form identity and editor-facing title with an inert local mount                                                           | Legacy `form`; provider loading/submission remains disabled until external acceptance  |
 
 The current contract tests prove that every implemented block has a frontend
 renderer and that the current importer emits only configured implemented block
@@ -67,7 +69,8 @@ rules:
   videos are limited to `trayportHero` and `contentSection`;
 - article listing metadata, map-only hubs, and relationship-only venues cannot
   own layout blocks; and
-- conversion pages remain draft-only until the bounded HubSpot form integration exists;
+- conversion pages remain draft-only while the current `hubspotForm` mount is
+  local/inert and lacks approved provider, consent, error, and success behavior;
   interactive Market Matrix pages require exactly one managed matrix component; and
 - publishing a Data Chart requires an Asset Class with a stable managed
   market-data key. The supported shapes are execution-type volume stacked columns,
@@ -107,18 +110,18 @@ column layout defaults. The importer does not emit the obsolete generic `theme` 
 These passing route/block invariants do not prove that the deferred external
 integrations or full production population/review are complete.
 
-## Deferred external-integration targets
+## External-integration delivery state
 
-| Target | Kind | Source | Required production behavior |
-| --- | --- | --- | --- |
-| `hubspotForm` | Section component | `form` | Retained approved HubSpot form identifier, bounded embed lifecycle, consent, validation/error/success, and accessible status behavior |
-| `cookiePreferences` | Consent integration | `[wcc_category_list]` | CookieYes category/preferences view that clones live behavior; no generic shortcode execution |
+| Target              | Current local state                                                                                               | Required production behavior                                                                                                             |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `hubspotForm`       | Implemented schema, import transform, typed renderer, and inert local mount; no third-party request or submission | Retained approved HubSpot form identifier, bounded provider lifecycle, consent, validation/error/success, and accessible status behavior |
+| `cookiePreferences` | Planned                                                                                                           | CookieYes category/preferences view that clones live behavior; no generic shortcode execution                                            |
 
-Each deferred integration is incomplete until its Payload schema/configuration,
-importer mapping, frontend renderer, provider lifecycle, accessibility behavior,
-and tests all exist. The HubSpot target must support the active page and article
-source cases through one bounded implementation. The publication guard prevents
-conversion pages from going live while that integration is absent.
+External acceptance is incomplete until the provider lifecycle, accessibility
+behavior, consent, and tests all exist. The HubSpot data boundary now supports
+active Page and Article source cases through one bounded component, but its
+inert local mount is deliberately not launch-ready. The publication guard
+therefore still prevents conversion pages from going live.
 
 ## Approved composed-page observations
 
@@ -126,40 +129,40 @@ The following counts cover the 42 in-scope
 `layouts/default-new.blade.php` pages after applying the production decision:
 FAQ is included and Commodities Report is excluded.
 
-| Source layout | Occurrences | Target disposition |
-| --- | ---: | --- |
-| `hero` | 32 | `trayportHero` |
-| `columns` | 155 | `contentSection` |
-| `single` | 39 | one-column `contentSection` |
-| `column` | 374 | `contentSection.columns` structure |
-| `header` | 264 | `heading` |
-| `subheader` | 56 | `heading` |
-| `preheader` | 37 | `heading.eyebrow` or a constrained heading |
-| `paragraph` | 183 | `richText` |
-| `buttons` | 60 | `actions` |
-| `image` | 61 | `media` |
-| `videos` | 2 | `media` |
-| `features` | 60 | `featureList` |
-| `icon` | 3 | `standaloneIcon` |
-| `stats` | 2 | `statistics` |
-| `faqs` | 12 | `faq` |
-| `people` | 2 | `entityList(kind=people)` |
-| `products` | 10 | `featureList(presentation=grid, display=image)` |
-| `clients` | 8 | `entityList(kind=clients)` |
-| `timeline` | 1 | `timeline` |
-| `table` | 2 | `dataTable` |
-| `gallery` | 5 | `gallery` |
-| `divider` | 27 | `divider` |
-| `connections` | 12 | `marketCoverage` |
-| `charts-new` | 7 | `dataChart` plus application PostgreSQL facts; six active instances are imported by the accepted navigation slice |
-| `form` | 8 | deferred bounded `hubspotForm` using retained source identifier |
-| `checklist` | 2 | implemented `checklist` |
-| `lifecycle` | 1 | implemented `lifecycle` |
-| `market-matrix` | 1 | implemented `marketMatrix` behavior on the accepted route |
-| `office` | 12 | implemented `office`; full production transformer/remediation coverage remains open |
-| `markets-map` | 5 | implemented `marketCoverage(mode=regionalConnectivity)` with managed map data and Mapbox runtime |
-| `regions` | 3 | consolidated to linked `featureList` items |
-| `icon` | 3 | Omit source wrapper; target component selects decorative icon |
+| Source layout   | Occurrences | Target disposition                                                                                                |
+| --------------- | ----------: | ----------------------------------------------------------------------------------------------------------------- |
+| `hero`          |          32 | `trayportHero`                                                                                                    |
+| `columns`       |         155 | `contentSection`                                                                                                  |
+| `single`        |          39 | one-column `contentSection`                                                                                       |
+| `column`        |         374 | `contentSection.columns` structure                                                                                |
+| `header`        |         264 | `heading`                                                                                                         |
+| `subheader`     |          56 | `heading`                                                                                                         |
+| `preheader`     |          37 | `heading.eyebrow` or a constrained heading                                                                        |
+| `paragraph`     |         183 | `richText`                                                                                                        |
+| `buttons`       |          60 | `actions`                                                                                                         |
+| `image`         |          61 | `media`                                                                                                           |
+| `videos`        |           2 | `media`                                                                                                           |
+| `features`      |          60 | `featureList`                                                                                                     |
+| `icon`          |           3 | `standaloneIcon`                                                                                                  |
+| `stats`         |           2 | `statistics`                                                                                                      |
+| `faqs`          |          12 | `faq`                                                                                                             |
+| `people`        |           2 | `peopleList` using explicit relationships or a managed team query                                                 |
+| `products`      |          10 | `featureList(presentation=grid, display=image)`                                                                   |
+| `clients`       |           8 | `entityList(kind=clients)`                                                                                        |
+| `timeline`      |           1 | `timeline`                                                                                                        |
+| `table`         |           2 | `dataTable`                                                                                                       |
+| `gallery`       |           5 | `gallery`                                                                                                         |
+| `divider`       |          27 | `divider`                                                                                                         |
+| `connections`   |          12 | `marketCoverage`                                                                                                  |
+| `charts-new`    |           7 | `dataChart` plus application PostgreSQL facts; six active instances are imported by the accepted navigation slice |
+| `form`          |           8 | bounded `hubspotForm` using retained source identifier; current local mount is inert                              |
+| `checklist`     |           2 | implemented `checklist`                                                                                           |
+| `lifecycle`     |           1 | implemented `lifecycle`                                                                                           |
+| `market-matrix` |           1 | implemented `marketMatrix` behavior on the accepted route                                                         |
+| `office`        |          12 | implemented `office`; full production transformer/remediation coverage remains open                               |
+| `markets-map`   |           5 | implemented `marketCoverage(mode=regionalConnectivity)` with managed map data and Mapbox runtime                  |
+| `regions`       |           3 | consolidated to linked `featureList` items                                                                        |
+| `icon`          |           3 | Omit source wrapper; target component selects decorative icon                                                     |
 
 Ten of these 42 pages have no source hero. A hero must therefore be allowed
 but not globally required; individual semantic archetypes may impose a stricter
@@ -173,24 +176,24 @@ remain unchanged.
 
 ## Special page-template observations
 
-| Source template | Observed layouts/behavior | Target |
-| --- | --- | --- |
-| Four article-list pages | One `hero` each plus a generated post query | `page.content-index`, hero, constrained listing |
-| Learning Hub home | `hero`, `single`, one nested `features`, plus 15 generated video links | Content index plus `learning-videos` query |
-| Market matrix | One `columns` with nested `column`, `header`, and `paragraph`, plus generated matrix | Interactive page plus `marketMatrix` |
-| Cookie consent | Two `columns` rows; three nested `column`, `header`, and `paragraph` layouts; `[wcc_category_list]` | Legal page plus deferred CookieYes-backed `cookiePreferences` |
-| Two legal article pages | Legacy `sections` body | Legal page using article-style reading sections |
+| Source template         | Observed layouts/behavior                                                                           | Target                                                        |
+| ----------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Four article-list pages | One `hero` each plus a generated post query                                                         | `page.content-index`, hero, constrained listing               |
+| Learning Hub home       | `hero`, `single`, one nested `features`, plus 15 generated video links                              | Content index plus `learning-videos` query                    |
+| Market matrix           | One `columns` with nested `column`, `header`, and `paragraph`, plus generated matrix                | Interactive page plus `marketMatrix`                          |
+| Cookie consent          | Two `columns` rows; three nested `column`, `header`, and `paragraph` layouts; `[wcc_category_list]` | Legal page plus deferred CookieYes-backed `cookiePreferences` |
+| Two legal article pages | Legacy `sections` body                                                                              | Legal page using article-style reading sections               |
 
 The two legal pages contain these authoritative legacy `sections` layouts:
 
-| Layout | Occurrences |
-| --- | ---: |
-| `buttons` | 3 |
-| `divider` | 5 |
-| `header` | 8 |
-| `index-point` | 12 |
-| `paragraph` | 8 |
-| `post-content` | 4 |
+| Layout         | Occurrences |
+| -------------- | ----------: |
+| `buttons`      |           3 |
+| `divider`      |           5 |
+| `header`       |           8 |
+| `index-point`  |          12 |
+| `paragraph`    |           8 |
+| `post-content` |           4 |
 
 `post-content` is converted to constrained rich text/reading-section content;
 it is not retained as an executable WordPress template fragment.
@@ -200,15 +203,15 @@ it is not retained as an executable WordPress template fragment.
 All 90 published post children use authoritative legacy `sections`.
 
 | Source layout | News (31) | Event (20) | Insights (39) | Total |
-| --- | ---: | ---: | ---: | ---: |
-| `paragraph` | 53 | 39 | 195 | 287 |
-| `divider` | 22 | 32 | 138 | 192 |
-| `index-point` | 9 | 24 | 126 | 159 |
-| `buttons` | 4 | 3 | 47 | 54 |
-| `media` | 15 | 18 | 45 | 78 |
-| `header` | 1 | 3 | 30 | 34 |
-| `form` | 0 | 16 | 0 | 16 |
-| `table` | 0 | 0 | 1 | 1 |
+| ------------- | --------: | ---------: | ------------: | ----: |
+| `paragraph`   |        53 |         39 |           195 |   287 |
+| `divider`     |        22 |         32 |           138 |   192 |
+| `index-point` |         9 |         24 |           126 |   159 |
+| `buttons`     |         4 |          3 |            47 |    54 |
+| `media`       |        15 |         18 |            45 |    78 |
+| `header`      |         1 |          3 |            30 |    34 |
+| `form`        |         0 |         16 |             0 |    16 |
+| `table`       |         0 |          0 |             1 |     1 |
 
 Featured records observed: 1 News, 3 Event, and 4 Insights. The importer
 preserves featured state/order as child metadata; it does not copy featured
@@ -223,7 +226,17 @@ Article top-level layouts normalize to reading-width `contentSection` blocks:
 - `index-point` → anchored `heading`;
 - `header` → `heading`;
 - `table` → `dataTable`; and
-- `form` → deferred bounded `hubspotForm` using its retained source identifier.
+- `form` → bounded `hubspotForm` using its retained source identifier; its
+  current local mount is inert.
+
+### Legacy Event records
+
+Five published legacy `events` records carry structured date, location, form,
+and lifecycle data. Two match canonical Event posts and enrich those Article
+owners; three become additional `article.full` documents. All five legacy
+`/events/<slug>/` paths redirect to `/event/<slug>/`. Finished notices and
+post-end form suppression are retained only for records that came through this
+legacy lifecycle, avoiding a new global rule for ordinary Event posts.
 
 ## Structured record observations
 
@@ -253,24 +266,33 @@ caption, image, order, permissions, and product/category/tag associations.
 These map to the dedicated `learning-videos` model and its explicit access
 policy.
 
+### People
+
+All 17 published People records map to the dedicated routable `people`
+collection. Profile fields remain source-faithful and optional where WordPress
+is sparse. Page-level People components become `peopleList` blocks backed by
+explicit relationships or one of the managed leadership, senior-management,
+department-head, or Careers teams.
+
 ### Lifecycle and component dependencies
 
 Twelve published lifecycle records support the observed lifecycle component.
 They are dependency content rather than additional public routes. The same rule
-applies to referenced client, people, product, office, and reusable-video
-records unless a separate route decision is approved.
+applies to referenced client, product, office, and reusable-video records unless
+a separate route decision is approved. Published People are no longer
+dependency-only: their 17 canonical profiles are route owners.
 
 ### Taxonomy dispositions
 
-| Source taxonomy | Target disposition |
-| --- | --- |
-| `category` | Managed `article-categories` |
-| `lh-category` | Managed `learning-video-categories` related from `learning-videos` for the live Learning Hub filter |
-| `asset-class` | Managed `asset-classes` |
-| `venue-type` | Managed `venue-types` |
-| `region` | Managed `regions` |
-| `post_tag` | Omit; not used by the agreed article discovery experience |
-| `product-feature` | Consolidate into typed `featureList` content |
+| Source taxonomy     | Target disposition                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `category`          | Managed `article-categories`                                                                                             |
+| `lh-category`       | Managed `learning-video-categories` related from `learning-videos` for the live Learning Hub filter                      |
+| `asset-class`       | Managed `asset-classes`                                                                                                  |
+| `venue-type`        | Managed `venue-types`                                                                                                    |
+| `region`            | Managed `regions`                                                                                                        |
+| `post_tag`          | Omit; not used by the agreed article discovery experience                                                                |
+| `product-feature`   | Consolidate into typed `featureList` content                                                                             |
 | `software-category` | Omit; reachable only through a dependency-only product and unused by target navigation, filtering, rendering, or routing |
 
 ## Authoritative-field rule
@@ -279,8 +301,8 @@ Only the body source declared for an archetype is traversed:
 
 - `sections_new` for composed/current page templates;
 - `sections` for legal article pages and published posts; and
-- structured ACF fields for hubs, venues, learning videos, and reusable
-  entities.
+- structured ACF fields for legacy Events, People, hubs, venues, learning
+  videos, and reusable entities.
 
 Stale `sections`, `page_content`, HTML caches, and template output are not
 merged into the target. This prevents duplicate copy and layouts from entering
@@ -309,13 +331,13 @@ Production block implementation passes only when:
   transform.
 
 The contract and retained inventory pass disposition totality for the observed
-source, and the 18 content-route runtime archetypes pass their current
+source, and the 19 content-route runtime archetypes pass their current
 allowlist/publication invariants. The remaining HubSpot and CookieYes targets
 still block `production-block-catalogue-implemented`; runtime rejection of
 unsupported publication is a safe invariant, not an implementation of the
 missing external integration.
 
-The production inventory command also emits a deterministic 297-route target
+The production inventory command also emits a deterministic 317-route target
 plan:
 
 ```bash
@@ -323,7 +345,6 @@ make content-inventory
 ```
 
 That plan records where these block transforms will be needed, but it is
-planning evidence only. The current acceptance slice covers 27 source roots plus
-five published-banner Page dependencies—31 rendered content routes and one
-temporary managed redirect—and the other 263
-plan-only production bodies have not been transformed or content-remediated.
+planning evidence only. It describes 315 Payload documents: 71 pilot-ready
+(70 rendered content owners plus the temporary managed redirect) and 244
+plan-only, alongside two system-ready virtual indexes.

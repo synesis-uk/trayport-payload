@@ -10,6 +10,7 @@ import {
 } from './helpers'
 import { htmlToLexical, htmlToPlainText } from './lexical'
 import type { LegacyReference, TransformCoverage } from './types'
+import { normalizeHubSpotFormID } from '../../src/integrations/hubSpotForm'
 import { migrationDestination } from './url'
 
 type TargetComponent = Record<string, unknown> & { blockType: string }
@@ -19,7 +20,8 @@ export type ManagedLinkLookup = Map<
   number,
   | {
       kind: LegacyReference['$legacyRef']
-      relationTo: 'articles' | 'hubs' | 'learning-videos' | 'pages' | 'venues'
+      legacyId?: number
+      relationTo: 'articles' | 'hubs' | 'learning-videos' | 'pages' | 'people' | 'venues'
     }
   | { url: string }
 >
@@ -58,6 +60,21 @@ const REGION_PAGE_LEGACY_ID_BY_REGION_LEGACY_ID: Record<number, number> = {
 
 const count = (target: Record<string, number>, key: string): void => {
   target[key] = (target[key] || 0) + 1
+}
+
+export const hubSpotFormComponentFromWordPress = (
+  value: unknown,
+): { blockType: 'hubspotForm'; formId: string; title: string } | null => {
+  const source = asObject(value)
+  const form = asObject(source.form)
+  const formId = normalizeHubSpotFormID(form.hubspot_form_id || source.hubspot_form_id)
+  if (!formId) return null
+
+  return {
+    blockType: 'hubspotForm',
+    formId,
+    title: htmlToPlainText(form.form_title || source.form_title) || 'Contact the Trayport team',
+  }
 }
 
 const normalizedFeatureIcon = (value: unknown): string | undefined => {
@@ -256,7 +273,7 @@ const linkFromValue = (
           type: 'reference',
           reference: {
             relationTo: target.relationTo,
-            value: legacyRef(target.kind, numericValue),
+            value: legacyRef(target.kind, target.legacyId || numericValue),
           },
           newTab: asString(link.target) === '_blank',
         }
@@ -327,6 +344,37 @@ const entityItemsFrom = (
       }
     })
     .filter(Boolean) as Record<string, unknown>[]
+}
+
+export const statsRightComponentsFromWordPress = (
+  value: unknown,
+): TargetComponent[] => {
+  const source = asObject(value)
+  const content = asObject(source.content || value)
+  const components: TargetComponent[] = []
+  const heading = htmlToPlainText(asObject(content.header).text)
+  const paragraph = asString(content.paragraph)
+  const items = asArray(content.stats)
+    .map((candidate) => {
+      const item = asObject(candidate)
+      const data = asObject(item.data)
+      const value = `${asString(data.prefix)}${asString(data.number)}${asString(data.suffix)}`
+      const label = htmlToPlainText(item.title)
+      const description = htmlToPlainText(item.description)
+      return value || label || description
+        ? { value: value || '—', label: label || 'Statistic', description }
+        : null
+    })
+    .filter(Boolean) as Record<string, unknown>[]
+
+  if (heading) {
+    components.push({ blockType: 'heading', text: heading, level: 'h2', appearance: 'h3' })
+  }
+  if (paragraph) {
+    components.push({ blockType: 'richText', body: htmlToLexical(paragraph), size: 'regular' })
+  }
+  if (items.length) components.push({ blockType: 'statistics', items })
+  return components
 }
 
 const productFeatureItemsFrom = (
@@ -746,6 +794,8 @@ const mapComponent = (
         .filter(Boolean) as Record<string, unknown>[]
       return items.length ? [{ blockType: 'statistics', items }] : []
     }
+    case 'stats-right':
+      return statsRightComponentsFromWordPress(component)
     case 'faqs': {
       const items = asArray(component.content || component.faqs)
         .map((candidate) => {
@@ -774,25 +824,54 @@ const mapComponent = (
           ]
         : []
     }
-    case 'people':
-    case 'clients': {
+    case 'people': {
       const category = asObject(component.category)
+      const selectionMode = asString(category.type) === 'team' ? 'team' : 'specific'
+      const team = asString(asObject(category.team).team)
       const source =
-        layout === 'people' && asString(category.type) === 'team'
+        selectionMode === 'team'
           ? [...reusables.values()]
               .filter(
-                ({ data, postType }) =>
-                  postType === 'people' &&
-                  asString(data.team) === asString(asObject(category.team).team),
+                ({ data, postType, status }) =>
+                  postType === 'people' && status === 'publish' && asString(data.team) === team,
               )
-              .map(({ legacyId, path, title }) => ({
-                $ref: 'post',
-                id: legacyId,
-                path,
-                title,
-              }))
-          : category.specific || category.single
-      const items = entityItemsFrom(source, reusables, links)
+              .sort(
+                (left, right) =>
+                  (left.menuOrder || 0) - (right.menuOrder || 0) ||
+                  Date.parse(right.publishedAt || '') - Date.parse(left.publishedAt || '') ||
+                  right.legacyId - left.legacyId,
+              )
+          : Array.isArray(category.specific)
+            ? category.specific
+            : category.single
+              ? [category.single]
+              : []
+      const people = source
+        .map((candidate) =>
+          legacyRef(
+            'person',
+            'legacyId' in Object(candidate)
+              ? Number((candidate as { legacyId?: number }).legacyId)
+              : candidate,
+          ),
+        )
+        .filter(Boolean)
+
+      return people.length
+        ? [
+            {
+              blockType: 'peopleList',
+              selectionMode,
+              people,
+              ...(selectionMode === 'team' && team ? { team } : {}),
+              presentation: team === 'careers' ? 'careersCarousel' : 'leadershipGrid',
+            },
+          ]
+        : []
+    }
+    case 'clients': {
+      const category = asObject(component.category)
+      const items = entityItemsFrom(category.specific || category.single, reusables, links)
       return items.length
         ? [
             {
@@ -955,12 +1034,15 @@ const mapComponent = (
           ]
         : []
     }
-    case 'form':
+    case 'form': {
+      const form = hubSpotFormComponentFromWordPress(component)
+      if (form) return [form]
       coverage.ignoredComponentLayouts.form = {
         count: (coverage.ignoredComponentLayouts.form?.count || 0) + 1,
-        reason: 'Legacy HubSpot forms are explicitly deferred from the production pilot.',
+        reason: 'Legacy form has no valid HubSpot form UUID.',
       }
       return []
+    }
     case 'icon': {
       const icon = normalizedStandaloneIcon(component.icon)
       if (!icon) {
@@ -1415,9 +1497,9 @@ export const mapArticleLayout = (
         text_size: 'regular',
       }
     } else if (layout === 'form') {
-      coverage.ignoredComponentLayouts.form = {
-        count: (coverage.ignoredComponentLayouts.form?.count || 0) + 1,
-        reason: 'Legacy HubSpot forms are explicitly deferred from the production pilot.',
+      component = {
+        ...section,
+        acf_fc_layout: 'form',
       }
     } else {
       coverage.unsupportedTopLevelLayouts.push(layout || '(missing)')

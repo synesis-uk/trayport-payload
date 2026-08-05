@@ -1,8 +1,15 @@
-import type { ArrayField, Block, TextFieldSingleValidation } from 'payload'
+import type {
+  ArrayField,
+  Block,
+  RelationshipFieldManyValidation,
+  SelectFieldSingleValidation,
+  TextFieldSingleValidation,
+} from 'payload'
 
 import { actionIconOptions, actionStyleOptions } from '@/fields/actions'
 import { imageOrVideoUploadField, imageUploadField } from '@/fields/mediaUpload'
 import { navigationLinkField } from '@/fields/navigationLink'
+import { validateHubSpotFormID } from '@/integrations/hubSpotForm'
 import {
   externalHTTPSDestinationPolicy,
   normalizeDestinationValue,
@@ -25,6 +32,19 @@ const validateMediaComponentExternalURL: TextFieldSingleValidation = (value, { d
     ? true
     : validateExternalMediaURL(value)
 }
+
+const siblingSelectionMode = (value: unknown): unknown =>
+  value && typeof value === 'object'
+    ? (value as { selectionMode?: unknown }).selectionMode
+    : undefined
+
+const validateSpecificPeople: RelationshipFieldManyValidation = (value, { siblingData }) =>
+  siblingSelectionMode(siblingData) !== 'specific' || (Array.isArray(value) && value.length > 0)
+    ? true
+    : 'Choose at least one Person.'
+
+const validatePeopleTeam: SelectFieldSingleValidation = (value, { siblingData }) =>
+  siblingSelectionMode(siblingData) !== 'team' || Boolean(value) ? true : 'Choose a team.'
 
 export const HeadingComponent: Block = {
   slug: 'heading',
@@ -336,6 +356,64 @@ export const EntityListComponent: Block = {
   ],
 }
 
+export const PeopleListComponent: Block = {
+  slug: 'peopleList',
+  interfaceName: 'PeopleListComponent',
+  labels: {
+    singular: 'People listing',
+    plural: 'People listings',
+  },
+  fields: [
+    {
+      name: 'selectionMode',
+      type: 'select',
+      defaultValue: 'specific',
+      options: [
+        { label: 'Choose people', value: 'specific' },
+        { label: 'People in a team', value: 'team' },
+      ],
+      required: true,
+    },
+    {
+      name: 'people',
+      type: 'relationship',
+      admin: {
+        condition: (_data, siblingData) => siblingSelectionMode(siblingData) === 'specific',
+        description:
+          'Selected profiles and their order. Each card always uses the current Person record.',
+      },
+      hasMany: true,
+      relationTo: 'people',
+      validate: validateSpecificPeople,
+    },
+    {
+      name: 'team',
+      type: 'select',
+      admin: {
+        condition: (_data, siblingData) => siblingSelectionMode(siblingData) === 'team',
+        description: 'Team listings update automatically as published profiles change.',
+      },
+      options: [
+        { label: 'Leadership', value: 'ceo' },
+        { label: 'Senior management', value: 'smt' },
+        { label: 'Department heads', value: 'head' },
+        { label: 'Careers', value: 'careers' },
+      ],
+      validate: validatePeopleTeam,
+    },
+    {
+      name: 'presentation',
+      type: 'select',
+      defaultValue: 'leadershipGrid',
+      options: [
+        { label: 'Leadership grid', value: 'leadershipGrid' },
+        { label: 'Careers carousel', value: 'careersCarousel' },
+      ],
+      required: true,
+    },
+  ],
+}
+
 export const TimelineComponent: Block = {
   slug: 'timeline',
   interfaceName: 'TimelineComponent',
@@ -431,6 +509,34 @@ export const DividerComponent: Block = {
       type: 'select',
       defaultValue: 'line',
       options: ['line', 'space'],
+    },
+  ],
+}
+
+export const HubSpotFormComponent: Block = {
+  slug: 'hubspotForm',
+  interfaceName: 'HubSpotFormComponent',
+  labels: {
+    singular: 'HubSpot form',
+    plural: 'HubSpot forms',
+  },
+  fields: [
+    {
+      name: 'title',
+      type: 'text',
+      admin: {
+        description: 'Public heading shown immediately above the form.',
+      },
+      required: true,
+    },
+    {
+      name: 'formId',
+      type: 'text',
+      admin: {
+        description: 'The HubSpot form UUID. The portal remains managed by the site integration.',
+      },
+      required: true,
+      validate: validateHubSpotFormID,
     },
   ],
 }
@@ -1469,11 +1575,13 @@ const sectionComponentGroups: Record<string, string> = {
   featureList: 'Structured content',
   gallery: 'Media',
   heading: 'Content',
+  hubspotForm: 'Integrations',
   lifecycle: 'Structured content',
   marketCoverage: 'Market tools',
   marketMatrix: 'Market tools',
   media: 'Media',
   office: 'Company information',
+  peopleList: 'Company information',
   richText: 'Content',
   standaloneIcon: 'Content',
   statistics: 'Structured content',
@@ -1502,10 +1610,12 @@ export const sectionComponents = [
   StatisticsComponent,
   FAQComponent,
   EntityListComponent,
+  PeopleListComponent,
   TimelineComponent,
   DataTableComponent,
   GalleryComponent,
   DividerComponent,
+  HubSpotFormComponent,
   MarketCoverageComponent,
   EmbedComponent,
   DataChartComponent,

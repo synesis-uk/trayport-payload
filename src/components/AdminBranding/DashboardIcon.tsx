@@ -8,6 +8,7 @@ type DashboardIconName =
   | 'media'
   | 'navigation'
   | 'page'
+  | 'people'
   | 'redirect'
   | 'settings'
   | 'users'
@@ -93,6 +94,13 @@ export const DashboardIcon = ({ name }: DashboardIconProps) => {
         <svg {...commonProps}>
           <path d="M6.5 3.75h8L18.5 8v12.25h-12z" />
           <path d="M14.5 3.75V8h4M9.5 12h6M9.5 15.5h4.25" />
+        </svg>
+      )
+    case 'people':
+      return (
+        <svg {...commonProps}>
+          <circle cx="9" cy="8" r="3.25" />
+          <path d="M3.5 19.5c.5-3.55 2.33-5.32 5.5-5.32s5 1.77 5.5 5.32M15.5 5.4a3.25 3.25 0 0 1 0 5.2M16.5 14.3c2.35.37 3.68 2.1 4 5.2" />
         </svg>
       )
     case 'redirect':

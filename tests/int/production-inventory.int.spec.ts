@@ -15,9 +15,9 @@ describe('production WordPress inventory', () => {
     expect(inventory.summary).toMatchObject({
       directAuthoredRouteStrings: 55,
       directPublicRoutes: 54,
-      listingRoutes: 243,
-      routes: 297,
-      redirects: 50,
+      listingRoutes: 263,
+      routes: 317,
+      redirects: 53,
       exclusions: 1,
       unknownArchetypes: 0,
     })
@@ -46,6 +46,18 @@ describe('production WordPress inventory', () => {
           archetype: 'page.legal',
         }),
         expect.objectContaining({
+          legacyId: 11233,
+          canonicalPath: '/people/nicole-rosenberg/',
+          archetype: 'person.public-profile',
+          targetOwner: 'people',
+        }),
+        expect.objectContaining({
+          legacyId: 2461,
+          canonicalPath: '/event/eworld-2025/',
+          archetype: 'article.full',
+          targetOwner: 'articles',
+        }),
+        expect.objectContaining({
           legacyId: 11299,
           canonicalPath: '/eex-news/',
           roles: ['banner'],
@@ -67,6 +79,20 @@ describe('production WordPress inventory', () => {
       expect.objectContaining({ legacyId: 2233, path: '/resources/commodities-report/' }),
     ])
     expect(inventory.issues.some(({ code }) => code === 'duplicate-canonical-path')).toBe(false)
+    expect(inventory.redirects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: '/events/e-world-2026/',
+          to: '/event/e-world-2026/',
+          type: '301',
+        }),
+        expect.objectContaining({
+          from: '/events/eworld-2025/',
+          to: '/event/eworld-2025/',
+          type: '301',
+        }),
+      ]),
+    )
 
     const referenceOnly = inventory.dependencies.find(({ legacyId }) => legacyId === 9999)
     expect(referenceOnly?.roles).toEqual(['reference-only'])
@@ -197,8 +223,8 @@ describe('production WordPress inventory', () => {
     ).verification
 
     expect(inventory.summary).toMatchObject({
-      listingRoutes: 243,
-      routes: 297,
+      listingRoutes: 263,
+      routes: 317,
       unknownArchetypes: 0,
     })
     expect(verification.status).toBe('failed')

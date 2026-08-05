@@ -5,6 +5,7 @@ import type {
   HubsSelect,
   LearningVideo,
   LearningVideosSelect,
+  Media,
   Page,
   PagesSelect,
   Redirect,
@@ -20,6 +21,8 @@ export const contentRouteSelects = {
     articleType: true,
     byline: true,
     categories: true,
+    displayDate: true,
+    eventDetails: true,
     excerpt: true,
     heroMedia: true,
     layout: true,
@@ -62,6 +65,18 @@ export const contentRouteSelects = {
     summary: true,
     title: true,
   } satisfies PagesSelect,
+  people: {
+    description: true,
+    externalProfileURL: true,
+    image: true,
+    jobRole: true,
+    joinedAt: true,
+    meta: true,
+    path: true,
+    quote: true,
+    team: true,
+    title: true,
+  },
   redirects: {
     to: true,
     type: true,
@@ -90,6 +105,8 @@ export type ArticleRouteDocument = Pick<
   | 'articleType'
   | 'byline'
   | 'categories'
+  | 'displayDate'
+  | 'eventDetails'
   | 'excerpt'
   | 'heroMedia'
   | 'id'
@@ -100,6 +117,30 @@ export type ArticleRouteDocument = Pick<
   | 'publishedAt'
   | 'title'
 >
+
+/** Stable public projection shared by routed profiles and whole-site search. */
+export const peopleSearchSelect = {
+  description: true,
+  jobRole: true,
+  meta: true,
+  path: true,
+  team: true,
+  title: true,
+} as const
+
+export type PersonRouteDocument = {
+  description?: unknown
+  externalProfileURL?: string | null
+  id: number | string
+  image?: Media | number | string | null
+  jobRole?: string | null
+  joinedAt?: string | null
+  meta?: Article['meta']
+  path: string
+  quote?: unknown
+  team: 'careers' | 'ceo' | 'head' | 'smt'
+  title: string
+}
 
 export type HubRouteDocument = Pick<
   Hub,

@@ -8,6 +8,7 @@ import { getPayload } from 'payload'
 import { migrationConfig } from '../lib/config'
 import { verifyAcceptedRun } from '../lib/acceptedRun'
 import type { LegacyReference, TargetCollection, TargetRecord } from '../transform/types'
+import { applyApprovedBannerRecipientMappings } from './bannerRecipients'
 import { loadMarketData } from './marketData'
 
 type PayloadDocument = {
@@ -34,10 +35,22 @@ type LoadOptions = {
   runId?: string
 }
 
+export const shouldApplyApprovedBannerRecipientMappings = (
+  publish: boolean | undefined,
+  targets: Array<Pick<TargetRecord, 'legacy' | 'target'>>,
+): boolean =>
+  Boolean(
+    publish &&
+      targets.some(
+        ({ legacy, target }) => target === 'banners' && legacy.legacyId === 11602,
+      ),
+  )
+
 const referenceKindForTarget: Partial<Record<TargetCollection, LegacyReference['$legacyRef']>> = {
   media: 'media',
   pages: 'page',
   articles: 'article',
+  people: 'person',
   hubs: 'hub',
   venues: 'venue',
   'learning-videos': 'learning-video',
@@ -62,6 +75,7 @@ const loadPriority: Record<TargetRecord['target'], number> = {
   venues: 30,
   pages: 40,
   articles: 40,
+  people: 40,
   hubs: 40,
   'learning-videos': 40,
   banners: 45,
@@ -72,6 +86,7 @@ const loadPriority: Record<TargetRecord['target'], number> = {
 const relationshipOwnerTargets = new Set<TargetRecord['target']>([
   'pages',
   'articles',
+  'people',
   'hubs',
   'venues',
   'learning-videos',
@@ -113,6 +128,11 @@ const draftSkeletonData = (record: TargetRecord): Record<string, unknown> => {
         ...base,
         articleType: 'insight',
         contentMode: 'listing',
+      }
+    case 'people':
+      return {
+        ...base,
+        team: 'head',
       }
     case 'hubs':
       return {
@@ -677,16 +697,21 @@ export const load = async (options: LoadOptions = {}): Promise<void> => {
     }
 
     report.unresolved = [...new Set(report.unresolved)].sort()
-    fs.writeFileSync(
-      path.join(runDir, 'reports', 'load.json'),
-      `${JSON.stringify({ runId, ...report }, null, 2)}\n`,
-    )
-
     if (report.unresolved.length) {
       throw new Error(`Unresolved migration relationships: ${report.unresolved.join(', ')}`)
     }
 
-    process.stdout.write(`${JSON.stringify({ ok: true, runId, ...report }, null, 2)}\n`)
+    const bannerRecipients = shouldApplyApprovedBannerRecipientMappings(options.publish, targets)
+      ? await applyApprovedBannerRecipientMappings(payload)
+      : undefined
+    fs.writeFileSync(
+      path.join(runDir, 'reports', 'load.json'),
+      `${JSON.stringify({ runId, ...report, ...(bannerRecipients ? { bannerRecipients } : {}) }, null, 2)}\n`,
+    )
+
+    process.stdout.write(
+      `${JSON.stringify({ ok: true, runId, ...report, ...(bannerRecipients ? { bannerRecipients } : {}) }, null, 2)}\n`,
+    )
   } finally {
     await payload.destroy()
   }
