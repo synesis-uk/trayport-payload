@@ -2,7 +2,7 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import type { GlobalConfig } from 'payload'
 
 import { publicGlobalRead } from '@/access/publicGlobalRead'
-import { adminsOrEditors } from '@/access/roles'
+import { adminsOrEditors, isAdmin } from '@/access/roles'
 import {
   CONTENT_SITEMAP_CACHE_TAG,
   contentRouteCacheTag,
@@ -27,6 +27,7 @@ export const RouteIndexes: GlobalConfig = {
   },
   admin: {
     group: 'Site configuration',
+    hidden: ({ user }) => !isAdmin(user),
   },
   fields: [
     {

@@ -1,4 +1,4 @@
-# Proof-of-concept editor guide
+# Trayport website editor guide
 
 ## First sign-in
 
@@ -6,6 +6,20 @@ Open `/admin/` and create the first account. Payload makes the first account an
 administrator. Administrators can create further administrators and editors;
 editors cannot manage roles, delete content, or alter WordPress migration
 provenance.
+
+## Content workspace
+
+The dashboard is organised around editorial work rather than Payload's data
+model. Use **Start something** for the most common create and upload tasks,
+**Recently edited** to resume work, and **Drafts and changes** to find content
+that still needs review. The website-management links provide direct routes to
+navigation, media, market coverage, and footer content.
+
+Administrators also see a separate restricted workspace for imports, customer
+identity records, CMS users, and site settings. Redirects remain in the shared
+website workspace because editors may create and update them; permanent
+deletion is administrator-only. Server-side access rules remain the final
+authority for every request.
 
 ## Content areas
 
@@ -41,6 +55,38 @@ Pages, full articles, and public hubs use a deliberately small block set:
 Editors choose named variants rather than arbitrary CSS, colours, or HTML. This
 keeps new pages consistent with the refreshed frontend while retaining enough
 controls to reconstruct the proof-of-concept routes.
+
+### Adding a section
+
+Use **Add a content section** at the top of the Content tab for routine page
+authoring. Each visual preset inserts the existing `contentSection` structure,
+with safe Trayport defaults and editable content; it does not create a second
+frontend format or store preset-specific data. The available starting points
+cover:
+
+- introductory copy and text with actions;
+- text/media and media/text splits;
+- feature grids, FAQs, calls to action, and statistics; and
+- charts, market coverage, and the Market Matrix where the page type supports
+  them.
+
+After insertion, edit the named section, column, and component rows in place.
+Row summaries show the useful content and layout shape, so collapsed sections
+can be identified without opening every field. Drag handles reorder existing
+rows. The standard Payload block selector remains available below the page
+sections for uncommon structures and top-level Hero or listing blocks.
+
+### Content first, appearance second
+
+Content fields appear before presentation controls. Section appearance, column
+appearance, and advanced layout controls are collapsed until needed. Start with
+the preset defaults and open these groups only when the design calls for a
+different width, surface, spacing, alignment, or column treatment. Controls
+that cannot affect the current configuration are hidden until their parent
+option is enabled.
+
+The visual cards and thumbnails are authoring aids only. The preview remains the
+source of truth for the public result.
 
 Imported rich text retains semantic H2-H4 headings, ordered and unordered lists,
 and nested list structure as native Lexical nodes. Full-article source sections
@@ -137,11 +183,30 @@ the Venue rather than patching a page block. Preview Asset Class, Region, and Hu
 filters; collapsible Venue groups; destination links; CSV; and Excel before
 publishing.
 
+The specialist components group their fields by task:
+
+- **Content** names the experience and supplies accessible explanatory copy;
+- **Data** or **Markets shown** selects managed Regions, Asset Classes, Hubs,
+  Venues, and date boundaries;
+- **Display**, **Visitor controls**, and **Map appearance** control the
+  implemented public experience; and
+- **Advanced**, where present, contains bounded technical tuning that most
+  editors can leave at its Trayport default.
+
+Options that would create an unsupported frontend combination are filtered or
+hidden. Required relationships and publication validation still protect the
+saved document, so the editor cannot publish a visually plausible but
+unresolvable chart or map.
+
 ## Current limits
 
 The Commodities Report, full-site search, and dormant WordPress content types
-are excluded. HubSpot embeds, CookieYes runtime behavior, TIM sign-in,
-protected-document/auto-login behavior, real public form submissions, and the
-full production content population remain deferred. A protected route registry
-reserves one canonical owner across every routable collection, managed
-redirects, and virtual indexes before broad production authoring.
+are excluded. HubSpot embeds and real public form submissions remain a functional
+dependency before conversion-page authoring can be enabled; there is deliberately
+no form preset until that bounded integration exists. The aggregate cookie notice
+is implemented, while the provider-backed CookieYes category and preference
+integration remains to be completed. TIM sign-in, protected-document/auto-login
+behavior, and the full production content population also remain deferred. A
+protected route registry reserves one canonical owner across every routable
+collection, managed redirects, and virtual indexes before broad production
+authoring.

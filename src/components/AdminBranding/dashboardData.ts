@@ -71,8 +71,11 @@ export const loadDashboardContent = async (req: PayloadRequest): Promise<Dashboa
           },
           sort: '-updatedAt',
         }),
-        req.payload.count({
+        req.payload.find({
           collection: slug,
+          depth: 0,
+          draft: true,
+          limit: 1,
           overrideAccess: false,
           req,
           where: {

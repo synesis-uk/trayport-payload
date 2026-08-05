@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" role="img" aria-labelledby="title">
+  <title id="title">Hero section preview</title>
+  <rect width="600" height="400" rx="24" fill="#002d72"/>
+  <rect x="54" y="70" width="90" height="12" rx="6" fill="#00c1d5"/>
+  <rect x="54" y="110" width="300" height="30" rx="8" fill="#fff"/>
+  <rect x="54" y="160" width="230" height="14" rx="7" fill="#b9d6ec"/>
+  <rect x="54" y="186" width="265" height="14" rx="7" fill="#b9d6ec"/>
+  <rect x="54" y="238" width="116" height="42" rx="8" fill="#ff6021"/>
+  <rect x="378" y="72" width="166" height="224" rx="18" fill="#0057b8"/>
+  <circle cx="461" cy="184" r="47" fill="#009cde"/>
+</svg>

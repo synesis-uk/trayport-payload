@@ -184,6 +184,9 @@ export interface Page {
    * Optional editorial summary used in listings and internal content previews.
    */
   summary?: string | null;
+  /**
+   * Reorder sections by dragging their handles. Use the advanced block selector below for uncommon structures.
+   */
   layout: (TrayportHeroBlock | ContentSectionBlock | ArticleListingBlock | LearningVideoListingBlock)[];
   parent?: (number | null) | Page;
   /**
@@ -578,32 +581,13 @@ export interface Article {
  * via the `definition` "ContentSectionBlock".
  */
 export interface ContentSectionBlock {
-  anchor?: string | null;
-  surfaceTone?: ('none' | 'white' | 'softBlue' | 'dark') | null;
-  wrapperTheme: 'none' | 'softBlue' | 'green' | 'dark';
   /**
-   * Optional managed background asset; presentation and opacity remain bounded.
+   * Add and order the content columns in this section. Most pages use one or two columns.
    */
-  backgroundMedia?: (number | null) | Media;
-  backgroundOpacity: 'none' | '10' | '20' | '50';
-  surfaceRadius?: ('default' | 'xl') | null;
-  surfacePadding?: ('none' | 'medium') | null;
-  width: 'reading' | 'standard' | 'wide' | 'full';
-  spacingTop?: ('tight' | 'regular' | 'large') | null;
-  spacingBottom?: ('tight' | 'regular' | 'large') | null;
-  columnGap?: ('tight' | 'regular') | null;
   columns: {
-    span: '4' | '6' | '8' | '12';
-    horizontalAlign?: ('left' | 'center') | null;
-    verticalAlign?: ('start' | 'center') | null;
-    heightMode?: ('fill' | 'content') | null;
-    componentGap?: ('none' | 'regular') | null;
-    padding?: ('none' | 'medium') | null;
-    surface?: ('none' | 'muted' | 'soft') | null;
-    border?: ('none' | 'subtle') | null;
-    backgroundMedia?: (number | null) | Media;
-    backgroundOpacity?: ('none' | '10' | '20' | '50') | null;
-    radius?: ('default' | 'xl') | null;
+    /**
+     * Add the editorial, media or data components shown in this column.
+     */
     components: (
       | HeadingComponent
       | RichTextComponent
@@ -626,8 +610,48 @@ export interface ContentSectionBlock {
       | LifecycleComponent
       | OfficeComponent
     )[];
+    /**
+     * Width in a 12-column grid. Two equal columns use 6 and 6.
+     */
+    span: '4' | '6' | '8' | '12';
+    horizontalAlign?: ('left' | 'center') | null;
+    verticalAlign?: ('start' | 'center') | null;
+    heightMode?: ('fill' | 'content') | null;
+    componentGap?: ('none' | 'regular') | null;
+    padding?: ('none' | 'medium') | null;
+    surface?: ('none' | 'muted' | 'soft') | null;
+    border?: ('none' | 'subtle') | null;
+    radius?: ('default' | 'xl') | null;
+    /**
+     * Optional image behind this column only.
+     */
+    backgroundMedia?: (number | null) | Media;
+    backgroundOpacity?: ('none' | '10' | '20' | '50') | null;
     id?: string | null;
   }[];
+  /**
+   * Applies a bounded background behind the section content.
+   */
+  surfaceTone?: ('none' | 'white' | 'softBlue' | 'dark') | null;
+  /**
+   * Extends a branded colour across the full browser width.
+   */
+  wrapperTheme: 'none' | 'softBlue' | 'green' | 'dark';
+  /**
+   * Optional image behind the complete section panel.
+   */
+  backgroundMedia?: (number | null) | Media;
+  backgroundOpacity?: ('none' | '10' | '20' | '50') | null;
+  surfaceRadius?: ('default' | 'xl') | null;
+  surfacePadding?: ('none' | 'medium') | null;
+  /**
+   * Optional short ID used for direct links to this section.
+   */
+  anchor?: string | null;
+  width: 'reading' | 'standard' | 'wide' | 'full';
+  spacingTop?: ('tight' | 'regular' | 'large') | null;
+  spacingBottom?: ('tight' | 'regular' | 'large') | null;
+  columnGap?: ('tight' | 'regular') | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'contentSection';
@@ -1573,14 +1597,20 @@ export interface DividerComponent {
  */
 export interface MarketCoverageComponent {
   /**
-   * Global connections is the lightweight schematic used on general pages. Regional connectivity is the full Mapbox market explorer with regions, countries, hubs, venues and optional market data.
+   * Use Global connections for the simple worldwide overview. Regional connectivity provides the detailed Mapbox explorer with hub, venue and market-data controls.
    */
   mode?: ('globalConnections' | 'regionalConnectivity') | null;
   /**
-   * Map only is intended for a map beside an existing managed introduction. Map with summary includes this block’s own title, body, regions and actions.
+   * Choose Map only when the surrounding page already introduces the map. Introduction and map adds this block’s title, body and actions.
    */
   presentation: 'mapOnly' | 'summary';
+  /**
+   * Heading shown alongside the map.
+   */
   title?: string | null;
+  /**
+   * Optional introduction shown alongside the map.
+   */
   body?: {
     root: {
       type: string;
@@ -1596,47 +1626,9 @@ export interface MarketCoverageComponent {
     };
     [k: string]: unknown;
   } | null;
-  style: 'dark' | 'light';
   /**
-   * Managed static background used by the map presentation when configured.
+   * Optional links shown below the map introduction.
    */
-  backgroundMedia?: (number | null) | Media;
-  height: number;
-  markerSize: number;
-  showLines: boolean;
-  lineColor: '#1f2a44' | '#002d72' | '#0057b8' | '#009cde' | '#00c1d5' | '#32b77b' | '#ff671f' | '#f7ea48';
-  lineWidth: number;
-  lineOpacity: number;
-  /**
-   * Optional managed subset. Leave empty to include every mapped asset class.
-   */
-  assetClasses?: (number | AssetClass)[] | null;
-  /**
-   * Optional venue-type subset for the connectivity sidebar.
-   */
-  venueTypes?: (number | VenueType)[] | null;
-  regions?: (number | Region)[] | null;
-  /**
-   * Optional curated hub allow-list. Leave empty to use the other map filters.
-   */
-  includedHubs?: (number | Hub)[] | null;
-  /**
-   * Initial active class when class switching is enabled.
-   */
-  defaultAssetClass?: (number | null) | AssetClass;
-  showAssetClassFilter?: boolean | null;
-  autoplayAssetClasses?: boolean | null;
-  /**
-   * Seconds between classes. Reduced-motion visitors never autoplay.
-   */
-  autoplayDelay?: number | null;
-  zoomTo?: ('markers' | 'region') | null;
-  showSidebar?: boolean | null;
-  /**
-   * Show public period and value controls backed by the market-data store.
-   */
-  showMarketData?: boolean | null;
-  dataDisplay?: ('always' | 'hover') | null;
   actions?:
     | {
         label: string;
@@ -1674,6 +1666,59 @@ export interface MarketCoverageComponent {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Optional subset. Leave empty to include every mapped asset class.
+   */
+  assetClasses?: (number | AssetClass)[] | null;
+  /**
+   * Optional venue-type subset for the regional explorer.
+   */
+  venueTypes?: (number | VenueType)[] | null;
+  /**
+   * Optional regional subset. Leave empty to use every region represented by the managed market data.
+   */
+  regions?: (number | Region)[] | null;
+  /**
+   * Optional hub allow-list for the regional explorer. Leave empty to use the broader market filters above.
+   */
+  includedHubs?: (number | Hub)[] | null;
+  /**
+   * Optional class selected when the map first opens. It must also be available in the chosen asset-class subset.
+   */
+  defaultAssetClass?: (number | null) | AssetClass;
+  /**
+   * Show an asset-class selector when more than one class is available.
+   */
+  showAssetClassFilter?: boolean | null;
+  /**
+   * Only applies to Global connections. Visitors who prefer reduced motion never see autoplay.
+   */
+  autoplayAssetClasses?: boolean | null;
+  /**
+   * Time before the Global connections map moves to the next class.
+   */
+  autoplayDelay?: number | null;
+  zoomTo?: ('markers' | 'region') | null;
+  showSidebar?: boolean | null;
+  /**
+   * Add period and value controls backed by the application market-data store.
+   */
+  showMarketData?: boolean | null;
+  dataDisplay?: ('always' | 'hover') | null;
+  style: 'dark' | 'light';
+  /**
+   * Optional managed image shown behind the map and used if the interactive map cannot load.
+   */
+  backgroundMedia?: (number | null) | Media;
+  /**
+   * Regional maps have an effective minimum height of 320 pixels.
+   */
+  height: number;
+  markerSize: number;
+  showLines: boolean;
+  lineColor: '#1f2a44' | '#002d72' | '#0057b8' | '#009cde' | '#00c1d5' | '#32b77b' | '#ff671f' | '#f7ea48';
+  lineWidth: number;
+  lineOpacity: number;
   id?: string | null;
   blockName?: string | null;
   blockType: 'marketCoverage';
@@ -1698,58 +1743,76 @@ export interface EmbedComponent {
  * via the `definition` "DataChartComponent".
  */
 export interface DataChartComponent {
+  /**
+   * Public heading shown above the chart and its accessible data table.
+   */
   title: string;
   /**
-   * Metric read from the application market-data store.
+   * Optional plain-language explanation of the main trend or comparison. Do not repeat the title.
    */
-  dataType: 'volume' | 'price';
+  accessibleSummary?: string | null;
   /**
-   * Chart presentation supported by the selected series dimension.
-   */
-  chartType: 'stackedColumn' | 'column' | 'line';
-  /**
-   * Group each series by execution type or by market hub.
-   */
-  seriesDimension: 'executionType' | 'hub';
-  /**
-   * Aggregate and label points by month, quarter, or year.
-   */
-  displayInterval: 'month' | 'quarter' | 'year';
-  unit?: string | null;
-  /**
-   * Select the managed asset class whose facts are read from the application market-data store.
+   * Select the managed asset class whose values are read from the application market-data store.
    */
   assetClass: number | AssetClass;
   /**
-   * Optional allow-list for hub-series charts. Leave empty to include all hubs.
+   * Execution type compares OTC and exchange-traded activity. Hub compares individual market hubs.
+   */
+  seriesDimension: 'executionType' | 'hub';
+  /**
+   * Price is available for hub comparisons. Execution-type charts show traded volume.
+   */
+  dataType: 'volume' | 'price';
+  /**
+   * Aggregate and label chart points by month, quarter or year.
+   */
+  displayInterval: 'month' | 'quarter' | 'year';
+  /**
+   * Optional allow-list applied before chart values are aggregated. Leave empty to include all hubs.
    */
   includedHubs?: (number | Hub)[] | null;
   /**
-   * Optional deny-list for hub-series charts.
+   * Optional deny-list. A hub selected above and here will be excluded.
    */
   excludedHubs?: (number | Hub)[] | null;
-  /**
-   * Imported application-data lookup key retained for migration provenance and older drafts.
-   */
-  assetClassLegacyId?: number | null;
-  accessibleSummary?: string | null;
   fromYear?: number | null;
+  /**
+   * 1–4. Leave empty to start at the beginning of the year.
+   */
   fromQuarter?: number | null;
   toYear?: number | null;
+  /**
+   * 1–4. Leave empty to include the full final year.
+   */
   toQuarter?: number | null;
+  /**
+   * Only the chart style supported by the selected comparison and measure is offered.
+   */
+  chartType: 'stackedColumn' | 'column' | 'line';
+  /**
+   * For example MWh, therms or €/MWh.
+   */
+  unit?: string | null;
+  /**
+   * Optional longer label shown beside the value axis.
+   */
   axisLabel?: string | null;
   height?: number | null;
-  /**
-   * Divide source values by 10 to this power before display.
-   */
-  scalePower?: number | null;
   showAxes?: boolean | null;
   showLegend?: boolean | null;
   showValues?: boolean | null;
   /**
-   * Accessibility enhancement. Disable to restore chart-only parity.
+   * Recommended. Gives keyboard and screen-reader users the source values behind the chart.
    */
   showDataTable?: boolean | null;
+  /**
+   * Divide source values by 10 to this power before display. For example, 6 displays millions. Normally leave this at 0.
+   */
+  scalePower?: number | null;
+  /**
+   * Imported application-data lookup key retained for migration provenance and older drafts.
+   */
+  assetClassLegacyId?: number | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'dataChart';
@@ -1760,25 +1823,31 @@ export interface DataChartComponent {
  */
 export interface MarketMatrixComponent {
   /**
-   * Accessible table name for the generated connectivity matrix.
+   * Accessible name for the generated connectivity matrix. It is announced to assistive technology rather than displayed as a second heading.
    */
   caption: string;
   /**
-   * Optional curated subset. Leave empty to include every managed asset class.
+   * Visitors can switch views after the matrix loads. Choose the most useful starting point for this page.
+   */
+  defaultView: 'joule' | 'autoTrader' | 'combined';
+  /**
+   * Optional subset. Leave empty to include every managed asset class with connectivity data.
    */
   assetClasses?: (number | AssetClass)[] | null;
   /**
-   * Optional curated subset. Leave empty to include every managed venue type.
+   * Optional subset. Leave empty to include every managed venue type with connectivity data.
    */
   venueTypes?: (number | VenueType)[] | null;
   /**
-   * Optional hub-region subset. Leave empty to include every managed region.
+   * Optional subset applied to market hubs. Leave empty to include hubs from every managed region.
    */
   regions?: (number | Region)[] | null;
-  defaultView: 'joule' | 'autoTrader' | 'combined';
+  /**
+   * Show filters when the selected data contains multiple asset classes, venue types or hubs.
+   */
   showFilters: boolean;
   /**
-   * Offer a CSV export of the visitor’s current filtered view.
+   * Let visitors export their current filtered view as either CSV or an Excel workbook.
    */
   showDownload: boolean;
   id?: string | null;
@@ -2512,31 +2581,9 @@ export interface TrayportHeroBlockSelect<T extends boolean = true> {
  * via the `definition` "ContentSectionBlock_select".
  */
 export interface ContentSectionBlockSelect<T extends boolean = true> {
-  anchor?: T;
-  surfaceTone?: T;
-  wrapperTheme?: T;
-  backgroundMedia?: T;
-  backgroundOpacity?: T;
-  surfaceRadius?: T;
-  surfacePadding?: T;
-  width?: T;
-  spacingTop?: T;
-  spacingBottom?: T;
-  columnGap?: T;
   columns?:
     | T
     | {
-        span?: T;
-        horizontalAlign?: T;
-        verticalAlign?: T;
-        heightMode?: T;
-        componentGap?: T;
-        padding?: T;
-        surface?: T;
-        border?: T;
-        backgroundMedia?: T;
-        backgroundOpacity?: T;
-        radius?: T;
         components?:
           | T
           | {
@@ -2561,8 +2608,30 @@ export interface ContentSectionBlockSelect<T extends boolean = true> {
               lifecycle?: T | LifecycleComponentSelect<T>;
               office?: T | OfficeComponentSelect<T>;
             };
+        span?: T;
+        horizontalAlign?: T;
+        verticalAlign?: T;
+        heightMode?: T;
+        componentGap?: T;
+        padding?: T;
+        surface?: T;
+        border?: T;
+        radius?: T;
+        backgroundMedia?: T;
+        backgroundOpacity?: T;
         id?: T;
       };
+  surfaceTone?: T;
+  wrapperTheme?: T;
+  backgroundMedia?: T;
+  backgroundOpacity?: T;
+  surfaceRadius?: T;
+  surfacePadding?: T;
+  anchor?: T;
+  width?: T;
+  spacingTop?: T;
+  spacingBottom?: T;
+  columnGap?: T;
   id?: T;
   blockName?: T;
 }
@@ -2796,26 +2865,6 @@ export interface MarketCoverageComponentSelect<T extends boolean = true> {
   presentation?: T;
   title?: T;
   body?: T;
-  style?: T;
-  backgroundMedia?: T;
-  height?: T;
-  markerSize?: T;
-  showLines?: T;
-  lineColor?: T;
-  lineWidth?: T;
-  lineOpacity?: T;
-  assetClasses?: T;
-  venueTypes?: T;
-  regions?: T;
-  includedHubs?: T;
-  defaultAssetClass?: T;
-  showAssetClassFilter?: T;
-  autoplayAssetClasses?: T;
-  autoplayDelay?: T;
-  zoomTo?: T;
-  showSidebar?: T;
-  showMarketData?: T;
-  dataDisplay?: T;
   actions?:
     | T
     | {
@@ -2832,6 +2881,26 @@ export interface MarketCoverageComponentSelect<T extends boolean = true> {
         style?: T;
         id?: T;
       };
+  assetClasses?: T;
+  venueTypes?: T;
+  regions?: T;
+  includedHubs?: T;
+  defaultAssetClass?: T;
+  showAssetClassFilter?: T;
+  autoplayAssetClasses?: T;
+  autoplayDelay?: T;
+  zoomTo?: T;
+  showSidebar?: T;
+  showMarketData?: T;
+  dataDisplay?: T;
+  style?: T;
+  backgroundMedia?: T;
+  height?: T;
+  markerSize?: T;
+  showLines?: T;
+  lineColor?: T;
+  lineWidth?: T;
+  lineOpacity?: T;
   id?: T;
   blockName?: T;
 }
@@ -2852,27 +2921,27 @@ export interface EmbedComponentSelect<T extends boolean = true> {
  */
 export interface DataChartComponentSelect<T extends boolean = true> {
   title?: T;
-  dataType?: T;
-  chartType?: T;
-  seriesDimension?: T;
-  displayInterval?: T;
-  unit?: T;
+  accessibleSummary?: T;
   assetClass?: T;
+  seriesDimension?: T;
+  dataType?: T;
+  displayInterval?: T;
   includedHubs?: T;
   excludedHubs?: T;
-  assetClassLegacyId?: T;
-  accessibleSummary?: T;
   fromYear?: T;
   fromQuarter?: T;
   toYear?: T;
   toQuarter?: T;
+  chartType?: T;
+  unit?: T;
   axisLabel?: T;
   height?: T;
-  scalePower?: T;
   showAxes?: T;
   showLegend?: T;
   showValues?: T;
   showDataTable?: T;
+  scalePower?: T;
+  assetClassLegacyId?: T;
   id?: T;
   blockName?: T;
 }
@@ -2882,10 +2951,10 @@ export interface DataChartComponentSelect<T extends boolean = true> {
  */
 export interface MarketMatrixComponentSelect<T extends boolean = true> {
   caption?: T;
+  defaultView?: T;
   assetClasses?: T;
   venueTypes?: T;
   regions?: T;
-  defaultView?: T;
   showFilters?: T;
   showDownload?: T;
   id?: T;

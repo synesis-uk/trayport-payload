@@ -66,10 +66,26 @@ export const Pages: CollectionConfig = {
               },
             },
             {
+              name: 'sectionPresetPicker',
+              type: 'ui',
+              admin: {
+                components: {
+                  Field: '@/components/AdminEditor/SectionPresetPicker.client',
+                },
+              },
+            },
+            {
               name: 'layout',
               type: 'blocks',
               blocks: trayportLayoutBlocks,
+              label: 'Page sections',
+              labels: {
+                singular: 'Section',
+                plural: 'Sections',
+              },
               admin: {
+                description:
+                  'Reorder sections by dragging their handles. Use the advanced block selector below for uncommon structures.',
                 initCollapsed: true,
               },
               required: true,

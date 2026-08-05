@@ -23,6 +23,7 @@ export const Users: CollectionConfig = {
   admin: {
     defaultColumns: ['name', 'email', 'roles', 'updatedAt'],
     group: 'Administration',
+    hidden: ({ user }) => !isAdmin(user),
     useAsTitle: 'email',
   },
   auth: {

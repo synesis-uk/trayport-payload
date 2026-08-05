@@ -4,7 +4,7 @@ import type {
   TextFieldSingleValidation,
 } from 'payload'
 
-import { admins, adminsOrEditors, isAdminOrEditor } from '@/access/roles'
+import { admins, adminsOrEditors, isAdmin, isAdminOrEditor } from '@/access/roles'
 
 const providerPattern = /^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$/u
 
@@ -66,6 +66,7 @@ export const CustomerIdentities: CollectionConfig = {
     description:
       'Provider-neutral customer identity references for future external-service integration. These records are not CMS login accounts.',
     group: 'Customer access',
+    hidden: ({ user }) => !isAdmin(user),
     useAsTitle: 'identityKey',
   },
   defaultSort: 'displayName',

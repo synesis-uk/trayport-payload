@@ -1,7 +1,7 @@
 import type { GlobalConfig } from 'payload'
 
 import { publicGlobalRead } from '@/access/publicGlobalRead'
-import { adminsOrEditors } from '@/access/roles'
+import { adminsOrEditors, isAdmin } from '@/access/roles'
 import { imageUploadField } from '@/fields/mediaUpload'
 import { navigationLinkField } from '@/fields/navigationLink'
 import { captureGlobalPublicProjectionIntent } from '@/hooks/publicProjection'
@@ -31,6 +31,7 @@ export const SiteSettings: GlobalConfig = {
   },
   admin: {
     group: 'Site configuration',
+    hidden: ({ user }) => !isAdmin(user),
   },
   fields: [
     {

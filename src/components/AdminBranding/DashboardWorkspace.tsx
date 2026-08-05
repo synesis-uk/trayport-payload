@@ -61,6 +61,12 @@ const websiteAreas = [
     icon: 'footer',
     label: 'Footer',
   },
+  {
+    description: 'Maintain permanent and temporary website redirects',
+    href: '/admin/collections/redirects',
+    icon: 'redirect',
+    label: 'Redirects',
+  },
 ] as const
 
 const administratorAreas = [
@@ -69,12 +75,6 @@ const administratorAreas = [
     href: '/admin/collections/market-data-imports',
     icon: 'data',
     label: 'Market data imports',
-  },
-  {
-    description: 'Maintain permanent and temporary redirects',
-    href: '/admin/collections/redirects',
-    icon: 'redirect',
-    label: 'Redirects',
   },
   {
     description: 'Review provider-linked customer records',

@@ -58,6 +58,9 @@ describe('Payload admin branding', () => {
     expect(screen.getByRole('link', { name: /Navigation/ }).getAttribute('href')).toBe(
       '/admin/globals/navigation',
     )
+    expect(screen.getByRole('link', { name: /Redirects/ }).getAttribute('href')).toBe(
+      '/admin/collections/redirects',
+    )
     expect(screen.getByText(/editors and administrators can draft and publish/i)).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Administration' })).toBeNull()
     expect(screen.getByText('No recent content yet.')).toBeTruthy()
@@ -108,7 +111,7 @@ describe('Payload admin branding', () => {
     expect(screen.getByText('6')).toBeTruthy()
 
     const adminNavigation = screen.getByRole('navigation', { name: 'Administration areas' })
-    expect(within(adminNavigation).getAllByRole('link')).toHaveLength(5)
+    expect(within(adminNavigation).getAllByRole('link')).toHaveLength(4)
     expect(
       within(adminNavigation)
         .getByRole('link', { name: /CMS users/ })

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" role="img" aria-labelledby="title">
+  <title id="title">Article listing preview</title>
+  <rect width="600" height="400" rx="24" fill="#f3f7fb"/>
+  <rect x="50" y="50" width="255" height="24" rx="7" fill="#002d72"/>
+  <g fill="#fff" stroke="#cad6e4" stroke-width="3">
+    <rect x="50" y="110" width="154" height="220" rx="14"/>
+    <rect x="223" y="110" width="154" height="220" rx="14"/>
+    <rect x="396" y="110" width="154" height="220" rx="14"/>
+  </g>
+  <g fill="#009cde">
+    <rect x="50" y="110" width="154" height="88" rx="14"/>
+    <rect x="223" y="110" width="154" height="88" rx="14"/>
+    <rect x="396" y="110" width="154" height="88" rx="14"/>
+  </g>
+  <g fill="#0057b8">
+    <rect x="70" y="225" width="105" height="13" rx="6"/>
+    <rect x="243" y="225" width="105" height="13" rx="6"/>
+    <rect x="416" y="225" width="105" height="13" rx="6"/>
+  </g>
+</svg>
