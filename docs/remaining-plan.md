@@ -71,13 +71,25 @@ selector under `.trayport-coverage-map`; this defect class was previously untest
 
 ### A2 — Map parity matrix
 
-Build the formal capability matrix against the live map and verify the migrated
-data behind it. The functional review already concluded the migrated maps are at
-parity with a stronger data model; this converts that conclusion into a checked
-artifact rather than a judgement.
+**Delivered 2026-08-06.** See
+[map-parity-matrix.md](content-architecture/map-parity-matrix.md).
 
-Exit: every live map capability is either proven present or recorded as an
-approved deviation.
+The matrix contradicts the earlier judgement that the maps are at functional
+parity. The data migrated faithfully — coordinates, polygons, routes, venue
+edges and market values all reconcile — but the rendering does not match, and
+the exercise found five class 1 defects that must be fixed before A3:
+
+1. first paint renders empty and wrongly tinted on two of the four map surfaces;
+2. the map click path into the sidebar is dead;
+3. the control panel renders white on white;
+4. coordinate-less hubs plot at `[0, 0]` off West Africa;
+5. hub and venue links leave the site (a Track B symptom, not a map defect).
+
+Seven visible differences need an explicit decision before A3 — most
+importantly that the hub marker type hierarchy was flattened and that region
+boundaries, which the live site draws invisibly, are now visible circles.
+
+A3 does not start until 1–4 are fixed and the class 3 list is decided.
 
 ### A3 — Approved map increments (class 3)
 

@@ -13,6 +13,14 @@ const dirname = path.dirname(__filename)
 const publicOrigin = new URL(resolvePublicOrigin())
 
 const nextConfig: NextConfig = {
+  // The local review server is reached over the LAN rather than on `localhost`, and Next
+  // refuses cross-origin development asset requests unless the origin is listed here. Without
+  // it the client chunks are answered with HTML, the map islands never hydrate, and every map
+  // silently shows its static fallback. Development-only; production serves assets statically.
+  allowedDevOrigins: (process.env.DEV_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
   cacheComponents: true,
   experimental: {
     globalNotFound: true,

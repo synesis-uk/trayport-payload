@@ -31,6 +31,7 @@ mean the remaining documents have been imported, rendered, or reviewed.
 - [Editorial workflows](editorial-workflows.md)
 - [Architecture decisions and readiness gates](decisions.md)
 - [Functional parity catalogue and audit](functional-parity.md)
+- [Market map parity matrix](map-parity-matrix.md)
 - [Delivery slices and remaining plan](../delivery-slices.md)
 - [Thin visual and interaction direction](../design-direction.md)
 - [Retained inventory summary](inventory-summary.json)
