@@ -91,6 +91,27 @@ boundaries, which the live site draws invisibly, are now visible circles.
 
 A3 does not start until 1–4 are fixed and the class 3 list is decided.
 
+### A2b — Class 3 decisions on the map (approved 2026-08-06)
+
+The seven visible differences the parity matrix surfaced were decided together. Six
+are restorations to the live baseline; one difference is kept. The governing test
+was the change policy above: a visible difference has to be defensible to the
+client in one sentence they would accept, and none of these six were.
+
+| # | Difference | Decision | Reason |
+| - | ---------- | -------- | ------ |
+| 1 | Hub marker type hierarchy flattened to uniform 7–8px dots | **Restore** | The live site's 100px named bubbles for regional/offshore hubs versus small dots for venue/physical hubs encode hub type. Flattening them discards information rather than simplifying it. |
+| 2 | Region boundaries drawn as visible yellow circles | **Restore to invisible** | The live site draws the same GeoJSON at zero fill opacity and zero outline width deliberately. The circles are crude approximations of the region shapes, so showing them adds noise that means nothing. Keep them as hit targets. |
+| 3 | Country tint reduced to a 42% wash | **Restore solid** | Connected-country fill is the map's primary visual signal. Restore fill opacity 1 for connected countries and 1 for the selected country. |
+| 4 | Region pages default to Natural Gas | **Restore Power** | A data-level difference (`default_asset_class_id` 2 versus 1). On Asia Pacific it changes the entire first view a visitor sees. |
+| 5 | Route lines and mid-point markers restyled | **Restore** | Return to the live 2px orange lines and the 32px yellow glyph markers, and reinstate the route hover highlight (`#F56A00`, width 2) that the migration dropped entirely. |
+| 6 | Controls moved from a hover overlay inside the map to a bar above it | **Keep** | The only difference worth defending: a hover-opening overlay is unusable by touch and keyboard, so this is a real accessibility gain and states in one sentence — "the map filters are always visible instead of hidden behind a hover menu." The stale instruction "Use the menu tool in the top left corner to assist your search" must be corrected as managed content. |
+| 7 | Fit padding no longer editor-controlled (~0.3 zoom tighter) | **Restore** | Restore the per-placement padding control and match the live fit so every view frames identically. |
+
+Decisions 1–5 and 7 are parity restorations and need no ledger entry beyond
+[visual-parity.md](visual-parity.md). Decision 6 is a retained improvement and
+needs an [FE ledger](frontend-improvements.md) entry with its rollback.
+
 ### A3 — Approved map increments (class 3)
 
 Implement only the increments that pass the one-sentence test:
