@@ -57,6 +57,11 @@ user acceptance is complete.
 
 ## Remaining delivery order
 
+**Superseded.** This section is retained as the record of the order agreed on
+2026-08-04. The current working plan is [remaining-plan.md](remaining-plan.md),
+which restructures the same work around the six non-passing blocker gates and
+adds the parity change policy.
+
 ### 1. Complete stakeholder local acceptance
 
 Automated local acceptance is complete: the schema migrations and locked-source
