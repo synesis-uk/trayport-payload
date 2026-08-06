@@ -54,6 +54,9 @@ type SourceData = {
   type: 'FeatureCollection'
 }
 
+// Layers painted above the country and region fills, in paint order.
+const MARKER_LAYERS = ['trayport-hubs', 'trayport-routes', 'trayport-route-markers']
+
 const featureCollection = (features: SourceData['features']): SourceData => ({
   features,
   type: 'FeatureCollection',
@@ -331,10 +334,17 @@ export default function RegionalMarketMapRuntime({
   const popupRef = useRef<mapboxgl.Popup | null>(null)
   const [styleReady, setStyleReady] = useState(false)
   const callbacksRef = useRef({ onCountrySelect, onError, onHubSelect, onReady, onRegionSelect })
+  // The click handlers are registered once, in an effect that does not depend on the active
+  // region, so they must read it through a ref or they capture its mount-time value forever.
+  const activeRegionRef = useRef(activeRegionID)
 
   useEffect(() => {
     callbacksRef.current = { onCountrySelect, onError, onHubSelect, onReady, onRegionSelect }
   }, [onCountrySelect, onError, onHubSelect, onReady, onRegionSelect])
+
+  useEffect(() => {
+    activeRegionRef.current = activeRegionID
+  }, [activeRegionID])
 
   useEffect(() => {
     const container = containerRef.current
@@ -395,6 +405,9 @@ export default function RegionalMarketMapRuntime({
         })
         map.addLayer(
           {
+            // A fill layer with no filter renders every country in the tileset, so the layer must
+            // start empty and be narrowed by the data effect rather than fail open while it waits.
+            filter: ['in', ['get', 'iso_3166_1_alpha_3'], ['literal', []]],
             id: 'trayport-populated-countries',
             paint: {
               'fill-color': '#009cde',
@@ -409,6 +422,7 @@ export default function RegionalMarketMapRuntime({
         )
         map.addLayer(
           {
+            filter: ['in', ['get', 'iso_3166_1_alpha_3'], ['literal', []]],
             id: 'trayport-selected-countries',
             paint: {
               'fill-color': '#f7ea48',
@@ -558,23 +572,38 @@ export default function RegionalMarketMapRuntime({
           map?.on(event, layer, handler)
           listeners.push({ event, handler, layer })
         }
+        // Mapbox runs every matching layer handler for a single click, in registration order, and
+        // offers no way to stop the chain. Without these guards the region handler always ran last
+        // and cleared the hub selection the foreground handler had just made, so no map click ever
+        // reached the sidebar. Each handler therefore defers to the layers painted above it, which
+        // is the declarative equivalent of the live site's `stopPropagation()`.
+        const hitsLayers = (event: MapLayerMouseEvent, layers: string[]) =>
+          Boolean(map?.queryRenderedFeatures(event.point, { layers }).length)
         register('click', 'trayport-hubs', (event) => {
           const hubID = stringProperty(event, 'hubID')
           if (hubID) callbacksRef.current.onHubSelect(hubID)
         })
         register('click', 'trayport-routes', (event) => {
+          if (hitsLayers(event, ['trayport-hubs'])) return
           const hubID = stringProperty(event, 'selectHubID')
           if (hubID) callbacksRef.current.onHubSelect(hubID)
         })
         register('click', 'trayport-route-markers', (event) => {
+          if (hitsLayers(event, ['trayport-hubs', 'trayport-routes'])) return
           const hubID = stringProperty(event, 'selectHubID')
           if (hubID) callbacksRef.current.onHubSelect(hubID)
         })
         register('click', 'trayport-populated-countries', (event) => {
+          // The live site only opens a country's merged sidebar once a region is selected.
+          if (!activeRegionRef.current) return
+          if (hitsLayers(event, MARKER_LAYERS)) return
           const code = stringProperty(event, 'iso_3166_1_alpha_3')
           if (code) callbacksRef.current.onCountrySelect(code)
         })
         register('click', 'trayport-region-fill', (event) => {
+          // ...and conversely only zooms into a region while none is selected.
+          if (activeRegionRef.current) return
+          if (hitsLayers(event, [...MARKER_LAYERS, 'trayport-populated-countries'])) return
           const regionID = stringProperty(event, 'regionID')
           if (regionID) callbacksRef.current.onRegionSelect(regionID)
         })
@@ -684,7 +713,11 @@ export default function RegionalMarketMapRuntime({
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map?.isStyleLoaded()) return
+    // `isStyleLoaded()` is still false in the `load` handler that flips `styleReady`, because the
+    // country-boundaries vector source has not resolved its TileJSON yet. Gating on it therefore
+    // dropped the only run this effect ever got, leaving every source empty and both country
+    // layers unfiltered. `styleReady` is set once the style exists and is already a dependency.
+    if (!map || !styleReady) return
     const visible = new Set(visibleHubIDs)
     source(map, 'trayport-hubs')?.setData(
       hubFeatures(index, visible, summaries, activeAssetClassID) as never,

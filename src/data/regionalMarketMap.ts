@@ -25,8 +25,12 @@ export const regionalMapRelationshipID = (value: unknown): string | null => {
 
 const coordinates = (value: unknown): TrayportPosition | null => {
   const candidate = record(value)
-  const longitude = Number(candidate?.longitude)
-  const latitude = Number(candidate?.latitude)
+  // Payload emits group fields eagerly, so a hub with no location still yields
+  // `{ latitude: null, longitude: null }`. `Number(null)` is 0, which is a legal coordinate, so
+  // coercion laundered "no location" into a point off West Africa and defeated the
+  // points-length filter downstream that already exists to drop such hubs.
+  const longitude = typeof candidate?.longitude === 'number' ? candidate.longitude : Number.NaN
+  const latitude = typeof candidate?.latitude === 'number' ? candidate.latitude : Number.NaN
   return Number.isFinite(longitude) &&
     longitude >= -180 &&
     longitude <= 180 &&

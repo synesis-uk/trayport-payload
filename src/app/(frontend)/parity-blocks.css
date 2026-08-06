@@ -380,9 +380,16 @@
     padding: clamp(1.5rem, 3vw, 2.5rem);
   }
 
+  /*
+   * This modifier strips the base block's deep-blue card treatment. It must also release the
+   * white foreground that came with it, or every descendant control inherits white text onto a
+   * white page. `inherit` adopts whatever the surrounding section established, which keeps the
+   * controls legible on light sections and still white inside a dark-wrapper section.
+   */
   .trayport-market-coverage--map-only {
     background: transparent;
     border-radius: 0;
+    color: inherit;
     display: block;
     padding: 0;
   }

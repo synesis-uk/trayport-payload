@@ -412,7 +412,7 @@ export function DynamicRegionalMarketMap({
         ) : model.index.regions[0] ? (
           <div className="min-w-52 flex-1">
             <span className="text-sm font-medium">Region</span>
-            <p className="mt-2 flex min-h-control items-center rounded-md border border-input bg-background px-3 py-2 text-sm">
+            <p className="mt-2 flex min-h-control items-center rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground">
               {model.index.regions[0].title}
             </p>
           </div>
@@ -717,7 +717,7 @@ export function DynamicRegionalMarketMap({
         .
       </p>
 
-      <details className="rounded-panel border border-border bg-white p-4">
+      <details className="rounded-panel border border-border bg-white p-4 text-foreground">
         <summary className="min-h-control cursor-pointer font-semibold focus-visible:focus-ring">
           Accessible market-hub and venue list
         </summary>
@@ -739,6 +739,11 @@ export function DynamicRegionalMarketMap({
                 ))}
             </div>
           </div>
+        ) : null}
+        {visibleHubs.length === 0 ? (
+          <p className="mt-3 text-sm">
+            No market hubs match the current selection. Choose another asset class or region.
+          </p>
         ) : null}
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {visibleHubs.map((hub) => {
