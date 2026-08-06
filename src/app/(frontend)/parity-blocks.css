@@ -413,7 +413,7 @@
     width: 100%;
   }
 
-  .trayport-coverage-map svg {
+  .trayport-coverage-map__surface {
     min-height: var(--trayport-map-height, 300px);
     position: relative;
     z-index: 1;
@@ -832,7 +832,8 @@
       min-height: min(var(--trayport-map-height, 300px), 240px);
     }
 
-    .trayport-market-coverage:not(.trayport-market-coverage--map-only) .trayport-coverage-map svg {
+    .trayport-market-coverage:not(.trayport-market-coverage--map-only)
+      .trayport-coverage-map__surface {
       min-height: 240px;
     }
 

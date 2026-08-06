@@ -45,19 +45,29 @@ it is the smallest. It establishes the pattern the remaining families follow.
 
 ### A1 — Map defects (class 1)
 
-- Scope `.trayport-coverage-map svg` at `src/app/(frontend)/globals.css:1972` to
-  the fallback map figure only. It currently matches every descendant SVG,
-  including Font Awesome chevrons inside the map's select controls, which
-  stretches them to the container width.
-- Recover `MAPBOX_PUBLIC_TOKEN` from the legacy theme
-  (`~/site/tp/web/app/themes/trayport/functions.php`) into `.env`. The two style
-  URLs already exist in `.env.example`; `src/config/connectionsMap.server.ts`
-  resolves the token, and its absence is why every regional map currently
-  renders the static fallback.
-- Restart the review server and confirm the regional maps render through Mapbox
-  rather than the fallback, on desktop and at 390px.
+**Delivered 2026-08-06.** Both defects are fixed, verified in a real browser, and
+recorded as VP-036 in [visual-parity.md](visual-parity.md).
 
-Exit: both defects fixed, screenshots retaken, no other visual change.
+Investigation corrected two assumptions in the original write-up of this slice:
+
+- The stretched chevrons were **not** caused by `width: 100%` at `globals.css:1972`
+  — Tailwind's `size-4` utility outranks it. The cause was `min-height` in
+  `parity-blocks.css`, which no utility competes with, and there were **four**
+  over-broad descendant rules across three files rather than one. One of them, in
+  `parity-home.css`, sits outside any `@layer` and so outranks every layered rule.
+- The fix is a dedicated `trayport-coverage-map__surface` class on the two real map
+  SVGs rather than a `> svg` child combinator. The combinator would have dropped
+  `z-index: 1` from the regional fallback SVG, letting the Mapbox canvas paint over
+  it during load, and would not have reached the two mobile rules.
+- Recovering the Mapbox token alone was insufficient. `.env.example` is not loaded
+  at runtime, so all three of `MAPBOX_PUBLIC_TOKEN`, `MAPBOX_STYLE_DARK_URL`, and
+  `MAPBOX_STYLE_LIGHT_URL` must be present in `.env`. Adding them also required
+  making `tests/int/connections-map-config.int.spec.ts` hermetic — `vitest.setup.ts`
+  loads `.env` into `process.env`, and the ambient dark style shadowed the values
+  under test, failing 17 of its 22 cases.
+
+A regression guard now fails the build if any rule reintroduces a descendant `svg`
+selector under `.trayport-coverage-map`; this defect class was previously untested.
 
 ### A2 — Map parity matrix
 
@@ -88,23 +98,41 @@ and passing keyboard, touch, and reduced-motion checks.
 ## Track B — Content completion
 
 The largest remaining body of work and the one that unblocks three gates.
-73 of 317 route owners are loaded; 244 documents remain plan-only.
+73 of 317 route owners are loaded; 244 remain plan-only.
 
-| Family          | Owners | Position                                     |
-| --------------- | -----: | -------------------------------------------- |
-| Pages           |     51 | Partially loaded within the accepted slice   |
-| Articles        |     93 | 23 canonical Events loaded; bodies incomplete |
-| Hubs            |     72 | Plan-only                                    |
-| Venues          |     66 | Plan-only                                    |
-| Learning videos |     15 | Plan-only                                    |
-| People          |     17 | Complete                                     |
+Those 244 are not 244 outstanding imports. The local database was inspected on
+2026-08-06 and 219 of them are **already loaded as records in a reduced content
+mode**; only 25 Pages are genuinely absent. `contentMode` is a schema
+discriminator, and the reduced modes forbid a path and a layout, so a record in
+`map-only` or `relationship-only` cannot own a public route by construction.
 
-### B1 — Load the remaining route owners
+| Family          | Records | Route-owning        | Reduced mode                | Outstanding |
+| --------------- | ------: | ------------------- | --------------------------- | ----------: |
+| Pages           |      26 | 26                  | —                           |          25 |
+| Articles        |      93 | 24 `full`           | 69 `listing`                |          69 |
+| Hubs            |      72 | 1 `page`            | 71 `map-only`               |          71 |
+| Venues          |      66 | 1 `page`            | 65 `relationship-only`      |          65 |
+| Learning videos |      15 | 1 `full`            | 14 `listing`                |          14 |
+| People          |      17 | 17                  | —                           |           0 |
 
-Extend the accepted population family by family through the existing
-extract → transform → validate → load cycle. Each family runs its own immutable
-inventory run and keeps its evidence; a family that fails validation fails the
-gate rather than silently reducing scope.
+So the work splits into two different shapes, and they carry different risk:
+
+- **Promotion (219).** The hub, venue, article, and learning-video records are
+  already migrated with their codes, relationships, coordinates, and market-data
+  keys intact — they were loaded to serve the maps and the Matrix. Promotion is a
+  guarded `contentMode` transition plus detail content and SEO, not a fresh
+  import. The archetype discriminator invariants enforce correctness on the way
+  through, which is why this is lower risk than the raw count suggests.
+- **Import (25).** The remaining Pages run the full
+  extract → transform → validate → load cycle.
+
+### B1 — Promote and load the remaining route owners
+
+Work family by family. Each family runs its own immutable inventory run and
+keeps its evidence; a family that fails validation fails the gate rather than
+silently reducing scope. Confirm before starting each promotion batch that the
+source WordPress records actually carry detail content — a hub that has no body
+in WordPress should stay `map-only` rather than be promoted into an empty route.
 
 Exit: all 317 route owners resolve to a managed document.
 Gate: `listing-detail-route-ownership`.

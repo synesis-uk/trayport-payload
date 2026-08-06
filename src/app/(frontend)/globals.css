@@ -1969,7 +1969,7 @@
     min-width: 0;
   }
 
-  .trayport-coverage-map svg {
+  .trayport-coverage-map__surface {
     display: block;
     height: auto;
     width: 100%;

@@ -203,10 +203,17 @@ exact footprint is later preferred.
 | VP-034 | Improvement | Keep Home content actions at 44 px and retain native chart-data disclosures even though the reference uses smaller actions and no disclosure rows. These account for explicit, measured residual height rather than hidden parity drift. | Shared action minimum height, imported `dataChart.showDataTable`, strict visual evidence, and FE-093 | Remove the scoped action minimum or set the disclosure control false to reproduce the source footprint; link destinations, chart rendering, and PostgreSQL facts are unchanged. |
 | VP-035 | Exact plus bounded improvements | Reproduce every active live regional-map interaction—region/reset, boundary fit, Asset Class, country, Hub, explicit route, points of interest, Venue links grouped by type, and configured data periods—while retaining an accessible list/fallback, reduced-motion behavior, and Payload-managed geometry/data. | `marketCoverage(mode=regionalConnectivity)`, managed Region/Hub/Venue/Asset Class projections, `DynamicRegionalMarketMap.client`, and `RegionalMarketMapRuntime.client` | Switch the affected block back to the global schematic or remove the regional runtime while preserving managed data; this is not acceptable launch parity for routes whose live baseline uses the full regional map. |
 
+| VP-036 | Exact | Restore reference control geometry inside the market maps. `.trayport-coverage-map` wraps the whole regional explorer, so four descendant `svg` rules applied map sizing to every nested icon; the `min-height` declarations had no competing utility and stretched each select chevron to the full map height. The two real map surfaces now carry `trayport-coverage-map__surface` and the rules target that class. | `trayport-coverage-map__surface` in `specialistPresentation`/`DynamicRegionalMarketMap.client`, the four retargeted rules in `globals.css`, `parity-blocks.css`, and `parity-home.css`, and the frontend-system contract guard | Restore the descendant `svg` selectors and remove the class from both SVGs; managed geometry, map data, and every other rule are unchanged. |
+
 ### Map activation gate
 
-VP-008 remains the durable global-schematic fallback, VP-032 records exact Home topology, and
-VP-035 adds the active regional-map behavior. Mapbox stays behind the blocks that require it rather
+VP-008 remains the durable global-schematic fallback, VP-032 records exact Home topology,
+VP-035 adds the active regional-map behavior, and VP-036 restores control geometry inside both.
+
+Local Mapbox activation is complete as of 2026-08-06: the legacy public token and the two
+Synesis dark/light styles are configured in the local `.env`, and `/resources/markets-map/`,
+`/regions/europe/`, and `/` all render `data-map-provider="mapbox"` at 1440px and 390px. This
+closes the local half of the gate only. Mapbox stays behind the blocks that require it rather
 than the public shell. Exact provider-rendered acceptance remains open until deployment supplies an
 approved origin-restricted public token, approves the dark/light Synesis reference styles or
 Trayport-owned clones, and records Mapbox licence/attribution approval. No secret token may be used:

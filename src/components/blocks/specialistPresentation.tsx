@@ -128,7 +128,12 @@ export function MarketCoveragePresentation({
           {model.background}
         </div>
       ) : null}
-      <svg aria-labelledby={`${mapTitleID} ${mapDescriptionID}`} role="img" viewBox="0 0 1000 562">
+      <svg
+        aria-labelledby={`${mapTitleID} ${mapDescriptionID}`}
+        className="trayport-coverage-map__surface"
+        role="img"
+        viewBox="0 0 1000 562"
+      >
         <title id={mapTitleID}>Trayport market connectivity locations</title>
         <desc id={mapDescriptionID}>
           Regional connectivity overview for{' '}

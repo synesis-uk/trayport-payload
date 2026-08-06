@@ -340,6 +340,25 @@ describe('locked frontend system', () => {
     expect(runtimeCSS).toContain('.trayport-coverage-map__interactive .mapboxgl-popup-tip {')
   })
 
+  it('targets the map surface by class so control icons never inherit map geometry', () => {
+    // `.trayport-coverage-map` wraps the whole regional explorer, including its Radix
+    // select triggers and their inline Font Awesome chevrons. A descendant `svg` selector
+    // therefore applies map sizing to every control icon; `min-height` in particular has
+    // no competing Tailwind utility, so chevrons inherited the full map height.
+    const sources = [
+      'src/app/(frontend)/globals.css',
+      'src/app/(frontend)/parity-blocks.css',
+      'src/app/(frontend)/parity-home.css',
+    ]
+
+    for (const source of sources) {
+      const css = readFileSync(new URL(`../../${source}`, import.meta.url), 'utf8')
+      expect(css, `${source} must not size every svg inside the coverage map`).not.toMatch(
+        /\.trayport-coverage-map\s+svg\b/,
+      )
+    }
+  })
+
   it('keeps source-measured Home and Joule corrections route-scoped and reversible', () => {
     const home = readFileSync(
       new URL('../../src/app/(frontend)/parity-home.css', import.meta.url),

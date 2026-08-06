@@ -504,6 +504,7 @@ export function DynamicRegionalMarketMap({
         <svg
           aria-hidden
           className={cn(
+            'trayport-coverage-map__surface',
             'pointer-events-none absolute inset-0 size-full transition-opacity duration-300',
             ready && 'opacity-0',
           )}

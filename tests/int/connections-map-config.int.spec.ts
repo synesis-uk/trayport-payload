@@ -1,18 +1,33 @@
 // @vitest-environment node
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { getConnectionsMapRuntimeConfig } from '@/config/connectionsMap.server'
 
-const originalToken = process.env.MAPBOX_PUBLIC_TOKEN
-const originalStyleURL = process.env.MAPBOX_STYLE_URL
+// The repository `.env` is loaded into `process.env` by `vitest.setup.ts`, and a
+// configured deployment sets the split dark/light styles. `getConnectionsMapRuntimeConfig`
+// resolves `MAPBOX_STYLE_DARK_URL || MAPBOX_STYLE_URL`, so an ambient dark style would
+// shadow every style URL these cases assign. Every variable the module reads is therefore
+// captured, cleared before each case, and restored afterwards.
+const READ_VARIABLES = [
+  'MAPBOX_PUBLIC_TOKEN',
+  'MAPBOX_STYLE_URL',
+  'MAPBOX_STYLE_DARK_URL',
+  'MAPBOX_STYLE_LIGHT_URL',
+] as const
+
+const originalValues = new Map(READ_VARIABLES.map((name) => [name, process.env[name]]))
+
+beforeEach(() => {
+  for (const name of READ_VARIABLES) delete process.env[name]
+})
 
 afterEach(() => {
-  if (originalToken === undefined) delete process.env.MAPBOX_PUBLIC_TOKEN
-  else process.env.MAPBOX_PUBLIC_TOKEN = originalToken
-
-  if (originalStyleURL === undefined) delete process.env.MAPBOX_STYLE_URL
-  else process.env.MAPBOX_STYLE_URL = originalStyleURL
+  for (const name of READ_VARIABLES) {
+    const original = originalValues.get(name)
+    if (original === undefined) delete process.env[name]
+    else process.env[name] = original
+  }
 })
 
 describe('connections map runtime configuration', () => {

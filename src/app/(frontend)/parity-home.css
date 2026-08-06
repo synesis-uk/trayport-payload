@@ -720,7 +720,7 @@
   }
 
   .trayport-page--home > .trayport-section--has-market-coverage .trayport-coverage-map,
-  .trayport-page--home > .trayport-section--has-market-coverage .trayport-coverage-map svg {
+  .trayport-page--home > .trayport-section--has-market-coverage .trayport-coverage-map__surface {
     min-height: 21.875rem;
   }
 
