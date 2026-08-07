@@ -3,9 +3,20 @@
 import { discoverProductionInventory } from '../../migration/inventory/discover'
 import { architectureContractHash, buildProductionTargetPlan } from '../../migration/plan/build'
 import { buildTargetPlanArtifacts } from '../../migration/plan/report'
+import { pilotScope } from '../../migration/scopes/pilot'
 import { productionScope } from '../../migration/scopes/production'
 import { productionFixture } from '../fixtures/productionInventory'
 import { describe, expect, it } from 'vitest'
+
+/**
+ * The fixture is a synthetic corpus whose paths differ from the real ones (node 10140 is
+ * `/products/eod-file/` where the real route is `/products/end-of-day-eod-file/`), so roots
+ * generated from the real plan can never match it. These cases therefore exercise the plan's own
+ * accepted-corpus rules with no external root set. Drift between the generated corpus and a
+ * regenerated plan is checked on real inventory runs, where `buildProductionTargetPlan` falls
+ * back to the generated corpus by default.
+ */
+const fixtureAcceptedRoots: never[] = []
 
 const evidence = {
   sourceSnapshotHash: 'source-snapshot-hash',
@@ -17,7 +28,9 @@ describe('production target plan', () => {
   it('turns the verified 317-route inventory into the explicit implementation plan', () => {
     const snapshot = productionFixture()
     const inventory = discoverProductionInventory(snapshot, productionScope)
-    const { plan, verification } = buildProductionTargetPlan(inventory, snapshot, evidence)
+    const { plan, verification } = buildProductionTargetPlan(inventory, snapshot, evidence, {
+      acceptedRoots: fixtureAcceptedRoots,
+    })
 
     expect(verification.status).toBe('passed')
     expect(verification.failures).toEqual([])
@@ -25,8 +38,10 @@ describe('production target plan', () => {
       routes: 317,
       payloadDocuments: 315,
       virtualIndexes: 2,
-      pocReadyDocuments: 71,
-      planOnlyDocuments: 244,
+      // With no external accepted-root set these are the plan's own accepted-corpus rules
+      // (People, legacy Events and /event/ posts) rather than the pilot slice's 71/244.
+      pocReadyDocuments: 45,
+      planOnlyDocuments: 270,
       systemReadyRoutes: 2,
       managedTaxonomies: 33,
       learningVideoCategories: 11,
@@ -34,19 +49,24 @@ describe('production target plan', () => {
       activeRedirects: 5,
       inactiveRedirects: 48,
     })
-    expect(
-      plan.routes
-        .filter(({ contentState }) => contentState === 'poc-ready')
-        .map(({ legacyId }) => legacyId)
-        .sort((left, right) => (left || 0) - (right || 0)),
-    ).toEqual(
-      expect.arrayContaining([
-      2461,
-      34, 1898, 1924, 1926, 1930, 1940, 2203, 2205, 2221, 2231, 2495, 3311, 3363, 4028, 4031, 4737,
-      4803, 5920, 5981, 5983, 6773, 7573, 7585, 7589, 7609, 8454, 9244, 9248, 9351, 10030, 11299,
-      11233, 11465, 11475,
-    ]),
+    // With no external accepted-root set, poc-ready is exactly the plan's own accepted corpus:
+    // People, legacy Events, posts published under /event/, and the hand-authored banner-target
+    // dependencies. Asserting the rule rather than a literal id list keeps this meaningful as the
+    // corpus grows.
+    const acceptedDependencyIDs = new Set<number>(
+      pilotScope.acceptedRouteDependencies.map(({ legacyId }) => legacyId),
     )
+    const pocReady = plan.routes.filter(({ contentState }) => contentState === 'poc-ready')
+    expect(pocReady.length).toBe(45)
+    expect(
+      pocReady.every(
+        ({ canonicalPath, legacyId, sourcePostType }) =>
+          sourcePostType === 'people' ||
+          sourcePostType === 'events' ||
+          (sourcePostType === 'post' && canonicalPath.startsWith('/event/')) ||
+          (legacyId !== null && acceptedDependencyIDs.has(legacyId)),
+      ),
+    ).toBe(true)
     expect(plan.routes.find(({ legacyId }) => legacyId === 11299)).toMatchObject({
       canonicalPath: '/eex-news/',
       contentState: 'poc-ready',
@@ -164,8 +184,12 @@ describe('production target plan', () => {
     }
 
     const inventory = discoverProductionInventory(snapshot, productionScope)
-    const first = buildProductionTargetPlan(inventory, snapshot, evidence)
-    const second = buildProductionTargetPlan(inventory, snapshot, evidence)
+    const first = buildProductionTargetPlan(inventory, snapshot, evidence, {
+      acceptedRoots: fixtureAcceptedRoots,
+    })
+    const second = buildProductionTargetPlan(inventory, snapshot, evidence, {
+      acceptedRoots: fixtureAcceptedRoots,
+    })
     const firstArtifacts = buildTargetPlanArtifacts(first.plan, first.verification)
     const secondArtifacts = buildTargetPlanArtifacts(second.plan, second.verification)
 
@@ -220,7 +244,9 @@ describe('production target plan', () => {
       ({ legacyId, taxonomy }) => legacyId !== 85 || taxonomy !== 'lh-category',
     )
 
-    const { plan, verification } = buildProductionTargetPlan(inventory, snapshot, evidence)
+    const { plan, verification } = buildProductionTargetPlan(inventory, snapshot, evidence, {
+      acceptedRoots: fixtureAcceptedRoots,
+    })
 
     expect(plan.summary.managedTaxonomies).toBe(32)
     expect(plan.summary.learningVideoCategories).toBe(10)
@@ -244,7 +270,19 @@ describe('production target plan', () => {
     joule.path = '/products/joule-renamed/'
     joule.canonicalPath = '/products/joule-renamed/'
 
-    const { plan, verification } = buildProductionTargetPlan(inventory, snapshot, evidence)
+    // This case is the drift check itself, so it needs a real accepted root to detect drift
+    // against: Joule at its original identity, which the renamed route can no longer satisfy.
+    const { plan, verification } = buildProductionTargetPlan(inventory, snapshot, evidence, {
+      acceptedRoots: [
+        {
+          legacyId: 1924,
+          postType: 'page',
+          path: '/products/joule/',
+          archetype: 'page.product',
+          targetOwner: 'pages',
+        },
+      ] as never,
+    })
     const plannedJoule = plan.routes.find(({ legacyId }) => legacyId === 1924)
 
     expect(plannedJoule).toMatchObject({
@@ -254,9 +292,7 @@ describe('production target plan', () => {
     })
     expect(verification.status).toBe('failed')
     expect(verification.failures).toEqual(
-      expect.arrayContaining([
-        'poc-root:1924: expected 1, received 0',
-      ]),
+      expect.arrayContaining(['poc-root:1924: expected 1, received 0']),
     )
   })
 
@@ -280,7 +316,9 @@ describe('production target plan', () => {
     })
 
     const inventory = discoverProductionInventory(snapshot, productionScope)
-    const { plan, verification } = buildProductionTargetPlan(inventory, snapshot, evidence)
+    const { plan, verification } = buildProductionTargetPlan(inventory, snapshot, evidence, {
+      acceptedRoots: fixtureAcceptedRoots,
+    })
 
     expect(plan.summary.managedTaxonomies).toBe(33)
     expect(plan.summary.learningVideoCategories).toBe(11)

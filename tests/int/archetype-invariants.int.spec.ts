@@ -984,7 +984,9 @@ describe.sequential('route archetype invariants', () => {
         draft: false,
         overrideAccess: true,
       }),
-    ).rejects.toThrow(/requires a managed description, layout, or market connections/i)
+    ).rejects.toThrow(
+      /requires a managed description, layout, market connections, website, or logo/i,
+    )
     await expectNoDocument('venues', venueSlug)
 
     const hub = await payload.create({

@@ -554,7 +554,9 @@ export const validateRoutableDocument = (
 
     if (collection === 'articles' && next.articleType === 'event') {
       const eventDetails =
-        next.eventDetails && typeof next.eventDetails === 'object' && !Array.isArray(next.eventDetails)
+        next.eventDetails &&
+        typeof next.eventDetails === 'object' &&
+        !Array.isArray(next.eventDetails)
           ? (next.eventDetails as UnknownRecord)
           : {}
       const startsAt = Date.parse(text(eventDetails.startsAt))
@@ -626,10 +628,16 @@ export const validateRoutableDocument = (
       resolution.archetype === 'venue.public-detail' &&
       layout.length === 0 &&
       !next.description &&
-      (!Array.isArray(next.marketConnections) || next.marketConnections.length === 0)
+      (!Array.isArray(next.marketConnections) || next.marketConnections.length === 0) &&
+      // The reference publishes venue details that carry nothing but an identity: it serves
+      // /venue/nasdaq-omx/ and /venue/nasdaq-commodities-europe/ at 200 with only a website
+      // link. Requiring body content would make those two routes 404 against a live 200, so a
+      // managed website or logo is accepted as the minimum a public venue detail needs.
+      !next.website &&
+      !next.logo
     ) {
       throw new APIError(
-        'A public venue detail requires a managed description, layout, or market connections before publication.',
+        'A public venue detail requires a managed description, layout, market connections, website, or logo before publication.',
         400,
       )
     }

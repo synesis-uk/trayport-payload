@@ -1457,6 +1457,12 @@ $legacyEventIds = get_posts([
     'no_found_rows' => true,
 ]);
 foreach ($legacyEventIds as $eventId) {
+    // Legacy Event records that own a canonical /event/ route are exported at root depth by the
+    // root loop above. Every other listing loop already skips roots; without the same guard here
+    // those records would be emitted twice and the second, shallower copy would win on load.
+    if (in_array((int) $eventId, $rootIds, true)) {
+        continue;
+    }
     tp_export_post(
         (int) $eventId,
         $mediaIds,

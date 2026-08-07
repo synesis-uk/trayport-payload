@@ -56,7 +56,9 @@ const matchesAcceptedRoute = (route: TargetPlanRoute, accepted: AcceptedRoute): 
   route.ownerKind === 'payload-document' &&
   route.legacyId === accepted.legacyId &&
   route.sourcePostType === accepted.postType &&
-  route.authoredPath === accepted.path &&
+  // Matched on the canonical path only. `authoredPath` is source-side provenance and can differ:
+  // page 9852 is authored at /home/enterprise-security/ but published at
+  // /products/enterprise-security/. Requiring both would make that route unacceptable forever.
   route.canonicalPath === accepted.path &&
   route.archetype === accepted.archetype &&
   route.targetCollection === accepted.targetOwner
@@ -67,12 +69,17 @@ const isAcceptedCorpusRoute = (route: TargetPlanRoute): boolean =>
     route.sourcePostType === 'events' ||
     (route.sourcePostType === 'post' && route.canonicalPath.startsWith('/event/')))
 
-const buildRoutes = (inventory: ProductionInventory): TargetPlanRoute[] => {
+const buildRoutes = (
+  inventory: ProductionInventory,
+  // Must be the same set `verifyPlan` uses, or the poc-ready assertion compares a count derived
+  // from one accepted corpus against a count derived from another.
+  acceptedRoots: readonly PilotRoot[] = pilotScope.roots,
+): TargetPlanRoute[] => {
   const archetypes = new Map(
     contentArchitectureContract.archetypes.map((archetype) => [archetype.id, archetype]),
   )
   const acceptedRoutesByID = new Map<number, AcceptedRoute>(
-    [...pilotScope.roots, ...pilotScope.acceptedRouteDependencies].map((route) => [
+    [...acceptedRoots, ...pilotScope.acceptedRouteDependencies].map((route) => [
       route.legacyId,
       route,
     ]),
@@ -328,7 +335,17 @@ const countRouteOwner = (
     )
   }).length
 
-const verifyPlan = (plan: ProductionTargetPlan, missingTerms: string[]): TargetPlanVerification => {
+/**
+ * `acceptedRoots` defaults to the generated production corpus. It is injectable because that
+ * corpus is now derived from a real plan, so asserting it against a synthetic fixture would
+ * demand routes the fixture never contained. For real inventory runs the default still catches
+ * drift between a regenerated plan and a stale root set.
+ */
+const verifyPlan = (
+  plan: ProductionTargetPlan,
+  missingTerms: string[],
+  acceptedRoots: readonly PilotRoot[] = pilotScope.roots,
+): TargetPlanVerification => {
   const uniqueCanonicalPaths = new Set(plan.routes.map(({ canonicalPath }) => canonicalPath)).size
   const requiredRoutePolicies = plan.routes.filter(
     ({ routePolicy }) => routePolicy === 'required',
@@ -359,7 +376,7 @@ const verifyPlan = (plan: ProductionTargetPlan, missingTerms: string[]): TargetP
     .filter(({ ownership }) => ownership === 'derived-collection-route')
     .reduce((total, { count }) => total + count, 0)
   const expectedPayloadDocumentCount = expectedRouteCount - expectedVirtualIndexCount
-  const acceptedRoutes = [...pilotScope.roots, ...pilotScope.acceptedRouteDependencies]
+  const acceptedRoutes = [...acceptedRoots, ...pilotScope.acceptedRouteDependencies]
   const acceptedDocumentKeys = new Set(
     plan.routes
       .filter(
@@ -434,7 +451,7 @@ const verifyPlan = (plan: ProductionTargetPlan, missingTerms: string[]): TargetP
       expected: 53,
       actual: plan.redirects.length,
     },
-    ...pilotScope.roots.map((root) => ({
+    ...acceptedRoots.map((root) => ({
       id: `poc-root:${root.legacyId}`,
       expected: 1,
       actual: plan.routes.filter((route) => matchesAcceptedRoute(route, root)).length,
@@ -493,8 +510,9 @@ export const buildProductionTargetPlan = (
   inventory: ProductionInventory,
   snapshot: RuntimeInventorySnapshot,
   evidence: PlanEvidence,
+  options?: { acceptedRoots?: readonly PilotRoot[] },
 ): { plan: ProductionTargetPlan; verification: TargetPlanVerification } => {
-  const routes = buildRoutes(inventory)
+  const routes = buildRoutes(inventory, options?.acceptedRoots)
   const taxonomies = buildTaxonomies(inventory, snapshot)
   const redirects = buildRedirects(inventory, snapshot, routes)
   const plan = productionTargetPlanSchema.parse({
@@ -521,6 +539,6 @@ export const buildProductionTargetPlan = (
     taxonomies: taxonomies.records,
     redirects,
   })
-  const verification = verifyPlan(plan, taxonomies.missingTerms)
+  const verification = verifyPlan(plan, taxonomies.missingTerms, options?.acceptedRoots)
   return { plan, verification }
 }
