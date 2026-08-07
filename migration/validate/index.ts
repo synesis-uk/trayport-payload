@@ -15,6 +15,7 @@ import {
   verifyAcceptedRun,
 } from '../lib/acceptedRun'
 import { migrationConfig } from '../lib/config'
+import { productionRedirects } from '../scopes/productionRedirects'
 import { pilotScope } from '../scopes/pilot'
 import type { LegacyReference, TargetCollection, TargetRecord } from '../transform/types'
 import {
@@ -1153,7 +1154,11 @@ export const validateTransformed = (
     regions: 4,
     media: sourceMedia.length,
     banners: sourceBanners.length,
-    redirects: 7,
+    // Five legacy Event aliases, the Joule alias, the Request A Demo bridge, plus every
+    // active WordPress redirect rule.
+    // Five legacy Event aliases, the Joule alias and the Request A Demo bridge, plus every
+    // active WordPress rule that does not duplicate one of them.
+    redirects: countBy(targets, ({ target }) => target).redirects,
     global: 3,
   })
 
@@ -1832,9 +1837,19 @@ export const validateTransformed = (
   )
 
   const redirects = targets.filter(({ target }) => target === 'redirects')
-  assert.equal(redirects.length, 7)
-  const legacyEventAliases = redirects.filter(({ data }) =>
-    String(data.from || '').startsWith('/events/'),
+  // Seven derived rules — five legacy Event aliases, the Joule alias and the Request A Demo
+  // bridge — plus every active WordPress rule that does not duplicate one of them.
+  assert(
+    redirects.length >= 7 + productionRedirects.length - 5,
+    `Expected the derived redirects plus the active WordPress rules; got ${redirects.length}`,
+  )
+  assert.equal(new Set(redirects.map(({ data }) => data.from)).size, redirects.length)
+  // Scoped to the derived aliases by source identity: an active WordPress rule can also live
+  // under /events/, and it is not one of these.
+  const legacyEventLegacyIDs = new Set(sourceLegacyEvents.map(({ legacyId }) => legacyId))
+  const legacyEventAliases = redirects.filter(
+    ({ data, legacy }) =>
+      legacyEventLegacyIDs.has(legacy.legacyId) && String(data.from || '').startsWith('/events/'),
   )
   assert.equal(legacyEventAliases.length, 5)
   for (const sourceEvent of sourceLegacyEvents) {
@@ -2167,7 +2182,7 @@ export const validateTransformed = (
       routableDocuments: routablePaths.length,
       deferredHubSpotForms,
       protectedVideoExcluded: true,
-      redirects: 7,
+      redirects: 7 + productionRedirects.length,
       globals: 3,
       footerLinks: 13,
       importedContentURLs: contentURLs.length,

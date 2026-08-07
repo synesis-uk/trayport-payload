@@ -12,6 +12,7 @@ import {
 import { assertRunNotAccepted, atomicWriteText, sealAcceptedRun } from '../lib/acceptedRun'
 import { migrationConfig } from '../lib/config'
 import { pilotScope, type AcceptedRouteDependency, type PilotRoot } from '../scopes/pilot'
+import { productionRedirects } from '../scopes/productionRedirects'
 import { validateSource, validateTransformed } from '../validate'
 import {
   asArray,
@@ -1683,6 +1684,49 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
             },
           },
           type: '301',
+        },
+      }),
+    )
+  }
+
+  // Active WordPress redirect rules. These are not in the extract — the exporter does not emit the
+  // `redirect` post type — so they come from the generated corpus and resolve to managed
+  // references rather than raw URLs, which keeps them inside the same link-integrity checks as
+  // every other internal destination.
+  // Some WordPress rules duplicate a derived alias — the legacy Event redirects are emitted above
+  // from the consolidation itself — so the derived rule wins and the duplicate is skipped.
+  const emittedRedirectSources = new Set(
+    targets.flatMap((candidate) =>
+      candidate.target === 'redirects' && typeof candidate.data.from === 'string'
+        ? [candidate.data.from]
+        : [],
+    ),
+  )
+  for (const redirect of productionRedirects) {
+    if (emittedRedirectSources.has(redirect.from)) continue
+    emittedRedirectSources.add(redirect.from)
+    targets.push(
+      finalizeTarget({
+        target: 'redirects',
+        legacy: {
+          source: 'wordpress',
+          legacyId: redirect.legacyId,
+          originalUrl: sourceURL(redirect.from),
+          modifiedGmt: null,
+        },
+        data: {
+          from: redirect.from,
+          to: {
+            type: 'reference',
+            reference: {
+              relationTo: redirect.targetOwner,
+              value: legacyRef(
+                redirect.targetOwner === 'articles' ? 'article' : 'page',
+                redirect.targetLegacyId,
+              ),
+            },
+          },
+          type: redirect.type,
         },
       }),
     )

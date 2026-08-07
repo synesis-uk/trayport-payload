@@ -175,7 +175,8 @@ describe.sequential('post-import acceptance', () => {
       eventArticles: 23,
       people: 17,
       protectedVideoExcluded: true,
-      redirects: 7,
+      // Seven derived rules plus every active WordPress rule that does not duplicate one.
+      redirects: 45,
       // Every content route owner in the corpus, against 70 in the pilot slice.
       routableDocuments: 314,
       marketMatrixAutoTraderConnections: 20,
