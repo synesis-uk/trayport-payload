@@ -72,7 +72,9 @@ export const VenueView = ({
           <header className="trayport-structured-venue__header">
             <div className="trayport-structured-venue__identity">
               <p className="trayport-eyebrow">{venueTypes.join(' · ') || 'Connected venue'}</p>
-              <Title>{document.title}</Title>
+              {/* The reference headlines a venue with its public display name where one is
+                  managed, falling back to the record title. */}
+              <Title>{document.summary || document.title}</Title>
             </div>
 
             {document.logo ? (

@@ -151,7 +151,10 @@ export const ContentSection: Block = {
         plural: 'Columns',
       },
       minRows: 1,
-      maxRows: 8,
+      // The reference authors up to ten columns in a single section — /products/customer-portal/
+      // alternates five text/media pairs — so the pilot-era bound of eight rejected real content.
+      // Twelve matches the grid the `span` values already divide.
+      maxRows: 12,
       required: true,
       admin: {
         className: 'trayport-admin-columns',
@@ -167,12 +170,10 @@ export const ContentSection: Block = {
           name: 'components',
           type: 'blocks',
           blocks: sectionComponents,
-          filterOptions: ({ data }) =>
-            data?.pageType === 'interactive'
-              ? true
-              : sectionComponents
-                  .filter(({ slug }) => slug !== 'marketMatrix')
-                  .map(({ slug }) => slug),
+          // The connectivity matrix is embeddable on any page — the reference uses it on the
+          // homepage and /markets/power/ as well as its dedicated page — so every section
+          // component is offered. At most one per page is enforced by the archetype invariants.
+          filterOptions: () => true,
           required: true,
           admin: {
             description: 'Add the editorial, media or data components shown in this column.',

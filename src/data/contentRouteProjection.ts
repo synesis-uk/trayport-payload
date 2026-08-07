@@ -92,6 +92,7 @@ export const contentRouteSelects = {
     marketConnections: true,
     meta: true,
     path: true,
+    summary: true,
     title: true,
     venueTypes: true,
     website: true,
@@ -190,6 +191,7 @@ export type VenueRouteDocument = Pick<
   | 'marketConnections'
   | 'meta'
   | 'path'
+  | 'summary'
   | 'title'
   | 'venueTypes'
   | 'website'

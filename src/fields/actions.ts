@@ -27,7 +27,9 @@ export const actionsField = (name = 'actions'): ArrayField => ({
     singular: 'Action',
     plural: 'Actions',
   },
-  maxRows: 4,
+  // The reference authors up to five actions in one group — /products/third-party-providers/
+  // uses a five-item in-page jump list — so four rejected real content.
+  maxRows: 6,
   fields: [
     {
       name: 'label',

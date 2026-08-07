@@ -1327,7 +1327,7 @@ export const mapPageLayout = (
   coverage: TransformCoverage,
   options: {
     appendArticleListing?: boolean
-    articleFamily?: 'insights' | 'news'
+    articleFamily?: 'all' | 'events' | 'insights' | 'news'
     appendLearningVideoListing?: boolean
     marketCoveragePresentation?: 'mapOnly' | 'summary'
     suppressedHeadingTexts?: readonly string[]
@@ -1427,7 +1427,14 @@ export const mapPageLayout = (
     blocks.push({
       blockType: 'articleListing',
       family: options.articleFamily || 'insights',
-      heading: options.articleFamily === 'news' ? 'Latest news' : 'Latest insights',
+      heading: (
+        {
+          all: 'Latest news, events and insights',
+          events: 'Upcoming and past events',
+          insights: 'Latest insights',
+          news: 'Latest news',
+        } as Record<string, string>
+      )[options.articleFamily || 'insights'],
       pageSize: 100,
       showCategoryFilter: true,
     })

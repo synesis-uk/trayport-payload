@@ -436,10 +436,20 @@ export const venueEditorialDataFromWordPress = (post: SourcePost, isPublic: bool
     meta.description = meta.description.trim()
   }
 
+  // `display_name` is the venue's public-facing name — the reference headlines its detail page
+  // with it and lists it alongside the title. Conditioning it on the record being private wiped
+  // it from every venue once the whole corpus became public. A handful of venues have a URL in
+  // that field instead of a name; keep those out rather than headlining a link.
+  const displayName = asString(post.acf.display_name)
+  const usableDisplayName =
+    displayName && !/^https?:\/\//i.test(displayName) && displayName !== post.title
+      ? displayName
+      : ''
+
   return {
     description: isPublic ? null : undefined,
     meta,
-    summary: isPublic ? null : asString(post.acf.display_name) || post.title,
+    summary: usableDisplayName || (isPublic ? null : post.title),
   }
 }
 
@@ -603,8 +613,16 @@ const mapPost = (
   if (post.postType === 'page') {
     const acceptedRoute = acceptedRouteByLegacyId.get(post.legacyId)
     if (acceptedRoute?.targetOwner === 'redirects') return null
-    const isInsights = post.legacyId === 9248
-    const isNews = post.legacyId === 9244
+    // The `articles-list` template renders its listing from the theme rather than from ACF, so
+    // the family is derived from the route rather than authored. Keyed on the path so every
+    // content-index page gets one, not just the three the pilot happened to include.
+    const articleListingFamilyByPath: Record<string, 'all' | 'events' | 'insights' | 'news'> = {
+      '/resources/events/': 'events',
+      '/resources/insights/': 'insights',
+      '/resources/news/': 'news',
+      '/resources/news-events-insights/': 'all',
+    }
+    const articleListingFamily = post.path ? articleListingFamilyByPath[post.path] : undefined
     const isLearningHub = post.legacyId === 3311
     const pageType =
       acceptedRoute && acceptedRoute.archetype in pageTypeByArchetype
@@ -620,8 +638,8 @@ const mapPost = (
           post.acf,
           coverage,
           {
-            appendArticleListing: isInsights || isNews,
-            articleFamily: isNews ? 'news' : 'insights',
+            appendArticleListing: Boolean(articleListingFamily),
+            articleFamily: articleListingFamily,
             appendLearningVideoListing: isLearningHub,
             marketCoveragePresentation: post.legacyId === 1898 ? 'mapOnly' : undefined,
             suppressedHeadingTexts:

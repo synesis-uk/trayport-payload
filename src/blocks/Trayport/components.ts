@@ -1171,15 +1171,16 @@ export const DataChartComponent: Block = {
               dbName: 'chart_type',
               defaultValue: 'stackedColumn',
               filterOptions: ({ options, siblingData }) => {
-                const chartType =
-                  siblingData?.seriesDimension === 'hub'
-                    ? siblingData?.dataType === 'price'
-                      ? 'line'
-                      : 'column'
-                    : 'stackedColumn'
+                // Price is only meaningful as a line. Volume can be plotted stacked or unstacked
+                // for either comparison — the reference does both — so offer that choice rather
+                // than pinning execution type to stacked columns.
+                const allowed =
+                  siblingData?.dataType === 'price'
+                    ? ['line']
+                    : ['stackedColumn', 'column']
 
-                return options.filter(
-                  (option) => (typeof option === 'string' ? option : option.value) === chartType,
+                return options.filter((option) =>
+                  allowed.includes(typeof option === 'string' ? option : String(option.value)),
                 )
               },
               options: [

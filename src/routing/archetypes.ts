@@ -288,11 +288,11 @@ const validateDataChartSemantics = (component: UnknownRecord): void => {
   }
 
   if (seriesDimension === 'executionType') {
-    if (dataType !== 'volume' || chartType !== 'stackedColumn') {
-      throw new APIError('Execution-type data charts require volume stacked columns.', 400)
-    }
-    if (includedHubIDs.length || excludedHubIDs.length) {
-      throw new APIError('Execution-type data charts cannot filter hubs.', 400)
+    // Execution type has no price series, so volume is still required. Presentation and hub
+    // filtering are not: the reference authors a plain column filtered to two hubs on
+    // /products/broker-trading-system/, and rejecting it here would make that route unpublishable.
+    if (dataType !== 'volume') {
+      throw new APIError('Execution-type data charts require volume data.', 400)
     }
     return
   }
@@ -599,10 +599,13 @@ export const validateRoutableDocument = (
       }
     }
 
+    // The reference embeds the connectivity matrix on ordinary pages as well as its dedicated
+    // one — the homepage and /markets/power/ both render it — so placement is not restricted.
+    // The dedicated archetype still requires exactly one, and no page may carry more than one.
     const marketMatrixCount = sectionComponentCount(layout, 'marketMatrix')
-    if (resolution.archetype !== 'page.interactive-market-matrix' && marketMatrixCount > 0) {
+    if (marketMatrixCount > 1) {
       throw new APIError(
-        `${resolution.archetype} does not allow the marketMatrix section component.`,
+        `${resolution.archetype} allows at most one marketMatrix section component.`,
         400,
       )
     }
