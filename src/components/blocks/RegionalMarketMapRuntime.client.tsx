@@ -54,6 +54,46 @@ type SourceData = {
   type: 'FeatureCollection'
 }
 
+// Route styling is hardcoded in the live theme and never varies by block setting
+// (markets-map.blade.php:120-123). HOVER_LINE_COLOR/HOVER_LINE_WIDTH there are deliberately
+// identical to the defaults, so hovering a route changes only the cursor. The block's migrated
+// line colour/opacity/width fields are authored in WordPress but never read by the live map.
+const ROUTE_LINE_COLOR = '#F56A00'
+const ROUTE_LINE_WIDTH = 2
+// markets-map.blade.php:142-143 — DEFAULT_LINE_MARKER_SIZE / ZOOMED_LINE_MARKER_SIZE, in CSS px.
+const ROUTE_MARKER_SIZE = 32
+const ROUTE_MARKER_ZOOMED_SIZE = 40
+const ROUTE_MARKER_IMAGE = 'trayport-route-marker'
+const ROUTE_MARKER_IMAGE_SIZE = 64
+const ROUTE_MARKER_IMAGE_PIXEL_RATIO = 2
+
+// The live theme stores a Font Awesome 6.7.2 `ship` glyph per connection in the ACF `marker_svg`
+// field and renders it as <svg viewBox="0 0 576 512" width=32 fill={asset class colour}>
+// (markets-map.blade.php:1127, 1145-1147). This is that stored artwork verbatim, inlined rather
+// than imported from the icon kit because eslint.config.mjs restricts '@awesome.me/**' to the
+// icon registry, and because frontend-system.md names specialist map geometry as an explicit
+// exception to that registry. The square raster reproduces the browser's default xMidYMid
+// letterboxing of a 576x512 viewBox inside a 32x32 element.
+const ROUTE_MARKER_VIEWBOX = [576, 512] as const
+const ROUTE_MARKER_PATH =
+  'M192 32c0-17.7 14.3-32 32-32L352 0c17.7 0 32 14.3 32 32l0 32 48 0c26.5 0 48 21.5 48 48l0 128 44.4 14.8c23.1 7.7 29.5 37.5 11.5 53.9l-101 92.6c-16.2 9.4-34.7 15.1-50.9 15.1c-19.6 0-40.8-7.7-59.2-20.3c-22.1-15.5-51.6-15.5-73.7 0c-17.1 11.8-38 20.3-59.2 20.3c-16.2 0-34.7-5.7-50.9-15.1l-101-92.6c-18-16.5-11.6-46.2 11.5-53.9L96 240l0-128c0-26.5 21.5-48 48-48l48 0 0-32zM160 218.7l107.8-35.9c13.1-4.4 27.3-4.4 40.5 0L416 218.7l0-90.7-256 0 0 90.7zM306.5 421.9C329 437.4 356.5 448 384 448c26.9 0 55.4-10.8 77.4-26.1c0 0 0 0 0 0c11.9-8.5 28.1-7.8 39.2 1.7c14.4 11.9 32.5 21 50.6 25.2c17.2 4 27.9 21.2 23.9 38.4s-21.2 27.9-38.4 23.9c-24.5-5.7-44.9-16.5-58.2-25C449.5 501.7 417 512 384 512c-31.9 0-60.6-9.9-80.4-18.9c-5.8-2.7-11.1-5.3-15.6-7.7c-4.5 2.4-9.7 5.1-15.6 7.7c-19.8 9-48.5 18.9-80.4 18.9c-33 0-65.5-10.3-94.5-25.8c-13.4 8.4-33.7 19.3-58.2 25c-17.2 4-34.4-6.7-38.4-23.9s6.7-34.4 23.9-38.4c18.1-4.2 36.2-13.3 50.6-25.2c11.1-9.4 27.3-10.1 39.2-1.7c0 0 0 0 0 0C136.7 437.2 165.1 448 192 448c27.5 0 55-10.6 77.5-26.1c11.1-7.9 25.9-7.9 37 0z'
+
+const routeMarkerImage = (color: string): ImageData | null => {
+  const size = ROUTE_MARKER_IMAGE_SIZE * ROUTE_MARKER_IMAGE_PIXEL_RATIO
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const context = canvas.getContext('2d')
+  if (!context) return null
+  const [viewBoxWidth, viewBoxHeight] = ROUTE_MARKER_VIEWBOX
+  const scale = size / Math.max(viewBoxWidth, viewBoxHeight)
+  context.translate((size - viewBoxWidth * scale) / 2, (size - viewBoxHeight * scale) / 2)
+  context.scale(scale, scale)
+  context.fillStyle = color
+  context.fill(new Path2D(ROUTE_MARKER_PATH))
+  return context.getImageData(0, 0, size, size)
+}
+
 // Layers painted above the country and region fills, in paint order. The hub label layer is
 // part of this set because once a region is selected the live map replaces the hub dot with the
 // label chip entirely, so the chip — not the circle — is what the pointer actually hits.
@@ -104,6 +144,58 @@ const addHubChipImage = (map: mapboxgl.Map) => {
     },
   )
 }
+
+const REGION_CHIP_IMAGE_ID = 'trayport-region-chip'
+
+// The live map labels each region with a permanent popup styled `bg-white/10 py-1 rounded-md`
+// over 14px/16px centred white text (trayport.css:902-908). Same stretchable-icon technique as
+// the hub chip, with the reference's own radius and translucency.
+const addRegionChipImage = (map: mapboxgl.Map) => {
+  if (map.hasImage(REGION_CHIP_IMAGE_ID)) return
+  const scale = 2
+  const size = 24 * scale
+  const radius = 6 * scale
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const context = canvas.getContext('2d')
+  if (!context) return
+  context.fillStyle = 'rgba(255, 255, 255, 0.1)'
+  context.beginPath()
+  context.roundRect(0, 0, size, size, radius)
+  context.fill()
+  map.addImage(
+    REGION_CHIP_IMAGE_ID,
+    {
+      data: new Uint8Array(context.getImageData(0, 0, size, size).data),
+      height: size,
+      width: size,
+    },
+    {
+      content: [radius, radius, size - radius, size - radius],
+      pixelRatio: scale,
+      stretchX: [[radius, size - radius]],
+      stretchY: [[radius, size - radius]],
+    },
+  )
+}
+
+// One point per region that has both a centre and a label. The live map draws these while no
+// region is selected and removes them on selection (markets-map.blade.php:284-286).
+const regionLabelFeatures = (index: RegionalMarketMapIndex): SourceData =>
+  featureCollection(
+    index.regions.flatMap((region) =>
+      region.centre && region.label
+        ? [
+            {
+              geometry: { coordinates: region.centre, type: 'Point' },
+              properties: { regionID: region.id, title: region.label },
+              type: 'Feature' as const,
+            },
+          ]
+        : [],
+    ),
+  )
 
 const marketNumber = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 2 })
 
@@ -193,12 +285,29 @@ const routeSegments = (route: TrayportGeoJSON | null): TrayportPosition[][] =>
     })
   })
 
+// markets-map.blade.php:1204-1205 places the glyph with turf.along(feat, turf.length(feat) / 2),
+// which measures great-circle kilometres. Measuring a planar hypot over raw degrees instead moves
+// the glyph 565 km on the LNG Europe -> LNG Asia route (planar 61.4305,12.1500 vs live 64.75,8.1948)
+// and 462 km on LNG Europe -> Henry Hub (planar -52.9745,33.0868 vs live -57.00,30.6474).
+const EARTH_RADIUS_KM = 6371.0088
+
+const toRadians = (degrees: number): number => (degrees * Math.PI) / 180
+
+const greatCircleDistance = (start: TrayportPosition, end: TrayportPosition): number => {
+  const deltaLatitude = toRadians(end[1] - start[1])
+  const deltaLongitude = toRadians(end[0] - start[0])
+  const haversine =
+    Math.sin(deltaLatitude / 2) ** 2 +
+    Math.sin(deltaLongitude / 2) ** 2 * Math.cos(toRadians(start[1])) * Math.cos(toRadians(end[1]))
+  return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(haversine))
+}
+
 const segmentMidpoint = (segments: TrayportPosition[][]): TrayportPosition | null => {
   const distances = segments.flatMap((positions) =>
     positions.slice(1).flatMap((end, index) => {
       const start = positions[index]
       if (!start) return []
-      const distance = Math.hypot(end[0] - start[0], end[1] - start[1])
+      const distance = greatCircleDistance(start, end)
       return distance ? [{ distance, end, start }] : []
     }),
   )
@@ -390,6 +499,9 @@ export default function RegionalMarketMapRuntime({
   // The click handlers are registered once, in an effect that does not depend on the active
   // region, so they must read it through a ref or they capture its mount-time value forever.
   const activeRegionRef = useRef(activeRegionID)
+  // The route-marker image is registered once inside the style effect, so it has to read the active
+  // asset class through a ref to pick its first colour; the data effect re-tints it afterwards.
+  const activeAssetClassIDRef = useRef(activeAssetClassID)
 
   useEffect(() => {
     callbacksRef.current = { onCountrySelect, onError, onHubSelect, onReady, onRegionSelect }
@@ -398,6 +510,10 @@ export default function RegionalMarketMapRuntime({
   useEffect(() => {
     activeRegionRef.current = activeRegionID
   }, [activeRegionID])
+
+  useEffect(() => {
+    activeAssetClassIDRef.current = activeAssetClassID
+  }, [activeAssetClassID])
 
   useEffect(() => {
     const container = containerRef.current
@@ -436,6 +552,10 @@ export default function RegionalMarketMapRuntime({
         if (!map) return
         const firstSymbol = map.getStyle().layers?.find(({ type }) => type === 'symbol')?.id
         map.addSource('trayport-regions', { data: regionFeatures(index) as never, type: 'geojson' })
+        map.addSource('trayport-region-labels', {
+          data: regionLabelFeatures(index) as never,
+          type: 'geojson',
+        })
         map.addSource('trayport-hubs', {
           data: featureCollection([]) as never,
           type: 'geojson',
@@ -510,11 +630,10 @@ export default function RegionalMarketMapRuntime({
         map.addLayer(
           {
             id: 'trayport-routes',
-            layout: { 'line-cap': 'round', 'line-join': 'round' },
             paint: {
-              'line-color': lineColor,
-              'line-opacity': lineOpacity,
-              'line-width': lineWidth,
+              'line-color': ROUTE_LINE_COLOR,
+              'line-opacity': 1,
+              'line-width': ROUTE_LINE_WIDTH,
             },
             source: 'trayport-routes',
             type: 'line',
@@ -555,6 +674,25 @@ export default function RegionalMarketMapRuntime({
           },
           source: 'trayport-hubs',
           type: 'circle',
+        })
+        addRegionChipImage(map)
+        map.addLayer({
+          id: 'trayport-region-labels',
+          layout: {
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+            'icon-image': REGION_CHIP_IMAGE_ID,
+            'icon-text-fit': 'both',
+            'text-allow-overlap': true,
+            'text-anchor': 'center',
+            'text-field': ['get', 'title'],
+            'text-ignore-placement': true,
+            'text-line-height': 1.14,
+            'text-size': 14,
+          },
+          paint: { 'text-color': '#ffffff' },
+          source: 'trayport-region-labels',
+          type: 'symbol',
         })
         addHubChipImage(map)
         map.addLayer({
@@ -597,17 +735,28 @@ export default function RegionalMarketMapRuntime({
           source: 'trayport-hubs',
           type: 'symbol',
         })
+        const initialRouteMarkerImage = routeMarkerImage(
+          index.assetClasses.find(({ id }) => id === activeAssetClassIDRef.current)?.color ||
+            '#f7ea48',
+        )
+        if (initialRouteMarkerImage && !map.hasImage(ROUTE_MARKER_IMAGE)) {
+          map.addImage(ROUTE_MARKER_IMAGE, initialRouteMarkerImage, {
+            pixelRatio: ROUTE_MARKER_IMAGE_PIXEL_RATIO,
+          })
+        }
         map.addLayer({
           id: 'trayport-route-markers',
-          paint: {
-            'circle-color': '#ff671f',
-            'circle-opacity': 1,
-            'circle-radius': 7,
-            'circle-stroke-color': '#ffffff',
-            'circle-stroke-width': 2,
+          layout: {
+            // markets-map.blade.php:1207 anchors the DOM marker at 'center' and never lets Mapbox
+            // collide-hide it, since it is a Marker rather than a symbol.
+            'icon-allow-overlap': true,
+            'icon-anchor': 'center',
+            'icon-ignore-placement': true,
+            'icon-image': ROUTE_MARKER_IMAGE,
+            'icon-size': ROUTE_MARKER_SIZE / ROUTE_MARKER_IMAGE_SIZE,
           },
           source: 'trayport-route-markers',
-          type: 'circle',
+          type: 'symbol',
         })
         map.addLayer({
           filter: ['!=', ['get', 'marketDisplay'], ''],
@@ -719,6 +868,13 @@ export default function RegionalMarketMapRuntime({
           if (map) map.getCanvas().style.cursor = ''
           popupRef.current?.remove()
         })
+        // markets-map.blade.php:1180-1189 — the live route hover sets the pointer cursor and then
+        // repaints line-color/line-width with HOVER_LINE_COLOR '#F56A00' and HOVER_LINE_WIDTH 2,
+        // which are the SAME values as DEFAULT_LINE_COLOR/DEFAULT_LINE_WIDTH
+        // (markets-map.blade.php:120-123). Hovering a route therefore produces no colour or width
+        // change on the live site, and neither does the region-hover path that reuses the same
+        // constants (markets-map.blade.php:410-411, 418-419). Parity requires no setPaintProperty
+        // here; adding one would be a deviation, not a restoration.
         register('mouseenter', 'trayport-routes', (event) => {
           if (!map) return
           map.getCanvas().style.cursor = 'pointer'
@@ -844,6 +1000,20 @@ export default function RegionalMarketMapRuntime({
     source(map, 'trayport-route-markers')?.setData(
       (showLines ? routeMarkerFeatures(index, visible) : featureCollection([])) as never,
     )
+    // markets-map.blade.php:1137/1147 tint the glyph with the ACTIVE asset class colour
+    // (updateAllMarkerIcons, markets-map.blade.php:911-921), and 1128 grows it from 32 to 40 once a
+    // region has been zoomed into (`zoomed`, set at markets-map.blade.php:335, cleared at 364).
+    const routeMarkerFill =
+      index.assetClasses.find(({ id }) => id === activeAssetClassID)?.color || '#f7ea48'
+    const nextRouteMarkerImage = routeMarkerImage(routeMarkerFill)
+    if (nextRouteMarkerImage && map.hasImage(ROUTE_MARKER_IMAGE)) {
+      map.updateImage(ROUTE_MARKER_IMAGE, nextRouteMarkerImage)
+    }
+    map.setLayoutProperty(
+      'trayport-route-markers',
+      'icon-size',
+      (activeRegionID ? ROUTE_MARKER_ZOOMED_SIZE : ROUTE_MARKER_SIZE) / ROUTE_MARKER_IMAGE_SIZE,
+    )
     source(map, 'trayport-pois')?.setData(pointOfInterestFeatures(index, activeRegionID) as never)
     const countries = [
       ...new Set(
@@ -873,26 +1043,44 @@ export default function RegionalMarketMapRuntime({
       : null
     map.setFilter('trayport-region-fill', regionFilter)
     map.setFilter('trayport-region-outline', regionFilter)
+    // The reference removes the permanent region names once a region is selected and restores
+    // them on reset (markets-map.blade.php:284-286).
+    map.setLayoutProperty(
+      'trayport-region-labels',
+      'visibility',
+      activeRegionID ? 'none' : 'visible',
+    )
 
     const selectedRegion = index.regions.find(({ id }) => id === activeRegionID)
     const regionPositions = selectedRegion ? geoJSONPositions(selectedRegion.boundary) : []
     const markerPositions = index.hubs
       .filter(({ id }) => visible.has(id))
       .flatMap(({ points }) => points.map(({ location }) => location))
-    const positions =
-      zoomTo === 'region' && regionPositions.length ? regionPositions : markerPositions
+    // Live fit constants, markets-map.blade.php:132-135 — MAX_ZOOM 5, ZOOM_DURATION 500,
+    // MARKER_ZOOM_PADDING 100 (uniform), REGION_ZOOM_PADDING 1.
+    const usingRegionBounds = zoomTo === 'region' && regionPositions.length > 0
+    const positions = usingRegionBounds
+      ? regionPositions
+      : markerPositions.length
+        ? markerPositions
+        : regionPositions
     if (positions.length) {
       const bounds = new mapboxgl.LngLatBounds()
       positions.forEach((position) => bounds.extend(position))
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      // markets-map.blade.php:355 fits markers at 100; :331/:357/:1271 fit the region bbox at 1.
+      const fitPadding = usingRegionBounds || markerPositions.length === 0 ? 1 : 100
       map.fitBounds(bounds, {
-        duration: reducedMotion ? 0 : 450,
+        duration: reducedMotion ? 0 : 500,
         maxZoom: 5,
         padding: {
-          bottom: 52,
-          left: 48,
-          right: showSidebar && selectedHubIDs.length ? 340 : 48,
-          top: 52,
+          bottom: fitPadding,
+          left: fitPadding,
+          // markets-map.blade.php:931 eases camera padding to right 300 for a 288px sidebar.
+          // This sidebar is 320px at an 8px inset, so 340 is the equivalent clearance; the
+          // literal 300 would fit markers 28px underneath the panel.
+          right: showSidebar && selectedHubIDs.length ? 340 : fitPadding,
+          top: fitPadding,
         },
       })
     }
