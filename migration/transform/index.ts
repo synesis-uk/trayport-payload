@@ -1340,6 +1340,14 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
       )
       .map((record) => [record.legacyId, record]),
   )
+  // Hubs that own a public route arrive as full `post` records. The map-hub pass must not also
+  // emit them, or one legacy identity would have two writers and the shallower map-only target
+  // would win on load, discarding the hub's page content.
+  const hubPostLegacyIds = new Set(
+    records.flatMap((record) =>
+      record.entity === 'post' && record.postType === 'hub' ? [record.legacyId] : [],
+    ),
+  )
   const mapRegions = new Map(
     records
       .filter(
@@ -1474,7 +1482,7 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
     }
 
     if (record.entity === 'map-hub') {
-      if (record.legacyId !== 2495) {
+      if (record.legacyId !== 2495 && !hubPostLegacyIds.has(record.legacyId)) {
         targets.push(mapHubTarget(record))
       }
       continue

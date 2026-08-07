@@ -346,9 +346,7 @@ const entityItemsFrom = (
     .filter(Boolean) as Record<string, unknown>[]
 }
 
-export const statsRightComponentsFromWordPress = (
-  value: unknown,
-): TargetComponent[] => {
+export const statsRightComponentsFromWordPress = (value: unknown): TargetComponent[] => {
   const source = asObject(value)
   const content = asObject(source.content || value)
   const components: TargetComponent[] = []
@@ -899,6 +897,22 @@ const mapComponent = (
         .filter(Boolean) as Record<string, unknown>[]
       return items.length ? [{ blockType: 'timeline', items }] : []
     }
+    case 'market-matrix': {
+      // The reference embeds the same venue connectivity matrix the dedicated page renders and
+      // exposes no per-placement configuration, so the managed defaults carry it.
+      return [
+        {
+          blockType: 'marketMatrix',
+          caption: htmlToPlainText(component.title) || 'Trayport venue connectivity by market hub',
+          assetClasses: [],
+          venueTypes: [],
+          regions: [],
+          defaultView: 'joule',
+          showFilters: true,
+          showDownload: true,
+        },
+      ]
+    }
     case 'table': {
       const table = asObject(component.table)
       const fields = asObject(table.fields)
@@ -1340,6 +1354,42 @@ export const mapPageLayout = (
       if (block) blocks.push(block)
       continue
     }
+    // A table authored at the top level is the same component the reference renders inside a
+    // section, so wrap it in a reading-width section rather than introducing a second table path.
+    if (layout === 'table') {
+      const mapped = mapComponent(section, coverage, reusables, links)
+      if (mapped.length) {
+        blocks.push({
+          blockType: 'contentSection',
+          anchor: asString(section.anchor),
+          surfaceTone: 'white',
+          wrapperTheme: 'none',
+          backgroundOpacity: 'none',
+          surfaceRadius: 'default',
+          surfacePadding: 'none',
+          width: 'reading',
+          spacingTop: 'regular',
+          spacingBottom: 'regular',
+          columnGap: 'regular',
+          columns: [
+            {
+              span: '12',
+              horizontalAlign: 'left',
+              verticalAlign: 'start',
+              heightMode: 'fill',
+              componentGap: 'regular',
+              padding: 'none',
+              surface: 'none',
+              border: 'none',
+              backgroundOpacity: 'none',
+              radius: 'default',
+              components: mapped,
+            },
+          ],
+        })
+      }
+      continue
+    }
 
     coverage.unsupportedTopLevelLayouts.push(layout || '(missing)')
   }
@@ -1502,6 +1552,13 @@ export const mapArticleLayout = (
       component = {
         ...section,
         acf_fc_layout: 'form',
+      }
+    } else if (layout === 'table') {
+      // Articles author tables at the same level as their prose, so they map through the shared
+      // table component rather than a section wrapper.
+      component = {
+        ...section,
+        acf_fc_layout: 'table',
       }
     } else {
       coverage.unsupportedTopLevelLayouts.push(layout || '(missing)')

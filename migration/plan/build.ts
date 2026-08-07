@@ -56,10 +56,10 @@ const matchesAcceptedRoute = (route: TargetPlanRoute, accepted: AcceptedRoute): 
   route.ownerKind === 'payload-document' &&
   route.legacyId === accepted.legacyId &&
   route.sourcePostType === accepted.postType &&
-  // Matched on the canonical path only. `authoredPath` is source-side provenance and can differ:
-  // page 9852 is authored at /home/enterprise-security/ but published at
-  // /products/enterprise-security/. Requiring both would make that route unacceptable forever.
-  route.canonicalPath === accepted.path &&
+  // Matched on the canonical path. A root's `path` is its WordPress permalink, which can differ
+  // from where it publishes when a route family was consolidated — the three legacy Events are
+  // served at /events/ but publish under /event/ — so roots carry an explicit canonical path.
+  route.canonicalPath === ('canonicalPath' in accepted ? accepted.canonicalPath : accepted.path) &&
   route.archetype === accepted.archetype &&
   route.targetCollection === accepted.targetOwner
 

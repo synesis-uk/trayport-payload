@@ -58,6 +58,17 @@ if (!runId) throw new Error(`No production target plan found under ${inventoryDi
 const planPath = path.join(inventoryDir, runId, 'production-target-plan.json')
 const plan = JSON.parse(fs.readFileSync(planPath, 'utf8')) as { routes: PlanRoute[] }
 
+/**
+ * `path` is the WordPress permalink and is what source validation compares against; the plan's
+ * canonical path can differ where a route family was consolidated (the three legacy Events are
+ * served at /events/ but publish under /event/). Roots therefore carry both.
+ */
+const snapshotPath = path.join(inventoryDir, runId, 'source-snapshot.json')
+const snapshot = JSON.parse(fs.readFileSync(snapshotPath, 'utf8')) as {
+  nodes: Array<{ legacyId: number; path: string | null }>
+}
+const sourcePathByLegacyId = new Map(snapshot.nodes.map((node) => [node.legacyId, node.path]))
+
 const routes = plan.routes
   .filter(
     (route) =>
@@ -89,7 +100,10 @@ for (const route of routes) {
   lines.push('  {')
   lines.push(`    legacyId: ${route.legacyId},`)
   lines.push(`    postType: ${quote(route.sourcePostType)},`)
-  lines.push(`    path: ${quote(route.canonicalPath)},`)
+  lines.push(
+    `    path: ${quote(sourcePathByLegacyId.get(route.legacyId as number) || route.canonicalPath)},`,
+  )
+  lines.push(`    canonicalPath: ${quote(route.canonicalPath)},`)
   lines.push(`    purpose: ${quote((route.title || '').slice(0, 80))},`)
   lines.push(`    archetype: ${quote(route.archetype)},`)
   lines.push(`    targetOwner: ${quote(route.targetCollection)},`)

@@ -1237,6 +1237,10 @@ $hubConnections = $hubId > 0
 $mediaIds = [];
 $termIds = [];
 
+// Featured Insights carry an explicit running order. Defined before the root loop so posts that
+// own a public route keep their order rather than losing it to root-depth export.
+$featuredOrder = array_flip([11694, 11553, 11203, 10790]);
+
 foreach ($rootIds as $postId) {
     $postType = get_post_type($postId);
     if ($postType === 'page') {
@@ -1255,13 +1259,15 @@ foreach ($rootIds as $postId) {
             'root'
         );
     } elseif ($postType === 'post') {
+        $isFeaturedRoot = isset($featuredOrder[(int) $postId]);
         tp_export_post(
             (int) $postId,
             $mediaIds,
             $termIds,
             ['article_header', 'location', 'display_date', 'featured', 'sections', 'page_settings'],
             true,
-            'root'
+            'root',
+            $isFeaturedRoot ? (int) $featuredOrder[(int) $postId] : null
         );
     } elseif ($postType === 'hub') {
         tp_export_post(
@@ -1396,7 +1402,6 @@ $insightsIds = get_posts([
     'order' => 'ASC',
     'no_found_rows' => true,
 ]);
-$featuredOrder = array_flip([11694, 11553, 11203, 10790]);
 foreach ($insightsIds as $articleId) {
     if (in_array((int) $articleId, $rootIds, true)) {
         continue;

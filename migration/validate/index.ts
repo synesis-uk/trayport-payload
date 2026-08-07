@@ -35,7 +35,12 @@ const pilotSourcePageCount = pilotScope.roots.filter(({ postType }) => postType 
 const pilotTargetPageCount = pilotScope.roots.filter(
   ({ targetOwner }) => targetOwner === 'pages',
 ).length
-const expectedNavigationFooterLiveFallbacks = 30
+/**
+ * CA-021 bridges navigation and footer destinations that the corpus does not yet own to canonical
+ * www.trayport.com URLs. Widening the corpus from the 26-root pilot to all 317 routes retires 24
+ * of them: only these remain unowned.
+ */
+const expectedNavigationFooterLiveFallbacks = 6
 
 const expectedPeopleLegacyIDs = [
   2561, 2563, 2570, 2571, 2667, 2668, 2670, 4145, 4146, 4837, 4839, 4841, 4843, 9253, 10395, 11232,
@@ -260,13 +265,14 @@ export const assertTransformedDataChartContracts = (targets: TargetRecord[]): nu
       `Data chart at ${valuePath} has an unsupported display interval.`,
     )
     if (chart.seriesDimension === 'executionType') {
+      // Written when the only execution-type chart in scope was the homepage's unfiltered stacked
+      // column. The wider corpus disproves both halves: /products/broker-trading-system/ authors a
+      // plain column filtered to two hubs. Volume is still required — execution type has no price
+      // series — but presentation and hub filtering follow the source. The frontend renders the
+      // shapes it supports and degrades the rest to its accessible data table.
       assert(
-        chart.dataType === 'volume' && chart.chartType === 'stackedColumn',
-        `Execution-type data chart at ${valuePath} must use volume stacked columns.`,
-      )
-      assert(
-        includedHubIDs.length === 0 && excludedHubIDs.length === 0,
-        `Execution-type data chart at ${valuePath} cannot filter hubs.`,
+        chart.dataType === 'volume',
+        `Execution-type data chart at ${valuePath} must use volume data.`,
       )
     } else {
       assert.equal(
@@ -653,21 +659,22 @@ export const validateSource = (
   const bannerActionPages = pages.filter(({ scopeRole }) => scopeRole === 'banner-action')
   const bannerDependencyPages = [...bannerTargetPages, ...bannerActionPages]
   assert.equal(pages.length, pilotSourcePageCount + bannerDependencyPages.length)
-  assert.equal(pages.filter(({ scopeRole }) => scopeRole === 'root').length, 22)
-  assert.deepEqual(
-    sortedNumbers(bannerTargetPages.map(({ legacyId }) => legacyId)),
-    [1930, 1940, 4028, 6773],
-  )
-  assert.deepEqual(sortedNumbers(bannerActionPages.map(({ legacyId }) => legacyId)), [11299])
+  assert.equal(pages.filter(({ scopeRole }) => scopeRole === 'root').length, pilotSourcePageCount)
+  // Banner dependencies must be exported, but a page that is itself a route owner arrives at root
+  // depth instead — the exporter's banner loops skip roots. Assert reachability, not the role.
+  const exportedPageIDs = new Set(pages.map(({ legacyId }) => legacyId))
+  for (const bannerTargetID of [1930, 1940, 4028, 6773, 11299]) {
+    assert(exportedPageIDs.has(bannerTargetID), `Missing banner dependency page ${bannerTargetID}`)
+  }
 
   const articles = posts.filter(({ postType }) => postType === 'post')
   const coreEvents = articles.filter(({ taxonomies }) => taxonomies.category?.includes(119))
   const legacyEvents = posts.filter(({ postType }) => postType === 'events')
   assert.equal(articles.length, 90)
-  assert.equal(articles.filter(({ scopeRole }) => scopeRole === 'insights-listing').length, 38)
-  assert.equal(articles.filter(({ scopeRole }) => scopeRole === 'news-listing').length, 31)
-  assert.equal(articles.filter(({ scopeRole }) => scopeRole === 'event-listing').length, 19)
-  assert.equal(articles.filter(({ scopeRole }) => scopeRole === 'root').length, 2)
+  assert.equal(
+    articles.filter(({ scopeRole }) => scopeRole === 'root').length,
+    pilotScope.roots.filter(({ postType }) => postType === 'post').length,
+  )
   assert.equal(articles.filter(({ taxonomies }) => taxonomies.category?.includes(120)).length, 39)
   assert.equal(articles.filter(({ taxonomies }) => taxonomies.category?.includes(111)).length, 31)
   assert.equal(coreEvents.length, 20)
@@ -679,9 +686,12 @@ export const validateSource = (
     sortedNumbers(legacyEvents.map(({ legacyId }) => legacyId)),
     expectedLegacyEventLegacyIDs,
   )
+  // Legacy Events that own a canonical /event/ route are exported at root depth; the rest arrive
+  // as listing members.
   assert(
     legacyEvents.every(
-      ({ scopeRole, status }) => scopeRole === 'event-listing' && status === 'publish',
+      ({ scopeRole, status }) =>
+        (scopeRole === 'event-listing' || scopeRole === 'root') && status === 'publish',
     ),
   )
   assert.equal(new Set(coreEvents.map(({ slug }) => slug)).size, 20)
@@ -713,8 +723,14 @@ export const validateSource = (
 
   const venues = posts.filter(({ postType }) => postType === 'venue')
   assert.equal(venues.length, 66)
-  assert.equal(venues.filter(({ scopeRole }) => scopeRole === 'root').length, 1)
-  assert.equal(venues.filter(({ scopeRole }) => scopeRole === 'venue-summary').length, 65)
+  // Every venue that owns a public route is exported at root depth; any remaining record arrives
+  // as a summary for the Matrix projection.
+  const rootVenueCount = pilotScope.roots.filter(({ postType }) => postType === 'venue').length
+  assert.equal(venues.filter(({ scopeRole }) => scopeRole === 'root').length, rootVenueCount)
+  assert.equal(
+    venues.filter(({ scopeRole }) => scopeRole === 'venue-summary').length,
+    venues.length - rootVenueCount,
+  )
   const sourceVenueConnections = venues.flatMap((venue) =>
     arrayValue(venue.acf.connections).map((connection) => ({
       hubLegacyId: referenceID(objectValue(connection).hub, 'post'),
@@ -754,10 +770,16 @@ export const validateSource = (
 
   const learningVideos = posts.filter(({ postType }) => postType === 'learning-hub-video')
   assert.equal(learningVideos.length, 15)
-  assert.equal(learningVideos.filter(({ scopeRole }) => scopeRole === 'root').length, 1)
+  const rootLearningVideoCount = pilotScope.roots.filter(
+    ({ postType }) => postType === 'learning-hub-video',
+  ).length
+  assert.equal(
+    learningVideos.filter(({ scopeRole }) => scopeRole === 'root').length,
+    rootLearningVideoCount,
+  )
   assert.equal(
     learningVideos.filter(({ scopeRole }) => scopeRole === 'learning-listing').length,
-    14,
+    learningVideos.length - rootLearningVideoCount,
   )
   assert(
     learningVideos.every(
@@ -1186,10 +1208,7 @@ export const validateTransformed = (
     nestedComponents(eWorldArticle)
       .filter(({ blockType }) => blockType === 'hubspotForm')
       .map(({ formId }) => formId),
-    [
-      '8c3a5fef-87b8-43c2-9662-fb663f0f3e9f',
-      'af88756a-8035-4bf7-80a6-db5b6250ebe2',
-    ],
+    ['8c3a5fef-87b8-43c2-9662-fb663f0f3e9f', 'af88756a-8035-4bf7-80a6-db5b6250ebe2'],
   )
 
   const marketMatrixPage = targets.find(
@@ -1303,8 +1322,12 @@ export const validateTransformed = (
   const fullArticles = articles.filter(({ data }) => data.contentMode === 'full')
   const listingArticles = articles.filter(({ data }) => data.contentMode === 'listing')
   const eventArticles = articles.filter(({ data }) => data.articleType === 'event')
-  assert.equal(fullArticles.length, 24)
-  assert.equal(listingArticles.length, 69)
+  // Every article that owns a public route is full; the rest remain listing metadata.
+  const rootArticleCount = pilotScope.roots.filter(
+    ({ postType }) => postType === 'post' || postType === 'events',
+  ).length
+  assert.equal(fullArticles.length, rootArticleCount)
+  assert.equal(listingArticles.length, articles.length - rootArticleCount)
   assert.equal(eventArticles.length, 23)
   assert.deepEqual(
     sortedNumbers(eventArticles.map(({ legacy }) => legacy.legacyId)),
@@ -1564,7 +1587,9 @@ export const validateTransformed = (
       toYear: 2025,
     },
   ])
-  assert.equal(dataChartCount, 6)
+  // Corpus-dependent: six in the pilot, plus the execution-type chart on
+  // /products/broker-trading-system/ that the full route corpus brings in.
+  assert.equal(dataChartCount, 7)
   const joule = targets.find(({ target, legacy }) => target === 'pages' && legacy.legacyId === 1924)
   assert(joule)
   const featureLists = (record: TargetRecord): Record<string, unknown>[] =>
@@ -1761,11 +1786,22 @@ export const validateTransformed = (
     targets.filter(({ target }) => target === 'hubs').map(({ legacy }) => legacy.legacyId),
   )
   assert(eexHubIDs.every((legacyId) => targetHubIDs.has(legacyId)))
+  // Every venue in the corpus now owns a public detail route; any venue outside it stays a
+  // relationship-only record with no path.
+  const rootVenueLegacyIDs = new Set<number>(
+    pilotScope.roots.filter(({ postType }) => postType === 'venue').map(({ legacyId }) => legacyId),
+  )
   assert(
     venues
-      .filter(({ legacy }) => legacy.legacyId !== 3363)
+      .filter(({ legacy }) => !rootVenueLegacyIDs.has(legacy.legacyId))
       .every(({ data }) => data.contentMode === 'relationship-only' && data.path === null),
-    'Only EEX may become a public venue in the pilot.',
+    'A venue outside the route corpus must remain a relationship-only record.',
+  )
+  assert(
+    venues
+      .filter(({ legacy }) => rootVenueLegacyIDs.has(legacy.legacyId))
+      .every(({ data }) => data.contentMode === 'page' && typeof data.path === 'string'),
+    'Every venue in the route corpus must own a public detail path.',
   )
 
   const learningVideos = targets.filter(({ target }) => target === 'learning-videos')
@@ -1778,7 +1814,10 @@ export const validateTransformed = (
   assert.equal(learningDetail.data.externalVideoURL, '')
   assert.deepEqual(learningDetail.data.poster, { $legacyRef: 'media', legacyId: 11728 })
   const learningListings = learningVideos.filter(({ data }) => data.contentMode === 'listing')
-  assert.equal(learningListings.length, 14)
+  const rootLearningVideos = pilotScope.roots.filter(
+    ({ postType }) => postType === 'learning-hub-video',
+  ).length
+  assert.equal(learningListings.length, learningVideos.length - rootLearningVideos)
   assert(
     learningListings.every(
       ({ data }) =>
@@ -1874,11 +1913,16 @@ export const validateTransformed = (
       assert.equal(owner.data.type, '302')
       continue
     }
-    assert.equal(owner.data.path, root.path)
+    // A root's `path` is its WordPress permalink; the target publishes at the canonical path,
+    // which differs where a route family was consolidated.
+    assert.equal(owner.data.path, root.canonicalPath)
     assert.equal(owner.data._status, 'published')
+    // The discriminator map is a spot-check over known identities rather than a per-root
+    // requirement; archetype discriminators are enforced for every route by the schema hooks.
     const discriminator = expectedDiscriminators[root.legacyId]
-    assert(discriminator)
-    assert.equal(owner.data[discriminator[0]], discriminator[1])
+    if (discriminator) {
+      assert.equal(owner.data[discriminator[0]], discriminator[1])
+    }
   }
   for (const dependency of pilotScope.acceptedRouteDependencies) {
     const owners = targets.filter(
@@ -1902,7 +1946,7 @@ export const validateTransformed = (
   const expectedRoutablePaths = [
     ...pilotScope.roots
       .filter(({ targetOwner }) => targetOwner !== 'redirects')
-      .map(({ path }) => path),
+      .map(({ canonicalPath }) => canonicalPath),
     ...sourceBannerDependencyPages.flatMap(({ path }) => (path ? [path] : [])),
     ...sourcePeople.flatMap(({ path }) => (path ? [path] : [])),
     ...sourceCoreEvents.flatMap(({ path }) => (path ? [path] : [])),
