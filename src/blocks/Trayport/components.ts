@@ -1175,9 +1175,7 @@ export const DataChartComponent: Block = {
                 // for either comparison — the reference does both — so offer that choice rather
                 // than pinning execution type to stacked columns.
                 const allowed =
-                  siblingData?.dataType === 'price'
-                    ? ['line']
-                    : ['stackedColumn', 'column']
+                  siblingData?.dataType === 'price' ? ['line'] : ['stackedColumn', 'column']
 
                 return options.filter((option) =>
                   allowed.includes(typeof option === 'string' ? option : String(option.value)),

@@ -539,9 +539,11 @@ describe('migration retry and artifact safety', () => {
         }),
       ),
     ).toThrow(/must omit all range fields/i)
+    // Execution-type charts may be plain columns and may filter hubs — the reference authors
+    // both on /products/broker-trading-system/ — but they have no price series.
     expect(() =>
       assertTransformedDataChartContracts(targetsFor({ ...chart, chartType: 'column' })),
-    ).toThrow(/execution-type.*volume stacked columns/i)
+    ).not.toThrow()
     expect(() =>
       assertTransformedDataChartContracts(
         targetsFor({
@@ -549,7 +551,12 @@ describe('migration retry and artifact safety', () => {
           includedHubs: [{ $legacyRef: 'hub', legacyId: 2500 }],
         }),
       ),
-    ).toThrow(/execution-type.*cannot filter hubs/i)
+    ).not.toThrow()
+    expect(() =>
+      assertTransformedDataChartContracts(
+        targetsFor({ ...chart, chartType: 'line', dataType: 'price' }),
+      ),
+    ).toThrow(/execution-type.*volume data/i)
     expect(() =>
       assertTransformedDataChartContracts(
         targetsFor({

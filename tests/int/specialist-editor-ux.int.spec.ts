@@ -219,10 +219,13 @@ describe('specialist editor experience', () => {
 
     expect(filteredValues(dataType, { seriesDimension: 'executionType' })).toEqual(['volume'])
     expect(filteredValues(dataType, { seriesDimension: 'hub' })).toEqual(['volume', 'price'])
+    // Volume can be plotted stacked or unstacked for either comparison — the reference authors
+    // both — while price remains a line.
     expect(
       filteredValues(chartType, { dataType: 'volume', seriesDimension: 'executionType' }),
-    ).toEqual(['stackedColumn'])
+    ).toEqual(['stackedColumn', 'column'])
     expect(filteredValues(chartType, { dataType: 'volume', seriesDimension: 'hub' })).toEqual([
+      'stackedColumn',
       'column',
     ])
     expect(filteredValues(chartType, { dataType: 'price', seriesDimension: 'hub' })).toEqual([

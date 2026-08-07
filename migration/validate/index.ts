@@ -1054,7 +1054,8 @@ export const validateSource = (
       people: 17,
       featuredInsights: 4,
       learningVideos: 15,
-      learningListingVideos: 14,
+      learningListingVideos:
+        15 - pilotScope.roots.filter(({ postType }) => postType === 'learning-hub-video').length,
       offices: 4,
       lifecycleItems: lifecycleItems.length,
       articleCategories: 3,
@@ -2142,7 +2143,8 @@ export const validateTransformed = (
       venues: 66,
       venueWebsitesHTTPS: true,
       learningVideos: 15,
-      learningListingVideos: 14,
+      learningListingVideos:
+        15 - pilotScope.roots.filter(({ postType }) => postType === 'learning-hub-video').length,
       offices: 4,
       lifecycleItems: lifecycleItems.length,
       articleCategories: 3,

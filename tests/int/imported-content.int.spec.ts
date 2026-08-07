@@ -117,9 +117,11 @@ describe.sequential('post-import acceptance', () => {
       assetClasses: 12,
       articles: 90,
       banners: 4,
-      bannerActionPages: 1,
-      bannerDependencyPages: 5,
-      bannerTargetPages: 4,
+      // Banner targets are route owners now, so they arrive at root depth rather than as
+      // banner dependencies. Their reachability is asserted by the source validator.
+      bannerActionPages: 0,
+      bannerDependencyPages: 0,
+      bannerTargetPages: 0,
       connectedVenues: 21,
       deferredHubSpotForms: 2,
       eexConnections: 37,
@@ -129,7 +131,7 @@ describe.sequential('post-import acceptance', () => {
       footerColumns: 3,
       footerLinks: 13,
       insightsArticles: 39,
-      learningListingVideos: 14,
+      learningListingVideos: 0,
       learningVideos: 15,
       legacyEvents: 5,
       mapHubs: 72,
@@ -142,19 +144,21 @@ describe.sequential('post-import acceptance', () => {
       marketRows: 1194,
       newsArticles: 31,
       offices: 4,
-      pages: 27,
+      pages: 52,
       people: 17,
       protectedVideoExcluded: true,
-      roots: 27,
+      roots: 298,
       venueTypes: 3,
     })
     expect(transformed.ok).toBe(true)
     expect(transformed.checks).toMatchObject({
       articles: 93,
       banners: 4,
-      bannerActionPages: 1,
-      bannerDependencyPages: 5,
-      bannerTargetPages: 4,
+      // Banner targets are route owners now, so they arrive at root depth rather than as
+      // banner dependencies. Their reachability is asserted by the source validator.
+      bannerActionPages: 0,
+      bannerDependencyPages: 0,
+      bannerTargetPages: 0,
       commoditiesReportExcluded: true,
       eexConnections: 37,
       fullArticles: 24,
@@ -162,24 +166,26 @@ describe.sequential('post-import acceptance', () => {
       cookieNoticeImported: true,
       footerLinks: 13,
       hubs: 72,
-      learningListingVideos: 14,
+      learningListingVideos: 0,
       learningVideos: 15,
       listingArticles: 69,
       offices: 4,
-      pages: 26,
+      pages: 51,
       deferredHubSpotForms: 2,
       eventArticles: 23,
       people: 17,
       protectedVideoExcluded: true,
       redirects: 7,
-      routableDocuments: 70,
+      // Every content route owner in the corpus, against 70 in the pilot slice.
+      routableDocuments: 314,
       marketMatrixAutoTraderConnections: 20,
       marketMatrixConnections: 655,
       marketMatrixDirectConnections: 417,
       marketMatrixDualConnections: 218,
       marketMatrixDuplicateMergeValidated: true,
       marketMatrixVenueRows: 64,
-      navigationFooterLiveFallbacks: 30,
+      // Widening the corpus retires 24 CA-021 live bridges: those destinations are owned now.
+      navigationFooterLiveFallbacks: 6,
       venues: 66,
       venueWebsitesHTTPS: true,
     })
@@ -190,7 +196,7 @@ describe.sequential('post-import acceptance', () => {
     )
   })
 
-  it('loads 26 Pages, including banner dependencies, 93 Articles, and 17 People', async () => {
+  it('loads 51 Pages, 93 Articles all with detail routes, and 17 People', async () => {
     const [pages, articles, people, assetClasses] = await Promise.all([
       payload.find({
         collection: 'pages',
@@ -230,7 +236,7 @@ describe.sequential('post-import acceptance', () => {
       }),
     ])
 
-    expect(pages.docs).toHaveLength(26)
+    expect(pages.docs).toHaveLength(51)
     expect(articles.docs).toHaveLength(93)
     expect(people.docs).toHaveLength(17)
     const sparsePerson = documentByLegacyID(people.docs, 11233)
@@ -295,8 +301,9 @@ describe.sequential('post-import acceptance', () => {
     const fullArticles = articles.docs.filter(({ contentMode }) => contentMode === 'full')
     const listingArticles = articles.docs.filter(({ contentMode }) => contentMode === 'listing')
     const eventArticles = articles.docs.filter(({ articleType }) => articleType === 'event')
-    expect(fullArticles).toHaveLength(24)
-    expect(listingArticles).toHaveLength(69)
+    // Every article in the corpus owns a public detail route.
+    expect(fullArticles).toHaveLength(93)
+    expect(listingArticles).toHaveLength(0)
     expect(eventArticles).toHaveLength(23)
     expect(fullArticles.map(({ path }) => path)).toEqual(
       expect.arrayContaining([
@@ -692,7 +699,7 @@ describe.sequential('post-import acceptance', () => {
       payload.find({
         collection: 'pages',
         depth: 0,
-        limit: 25,
+        limit: 500,
         overrideAccess: true,
         pagination: false,
         where: wordpressWhere,
@@ -857,12 +864,11 @@ describe.sequential('post-import acceptance', () => {
       family: 'news',
     })
     expect(newsArticles).toHaveLength(31)
+    // News articles own their detail routes now, so they carry a path and no live fallback.
     expect(
       newsArticles.every(
         ({ contentMode, externalDestination, path }) =>
-          contentMode === 'listing' &&
-          path === null &&
-          externalDestination?.startsWith('https://www.trayport.com/'),
+          contentMode === 'full' && typeof path === 'string' && !externalDestination,
       ),
     ).toBe(true)
 
@@ -884,10 +890,7 @@ describe.sequential('post-import acceptance', () => {
             )
           : [],
       ),
-    ).toEqual([
-      '8c3a5fef-87b8-43c2-9662-fb663f0f3e9f',
-      'af88756a-8035-4bf7-80a6-db5b6250ebe2',
-    ])
+    ).toEqual(['8c3a5fef-87b8-43c2-9662-fb663f0f3e9f', 'af88756a-8035-4bf7-80a6-db5b6250ebe2'])
     expect(JSON.stringify(event.layout)).not.toMatch(/"blockType":"form"/)
   })
 
@@ -912,7 +915,7 @@ describe.sequential('post-import acceptance', () => {
       payload.find({
         collection: 'media',
         depth: 0,
-        limit: 200,
+        limit: 500,
         overrideAccess: true,
         pagination: false,
         where: wordpressWhere,
@@ -931,7 +934,8 @@ describe.sequential('post-import acceptance', () => {
       learningHub.layout.filter(({ blockType }) => blockType === 'learningVideoListing'),
     ).toHaveLength(1)
     expect(learningVideos.docs).toHaveLength(15)
-    expect(listingVideos).toHaveLength(14)
+    // Every learning video in the corpus now owns a public detail route.
+    expect(listingVideos).toHaveLength(0)
     expect(
       listingVideos.every(
         ({ accessMode, externalDestination, path }) =>
@@ -1024,7 +1028,7 @@ describe.sequential('post-import acceptance', () => {
       payload.find({
         collection: 'pages',
         depth: 0,
-        limit: 25,
+        limit: 500,
         overrideAccess: true,
         pagination: false,
         where: wordpressWhere,
@@ -1159,10 +1163,11 @@ describe.sequential('post-import acceptance', () => {
         .filter(({ id }) => connectionHubIDs.includes(id))
         .map(({ legacySource }) => legacySource?.legacyId),
     ).toEqual(expect.arrayContaining([2490, 3332, 3333, 3336, 6776]))
+    // Every venue in the corpus owns a public detail route.
     expect(
-      venues.docs
-        .filter(({ legacySource }) => legacySource?.legacyId !== 3363)
-        .every(({ contentMode, path }) => contentMode === 'relationship-only' && path === null),
+      venues.docs.every(
+        ({ contentMode, path }) => contentMode === 'page' && typeof path === 'string',
+      ),
     ).toBe(true)
   })
 
@@ -1179,7 +1184,7 @@ describe.sequential('post-import acceptance', () => {
       payload.find({
         collection: 'media',
         depth: 0,
-        limit: 200,
+        limit: 500,
         overrideAccess: true,
         pagination: false,
         where: wordpressWhere,
@@ -1226,7 +1231,7 @@ describe.sequential('post-import acceptance', () => {
     const media = await payload.find({
       collection: 'media',
       depth: 1,
-      limit: 200,
+      limit: 500,
       overrideAccess: true,
       pagination: false,
       where: wordpressWhere,
@@ -1308,7 +1313,13 @@ describe.sequential('post-import acceptance', () => {
     expect(footer.parentCompanyText).toBe(
       'Trayport Holdings Limited is a wholly-owned subsidiary of TMX Group Limited (TMX Group).',
     )
-    const ownedInternalPaths = new Set([
+    // Owned paths come from the route registry rather than a fixed list: the shell legitimately
+    // links to anything the corpus owns, and that set grows as content is promoted.
+    const registryRows = await payload.db.drizzle.execute(
+      "select path from route_registry where state = 'published'",
+    )
+    const ownedInternalPaths = new Set<string>([
+      ...(registryRows.rows as Array<{ path: string }>).map(({ path }) => path),
       ...representativeRoutes.map(({ path }) => path),
       ...managedRedirectRoutes.map(({ path }) => path),
       '/market-coverage/',

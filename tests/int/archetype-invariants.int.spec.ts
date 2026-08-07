@@ -630,7 +630,7 @@ describe.sequential('route archetype invariants', () => {
     ).rejects.toThrow(/required first-party form/i)
   })
 
-  it('requires exactly one managed matrix on interactive pages and forbids it elsewhere', async () => {
+  it('requires exactly one managed matrix on interactive pages and at most one elsewhere', async () => {
     const missingSlug = fixtureKey('interactive-missing-matrix')
     await expect(
       payload.create({
@@ -650,23 +650,23 @@ describe.sequential('route archetype invariants', () => {
     ).rejects.toThrow(/require exactly one marketMatrix/i)
     await expectNoDocument('pages', missingSlug)
 
+    // The reference embeds the matrix on ordinary pages as well as its dedicated one — the
+    // homepage and /markets/power/ both carry it — so a standard page may hold one.
     const standardSlug = fixtureKey('standard-with-matrix')
-    await expect(
-      payload.create({
-        collection: 'pages',
-        context: draftMutationContext,
-        data: {
-          layout: [marketMatrixSection()],
-          pageType: 'standard',
-          path: fixturePath('standard-with-matrix'),
-          slug: standardSlug,
-          title: 'Standard with matrix',
-        },
-        draft: true,
-        overrideAccess: true,
-      }),
-    ).rejects.toThrow(/does not allow the marketMatrix/i)
-    await expectNoDocument('pages', standardSlug)
+    const standardPage = await payload.create({
+      collection: 'pages',
+      context: draftMutationContext,
+      data: {
+        layout: [marketMatrixSection()],
+        pageType: 'standard',
+        path: fixturePath('standard-with-matrix'),
+        slug: standardSlug,
+        title: 'Standard with matrix',
+      },
+      draft: true,
+      overrideAccess: true,
+    })
+    expect(standardPage.id).toBeTruthy()
 
     const duplicateSlug = fixtureKey('interactive-duplicate-matrix')
     await expect(
@@ -684,7 +684,7 @@ describe.sequential('route archetype invariants', () => {
         draft: false,
         overrideAccess: true,
       }),
-    ).rejects.toThrow(/require exactly one marketMatrix/i)
+    ).rejects.toThrow(/allows at most one marketMatrix/i)
     await expectNoDocument('pages', duplicateSlug)
 
     const path = fixturePath('valid-interactive-matrix')
@@ -877,10 +877,12 @@ describe.sequential('route archetype invariants', () => {
     ).rejects.toThrow(/start quarter must not be after its end quarter/i)
     await expectNoDocument('pages', reversedSlug)
 
+    // Execution-type charts may filter hubs and need not be stacked — the reference authors a
+    // plain column filtered to two hubs — but they have no price series.
     await expectSemanticRejection(
-      'filtered-execution-chart',
-      { includedHubs: [chartHub.id] },
-      /execution-type data charts cannot filter hubs/i,
+      'priced-execution-chart',
+      { chartType: 'line', dataType: 'price' },
+      /execution-type data charts require volume data/i,
     )
     await expectSemanticRejection(
       'invalid-hub-chart-pair',

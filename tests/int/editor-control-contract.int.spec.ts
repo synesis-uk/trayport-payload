@@ -160,8 +160,10 @@ describe('bounded editor controls', () => {
     expect(components?.filterOptions?.({ data: {} })).not.toContain('marketMatrix')
   })
 
-  it('keeps section columns bounded while admitting the observed seven-row source layout', () => {
-    expect(findField(ContentSection.fields as FieldNode[], 'columns')?.maxRows).toBe(8)
+  it('keeps section columns bounded while admitting the observed ten-column source layout', () => {
+    // /products/customer-portal/ alternates five text/media pairs, so the bound has to admit ten
+    // while still stopping an unbounded grid.
+    expect(findField(ContentSection.fields as FieldNode[], 'columns')?.maxRows).toBe(12)
   })
 
   it('bounds hero actions, badges, media aspect, and heading appearance', () => {
