@@ -183,6 +183,42 @@ So the work splits into two different shapes, and they carry different risk:
 - **Import (25).** The remaining Pages run the full
   extract → transform → validate → load cycle.
 
+### Status — delivered 2026-08-07
+
+The corpus is loaded. All 316 content routes serve locally against 73 before,
+and the route registry holds 93 articles, 72 hubs, 66 venues, 51 pages, 17
+people, 15 learning videos, 7 redirects and 2 virtual indexes.
+
+Verified route by route against the reference: every route returns 200, and only
+four headings differ — `/company/offices/`, where our `h1` is the page title
+rather than the first office card, and three routes where the reference itself
+is broken (two People pages return a Symfony exception, and `/venue/nasdaq-omx/`
+headlines a URL because its source display name is a link).
+
+**Open items carried forward**
+
+Navigation and footer live fallbacks fell from 30 to 6. The remaining six are not
+all equivalent, and four are straightforwardly ownable:
+
+| Path | Reference | Action |
+| ---- | --------- | ------ |
+| `/company/` | 301 → `/company/about-us/` | Own as a managed redirect |
+| `/markets/` | 301 → `/resources/markets-map/` | Own as a managed redirect |
+| `/regions/` | 301 → `/regions/europe/` | Own as a managed redirect |
+| `/home/enterprise-security/` | 301 → `/products/enterprise-security/` | Own as a managed redirect |
+| `/products/` | **200** | Not in the 317-route plan — investigate before launch |
+| `/resources/` | **200** | Not in the 317-route plan — investigate before launch |
+
+The last two matter: the reference serves real pages there and the discovery-led
+inventory did not classify them as route owners. That is either a scope decision
+to record or a gap in the inventory, and it should be settled before the route
+total is treated as final.
+
+Also open: the execution-type chart on `/products/broker-trading-system/` renders
+through the frontend's accessible data-table fallback rather than as a chart,
+because the supported-presentation set does not yet include an unstacked
+execution-type column.
+
 ### B1 — Promote and load the remaining route owners
 
 Work family by family. Each family runs its own immutable inventory run and
