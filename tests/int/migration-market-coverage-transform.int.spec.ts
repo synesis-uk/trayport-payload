@@ -113,7 +113,7 @@ describe('WordPress connection-map transform', () => {
     })
   })
 
-  it('defaults a single-region market map to the live Natural Gas view', () => {
+  it('defaults a single-region market map to the live Power view', () => {
     expect(
       transformedCoverage(
         {
@@ -122,7 +122,7 @@ describe('WordPress connection-map transform', () => {
         'markets-map',
       ),
     ).toMatchObject({
-      defaultAssetClass: { $legacyRef: 'asset-class', legacyId: 22 },
+      defaultAssetClass: { $legacyRef: 'asset-class', legacyId: 21 },
     })
   })
 

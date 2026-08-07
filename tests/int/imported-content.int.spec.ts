@@ -266,7 +266,6 @@ describe.sequential('post-import acceptance', () => {
     expect(JSON.stringify(cookiePolicy.layout)).toContain('WHAT ARE COOKIES?')
 
     const power = documentByLegacyID(assetClasses.docs, 21)
-    const gas = documentByLegacyID(assetClasses.docs, 22)
     const marketsMapPage = documentByLegacyID(pages.docs, 5920)
     expect(marketsMapPage).toMatchObject({
       path: '/resources/markets-map/',
@@ -291,7 +290,7 @@ describe.sequential('post-import acceptance', () => {
       (component): component is MarketCoverageComponent =>
         component.blockType === 'marketCoverage' && component.mode === 'regionalConnectivity',
     )
-    expect(relationshipID(europeMap!.defaultAssetClass!)).toBe(gas.id)
+    expect(relationshipID(europeMap!.defaultAssetClass!)).toBe(power.id)
 
     const fullArticles = articles.docs.filter(({ contentMode }) => contentMode === 'full')
     const listingArticles = articles.docs.filter(({ contentMode }) => contentMode === 'listing')

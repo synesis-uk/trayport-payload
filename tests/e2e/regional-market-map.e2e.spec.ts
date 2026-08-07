@@ -42,8 +42,14 @@ test.describe('regional market maps', () => {
     const map = page.getByRole('region', { name: 'Explore our connectivity' }).first()
     await expect(map.getByRole('combobox', { name: 'Region' })).toHaveCount(0)
     await expect(map.getByText('Europe', { exact: true })).toBeVisible()
-    await expect(map.getByRole('combobox', { name: 'Asset class' })).toHaveText('Natural Gas')
+    // The reference opens every region page on Power, not on the region's first authored class.
+    await expect(map.getByRole('combobox', { name: 'Asset class' })).toHaveText('Power')
     await expect(map.getByRole('combobox', { name: 'Data interval' })).toHaveText('Quarter')
+    await expect(map.getByText('Showing 22 hubs for Power in Europe.')).toBeVisible()
+
+    // Switch to Natural Gas to keep covering a hub that carries market data.
+    await map.getByRole('combobox', { name: 'Asset class' }).click()
+    await page.getByRole('option', { name: 'Natural Gas' }).click()
     await expect(map.getByText('Showing 17 hubs for Natural Gas in Europe.')).toBeVisible()
 
     await map.getByText('Accessible market-hub and venue list').click()

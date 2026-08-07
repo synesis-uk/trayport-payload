@@ -1256,7 +1256,7 @@ export const validateTransformed = (
       ({ blockType, mode }) => blockType === 'marketCoverage' && mode === 'regionalConnectivity',
     )
     assert(regionalMap)
-    assert.equal(referenceID(regionalMap.defaultAssetClass, 'asset-class'), 22)
+    assert.equal(referenceID(regionalMap.defaultAssetClass, 'asset-class'), 21)
     assert.deepEqual(
       arrayValue(regionalMap.regions).map((value) => referenceID(value, 'region')),
       [regionLegacyID],

@@ -109,8 +109,18 @@ client in one sentence they would accept, and none of these six were.
 | 7 | Fit padding no longer editor-controlled (~0.3 zoom tighter) | **Restore** | Restore the per-placement padding control and match the live fit so every view frames identically. |
 
 Decisions 1–5 and 7 are parity restorations and need no ledger entry beyond
-[visual-parity.md](visual-parity.md). Decision 6 is a retained improvement and
-needs an [FE ledger](frontend-improvements.md) entry with its rollback.
+[visual-parity.md](visual-parity.md). Decision 6 is recorded as FE-099 in the
+[FE ledger](frontend-improvements.md) with its rollback.
+
+**Open editorial task from decision 6.** The markets-map hero still tells
+visitors to "Use the menu tool in the top left corner to assist your search",
+which no longer describes the interface. That sentence is imported WordPress
+content (`pages_blocks_trayport_hero`, parent page 1380), so correcting it in the
+database now would be silently reverted by the next content import — and Track B
+re-imports repeatedly. It must therefore be corrected either as an editorial
+change in Payload after the final import, or as a recorded content override in
+the migration transform. It is deliberately not patched here, because a fix that
+a later import undoes is worse than a known open task.
 
 ### A3 — Approved map increments (class 3)
 

@@ -483,11 +483,13 @@ const marketCoverageFrom = (
     .filter(Boolean)
   const explicitDefaultAssetClassID =
     LEGACY_ASSET_CLASS_ID_BY_SLUG[asString(component.default_class_slug).trim().toLowerCase()]
+  // `markets-map.blade.php:5` hardcodes `$defaultClassSlug = 'power'` for every placement, which
+  // shadows the composer's 'gas' fallback, and the live site only picks another class when Power
+  // is absent from the selected subset. Single-region maps are not an exception: preferring gas
+  // for them opened all three region pages on Natural Gas where the reference opens on Power.
   const preferredDefaultAssetClassIDs = explicitDefaultAssetClassID
     ? [explicitDefaultAssetClassID]
-    : mode === 'regionalConnectivity' && regions.length === 1
-      ? [LEGACY_ASSET_CLASS_ID_BY_SLUG.gas, LEGACY_ASSET_CLASS_ID_BY_SLUG.power]
-      : [LEGACY_ASSET_CLASS_ID_BY_SLUG.power, LEGACY_ASSET_CLASS_ID_BY_SLUG.gas]
+    : [LEGACY_ASSET_CLASS_ID_BY_SLUG.power, LEGACY_ASSET_CLASS_ID_BY_SLUG.gas]
   const selectedAssetClassIDs = new Set(
     assetClasses.map((value) => Number(asObject(value).legacyId)).filter(Number.isInteger),
   )

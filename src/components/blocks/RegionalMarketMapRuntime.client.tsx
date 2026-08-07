@@ -411,7 +411,7 @@ export default function RegionalMarketMapRuntime({
             id: 'trayport-populated-countries',
             paint: {
               'fill-color': '#009cde',
-              'fill-opacity': 0.42,
+              'fill-opacity': 1,
               'fill-outline-color': '#0057b8',
             },
             source: 'country-boundaries',
@@ -426,8 +426,7 @@ export default function RegionalMarketMapRuntime({
             id: 'trayport-selected-countries',
             paint: {
               'fill-color': '#f7ea48',
-              'fill-opacity': 0.72,
-              'fill-outline-color': '#f7ea48',
+              'fill-opacity': 1,
             },
             source: 'country-boundaries',
             'source-layer': 'country_boundaries',
@@ -438,7 +437,9 @@ export default function RegionalMarketMapRuntime({
         map.addLayer(
           {
             id: 'trayport-region-fill',
-            paint: { 'fill-color': '#f7ea48', 'fill-opacity': 0.04 },
+            // The reference draws region boundaries invisibly — they exist only as click targets,
+            // and a zero-opacity fill still hit-tests in Mapbox.
+            paint: { 'fill-color': '#ffffff', 'fill-opacity': 0 },
             source: 'trayport-regions',
             type: 'fill',
           },
@@ -447,7 +448,7 @@ export default function RegionalMarketMapRuntime({
         map.addLayer(
           {
             id: 'trayport-region-outline',
-            paint: { 'line-color': '#f7ea48', 'line-opacity': 0.7, 'line-width': 1.5 },
+            paint: { 'line-color': '#f7ea48', 'line-width': 0 },
             source: 'trayport-regions',
             type: 'line',
           },
