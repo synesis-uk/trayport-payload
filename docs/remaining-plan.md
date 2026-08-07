@@ -232,6 +232,26 @@ Gate: `listing-detail-route-ownership`.
 
 ### B2 — Body and media remediation
 
+**Media investigated 2026-08-07.** The 83 unresolved media items are not a
+migration defect: the reference 404s them too. They split into two different
+problems with different owners.
+
+| Count | Reason | Where the file actually is |
+| ----: | ------ | -------------------------- |
+| 57 | `missing-or-unreadable-local-file` | Absent from the local WordPress uploads copy. The reference cannot serve them either, so the local copy is incomplete against production. |
+| 26 | `unsupported-object-storage-path` | Hosted on `cdn.trayport.com`, never in the uploads directory. Verified reachable — one sampled asset returns 200. |
+
+The 26 CDN-hosted assets are recoverable now, but doing so changes where the
+migration sources media from: today it reads only the local uploads directory,
+and pulling from an external CDN is a new outbound dependency that needs an
+explicit decision and an allowlist entry rather than being introduced quietly.
+
+The 57 need a more complete uploads export from production. No amount of work on
+this side recovers them.
+
+Neither is blocking: both surface as absent media rather than broken pages, and
+the review queue already records each one.
+
 Complete article bodies, disposition missing media, and clear the content review
 queue. Sparse source records stay sparse — the People work established that
 precedent and it holds here.
