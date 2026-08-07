@@ -122,6 +122,20 @@ change in Payload after the final import, or as a recorded content override in
 the migration transform. It is deliberately not patched here, because a fix that
 a later import undoes is worse than a known open task.
 
+**All seven delivered 2026-08-06** across commits `98ab1cc`, `1947cb9` and
+`bebdd63`, except decision 6, which is a keep. Two findings changed the work as
+scoped:
+
+- Decision 4 was a **transform bug**, not editorial data, so it is fixed at
+  source as well as in the loaded rows; otherwise the next import would have
+  reverted it.
+- Decision 5's route hover highlight **does not exist** in the reference.
+  `HOVER_LINE_COLOR`/`HOVER_LINE_WIDTH` are byte-identical to the defaults, so
+  the parity matrix row claiming one was wrong and no highlight was added.
+
+The three permanent region name labels, recorded in the matrix as `missing`
+rather than as one of the seven decisions, were restored in the same pass.
+
 ### A3 — Approved map increments (class 3)
 
 Implement only the increments that pass the one-sentence test:
