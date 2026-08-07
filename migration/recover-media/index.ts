@@ -95,6 +95,8 @@ const safeRelativePath = (value: string | null, legacyId: number): string => {
   return value
 }
 
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 const recoveryURLFor = (record: SourceMedia, origin: string, relativePath: string): string => {
   if (!record.url) {
     throw new Error(`WordPress attachment ${record.legacyId} has no original media URL.`)
@@ -108,8 +110,22 @@ const recoveryURLFor = (record: SourceMedia, origin: string, relativePath: strin
     throw new Error(`WordPress attachment ${record.legacyId} has an invalid encoded media path.`)
   }
 
+  // The recorded URL must identify the same uploads file the record claims, so recovery can never
+  // be pointed at arbitrary content. Records served from the CDN carry an extra upload-timestamp
+  // directory — /app/uploads/2026/07/06152303/name.png for 2026/07/name.png — so the year/month
+  // prefix and the filename must both match while that segment is allowed between them.
   const expectedPath = `/app/uploads/${relativePath}`
-  if (decodedPath !== expectedPath || original.search || original.hash) {
+  const segments = relativePath.split('/')
+  const timestampedPath = new RegExp(
+    `^/app/uploads/${segments.slice(0, -1).map(escapeRegExp).join('/')}/\\d+/${escapeRegExp(
+      segments[segments.length - 1] || '',
+    )}$`,
+  )
+  if (
+    (decodedPath !== expectedPath && !timestampedPath.test(decodedPath)) ||
+    original.search ||
+    original.hash
+  ) {
     throw new Error(
       `WordPress attachment ${record.legacyId} URL does not match its uploads-relative path.`,
     )
