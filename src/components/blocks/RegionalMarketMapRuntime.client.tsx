@@ -54,13 +54,56 @@ type SourceData = {
   type: 'FeatureCollection'
 }
 
-// Layers painted above the country and region fills, in paint order.
-const MARKER_LAYERS = ['trayport-hubs', 'trayport-routes', 'trayport-route-markers']
+// Layers painted above the country and region fills, in paint order. The hub label layer is
+// part of this set because once a region is selected the live map replaces the hub dot with the
+// label chip entirely, so the chip — not the circle — is what the pointer actually hits.
+const MARKER_LAYERS = [
+  'trayport-hubs',
+  'trayport-hub-labels',
+  'trayport-routes',
+  'trayport-route-markers',
+]
 
 const featureCollection = (features: SourceData['features']): SourceData => ({
   features,
   type: 'FeatureCollection',
 })
+
+const HUB_CHIP_IMAGE_ID = 'trayport-hub-chip'
+
+// The live map draws every hub label as a DOM chip — `bg-black/50 rounded p-1`, i.e.
+// rgba(0, 0, 0, 0.5) behind 12px white text on a 4px radius with 4px of padding
+// (markets-map.blade.php:1098-1101 and :1140). A symbol layer can only reproduce that with a
+// stretchable icon behind the text, so the chip is rasterised once at 2x and stretched to fit.
+const addHubChipImage = (map: mapboxgl.Map) => {
+  if (map.hasImage(HUB_CHIP_IMAGE_ID)) return
+  const scale = 2
+  const size = 24 * scale
+  const radius = 4 * scale
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const context = canvas.getContext('2d')
+  if (!context) return
+  context.fillStyle = 'rgba(0, 0, 0, 0.5)'
+  context.beginPath()
+  context.roundRect(0, 0, size, size, radius)
+  context.fill()
+  map.addImage(
+    HUB_CHIP_IMAGE_ID,
+    {
+      data: new Uint8Array(context.getImageData(0, 0, size, size).data),
+      height: size,
+      width: size,
+    },
+    {
+      content: [radius, radius, size - radius, size - radius],
+      pixelRatio: scale,
+      stretchX: [[radius, size - radius]],
+      stretchY: [[radius, size - radius]],
+    },
+  )
+}
 
 const marketNumber = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 2 })
 
@@ -95,6 +138,12 @@ const hubFeatures = (
   visibleHubIDs: Set<string>,
   summaries: Record<string, MarketSummary>,
   activeAssetClassID: string,
+  // The live map keeps one global `zoomed` flag: it flips true the moment any region is selected
+  // (markets-map.blade.php:335) and is true from first paint on single-region maps
+  // (markets-map.blade.php:1268). Every marker is rebuilt from it on each `moveend`
+  // (markets-map.blade.php:193), so it has to reach the features — the layer specs below are
+  // only ever built once, in the `load` handler.
+  zoomed: boolean,
 ): SourceData =>
   featureCollection(
     index.hubs
@@ -111,6 +160,9 @@ const hubFeatures = (
           return {
             geometry: { coordinates: point.location, type: 'Point' },
             properties: {
+              // `hub.class == 108` at markets-map.blade.php:1130 — the Bulk asset class, whose
+              // hubs are labelled at world zoom instead of being drawn as 7px dots.
+              alwaysLabel: assetClass?.legacyID === 108 || assetClass?.slug === 'bulk',
               color: assetClass?.color || '#00c1d5',
               countryCodes: hub.countryCodes.join(','),
               hubID: hub.id,
@@ -121,6 +173,7 @@ const hubFeatures = (
               marketTone: market.tone,
               title: hub.title,
               type: hub.hubType,
+              zoomed,
             },
             type: 'Feature' as const,
           }
@@ -472,35 +525,74 @@ export default function RegionalMarketMapRuntime({
           id: 'trayport-hubs',
           paint: {
             'circle-color': ['get', 'color'],
-            'circle-opacity': 1,
+            // ohub and rhub keep a filled disc at every zoom. Every other hub type is drawn by
+            // its label chip once a region is selected — or always, for the Bulk class — and the
+            // live code emits no circle at all in that state (markets-map.blade.php:1129-1135),
+            // so the circle survives only as an invisible hit target.
+            'circle-opacity': [
+              'case',
+              ['match', ['get', 'type'], ['ohub', 'rhub'], true, false],
+              1,
+              ['any', ['==', ['get', 'zoomed'], true], ['==', ['get', 'alwaysLabel'], true]],
+              0,
+              1,
+            ],
+            // Live sizes are SVG width/height, i.e. diameters: ohub 30 -> 100 when zoomed
+            // (markets-map.blade.php:1084), rhub a constant 100 (markets-map.blade.php:111-1112),
+            // everything else 7 (markets-map.blade.php:1134). Halved here for circle-radius.
             'circle-radius': [
               'case',
               ['==', ['get', 'type'], 'ohub'],
-              markerRadius + 3,
+              ['case', ['==', ['get', 'zoomed'], true], 50, 15],
               ['==', ['get', 'type'], 'rhub'],
-              markerRadius + 2,
-              markerRadius,
+              50,
+              ['any', ['==', ['get', 'zoomed'], true], ['==', ['get', 'alwaysLabel'], true]],
+              10,
+              3.5,
             ],
-            'circle-stroke-color': '#ffffff',
-            'circle-stroke-width': 1.5,
+            // No live hub marker has a stroke.
+            'circle-stroke-width': 0,
           },
           source: 'trayport-hubs',
           type: 'circle',
         })
+        addHubChipImage(map)
         map.addLayer({
-          filter: ['!=', ['get', 'mapLabel'], ''],
+          // ohub and rhub carry a permanent label centred inside their disc
+          // (markets-map.blade.php:1096-1102 and :1117-1123). Every other hub type is labelled
+          // only once a region is selected, or unconditionally when its asset class is Bulk
+          // (markets-map.blade.php:1130).
+          filter: [
+            'all',
+            ['!=', ['get', 'mapLabel'], ''],
+            [
+              'any',
+              ['match', ['get', 'type'], ['ohub', 'rhub'], true, false],
+              ['==', ['get', 'zoomed'], true],
+              ['==', ['get', 'alwaysLabel'], true],
+            ],
+          ],
           id: 'trayport-hub-labels',
           layout: {
-            'text-anchor': 'bottom',
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+            'icon-image': HUB_CHIP_IMAGE_ID,
+            'icon-text-fit': 'both',
+            // Live labels are DOM markers, so they never collide-avoid and are never dropped.
+            'text-allow-overlap': true,
+            // The chip is centred on the hub coordinate in every case: for ohub/rhub it is
+            // absolutely centred inside the disc, for the rest the chip IS the marker element
+            // and mapboxgl.Marker anchors 'center' by default.
+            'text-anchor': 'center',
             'text-field': ['get', 'mapLabel'],
-            'text-offset': [0, -0.9],
-            'text-size': 11,
+            'text-ignore-placement': true,
+            'text-line-height': 1,
+            'text-offset': [0, 0],
+            'text-size': 12,
           },
           paint: {
+            // No halo — the chip behind the text is the contrast treatment.
             'text-color': '#ffffff',
-            'text-halo-blur': 0.3,
-            'text-halo-color': '#002d72',
-            'text-halo-width': 2,
           },
           source: 'trayport-hubs',
           type: 'symbol',
@@ -584,13 +676,20 @@ export default function RegionalMarketMapRuntime({
           const hubID = stringProperty(event, 'hubID')
           if (hubID) callbacksRef.current.onHubSelect(hubID)
         })
+        // Once a region is selected the live marker element IS the chip and it carries
+        // `cursor-pointer` plus the click handler (markets-map.blade.php:1140, :481-484), so the
+        // symbol layer has to answer clicks — the circle underneath it is fully transparent.
+        register('click', 'trayport-hub-labels', (event) => {
+          const hubID = stringProperty(event, 'hubID')
+          if (hubID) callbacksRef.current.onHubSelect(hubID)
+        })
         register('click', 'trayport-routes', (event) => {
-          if (hitsLayers(event, ['trayport-hubs'])) return
+          if (hitsLayers(event, ['trayport-hubs', 'trayport-hub-labels'])) return
           const hubID = stringProperty(event, 'selectHubID')
           if (hubID) callbacksRef.current.onHubSelect(hubID)
         })
         register('click', 'trayport-route-markers', (event) => {
-          if (hitsLayers(event, ['trayport-hubs', 'trayport-routes'])) return
+          if (hitsLayers(event, ['trayport-hubs', 'trayport-hub-labels', 'trayport-routes'])) return
           const hubID = stringProperty(event, 'selectHubID')
           if (hubID) callbacksRef.current.onHubSelect(hubID)
         })
@@ -645,6 +744,22 @@ export default function RegionalMarketMapRuntime({
             .addTo(map)
         })
         register('mouseleave', 'trayport-hubs', () => {
+          if (map) map.getCanvas().style.cursor = ''
+          popupRef.current?.remove()
+        })
+        register('mouseenter', 'trayport-hub-labels', (event) => {
+          const feature = event.features?.[0]
+          if (!map || feature?.geometry.type !== 'Point') return
+          map.getCanvas().style.cursor = 'pointer'
+          if (dataDisplay !== 'hover') return
+          popupRef.current
+            ?.setLngLat(feature.geometry.coordinates as [number, number])
+            .setDOMContent(
+              popupContent(stringProperty(event, 'title'), stringProperty(event, 'marketDetail')),
+            )
+            .addTo(map)
+        })
+        register('mouseleave', 'trayport-hub-labels', () => {
           if (map) map.getCanvas().style.cursor = ''
           popupRef.current?.remove()
         })
@@ -721,7 +836,7 @@ export default function RegionalMarketMapRuntime({
     if (!map || !styleReady) return
     const visible = new Set(visibleHubIDs)
     source(map, 'trayport-hubs')?.setData(
-      hubFeatures(index, visible, summaries, activeAssetClassID) as never,
+      hubFeatures(index, visible, summaries, activeAssetClassID, Boolean(activeRegionID)) as never,
     )
     source(map, 'trayport-routes')?.setData(
       (showLines ? routeFeatures(index, visible) : featureCollection([])) as never,
