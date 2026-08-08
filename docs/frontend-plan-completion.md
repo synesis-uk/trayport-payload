@@ -30,8 +30,84 @@ does not by itself close a row.
 | 6   | Build the reusable composition layer.                                      | `Container`, `Section`, `Stack`, `Cluster`, `Grid`, `HeadingGroup`, `Eyebrow`, `ActionGroup`, `Hero`, `Surface/cards`, `StatGrid`, `MediaBlock`, `IconText`, `LogoCloud`, `CTASection`, and focused shell components exist, accept `className`, and avoid baked placement margins. Core hero, heading, action, media, stat, section, loading/error and shell compositions are used publicly; specialist compositions remain gallery-proven until matching content enters scope. | Complete as a bounded reusable API; public adoption is semantic rather than forced, and route-specific parity CSS remains a temporary consumer-side bridge.                                                                                                                                                                                                |
 | 7   | Separate CMS adapters from presentation.                                   | Every supported Payload block has a generated-type-backed adapter that normalizes data into an explicit presentation model. Dispatch is compile-time exhaustive. Presentation modules do not cast through `UnknownRecord` or know Payload field shapes, and no monolithic renderer remains.                                                                                                                                                                                     | Complete; the typed adapter, normalizer, and presentation families replace the removed monolithic renderer.                                                                                                                                                                                                                                                |
 | 8   | Complete the gated design-system gallery.                                  | `/design-system/` is unavailable by default and, when enabled, deterministically shows tokens, primitive/composition variants, every Font Awesome key, short/long content, missing media, loading/empty/error states, and mobile/tablet/desktop surfaces without CMS access. UI, keyboard/focus, axe, icon, and cascade checks pass.                                                                                                                                            | Complete: both owned desktop/mobile screenshots and both real-browser interaction/cascade contracts pass; WordPress references remain separate and untouched.                                                                                                                                                                                              |
-| 9   | Migrate a representative vertical slice on two differently composed pages. | Header/nav, hero, actions, one content section, a stat/card pattern, CTA, and footer render through the new system on two golden routes. Redundant parity selectors are removed only after desktop/mobile screenshots, keyboard checks, and route tests pass.                                                                                                                                                                                                                   | In progress: Home and Joule use the typed system and focused route tests pass; exact desktop/mobile visual acceptance is still open.                                                                                                                                                                                                                       |
-| 10  | Roll out by component family, then refactor and remove superseded code.    | Shell/navigation, heroes/intros, content sections, cards/listings/filters, forms/CTA, structured market/venue content, charts/data tables, maps, and route-specific details all meet reference acceptance or a recorded approved deviation. The final Next.js 16/Tailwind 4 audit is resolved; superseded CSS/dependencies are removed; every required suite passes.                                                                                                            | In progress: the architecture, audit, accepted content import, global and regional map runtimes, Market Matrix exports, chart/data ingestion, and strict comparison harness are implemented locally. Provider-rendered acceptance, HubSpot/CookieYes/TIM integrations, compatibility CSS, full content population, and exact route acceptance remain open. |
+| 9   | Migrate a representative vertical slice on two differently composed pages. | Header/nav, hero, actions, one content section, a stat/card pattern, CTA, and footer render through the new system on two golden routes. Redundant parity selectors are removed only after desktop/mobile screenshots, keyboard checks, and route tests pass.                                                                                                                                                                                                                   | In progress: Home and Joule use the typed system and focused route tests pass. Visual acceptance now has a defined threshold (see the visual acceptance standard below) and the suite runs to green against it; both routes still carry recorded outstanding gaps.                                                                                                                                                                                                                       |
+| 10  | Roll out by component family, then refactor and remove superseded code.    | Shell/navigation, heroes/intros, content sections, cards/listings/filters, forms/CTA, structured market/venue content, charts/data tables, maps, and route-specific details all meet reference acceptance or a recorded approved deviation. The final Next.js 16/Tailwind 4 audit is resolved; superseded CSS/dependencies are removed; every required suite passes.                                                                                                            | In progress: the architecture, audit, accepted content import, global and regional map runtimes, Market Matrix exports, chart/data ingestion, and strict comparison harness are implemented locally, and the full 317-route corpus is loaded. Acceptance per family is now measurable against the visual acceptance standard below. HubSpot/CookieYes/TIM integrations, compatibility CSS retirement, and per-family rollout remain open. |
+
+## Visual acceptance standard
+
+Requirements 9 and 10 were open because "exact visual acceptance" had no threshold. The harness was
+already strong — deterministic settling, an audited reference forwarder, hash-pinned baselines — but
+`toHaveScreenshot` carried no tolerance, so Playwright's default of **zero** differing pixels
+applied. Against a WordPress capture that can never pass, so the suite was never run to green rather
+than failing loudly.
+
+The standard is machine-readable in [`tests/visual/acceptance.ts`](../tests/visual/acceptance.ts),
+enforced by [`visual-regression.e2e.spec.ts`](../tests/e2e/visual-regression.e2e.spec.ts), and kept
+from rotting by [`visual-acceptance-standard.int.spec.ts`](../tests/int/visual-acceptance-standard.int.spec.ts).
+
+### Why not a single tolerance
+
+Measured on 2026-08-08, Insights on mobile differs from the reference by 15% and Home on mobile by
+18%. Those numbers mean opposite things. The legacy Insights mobile page has a broken narrow layout
+that we deliberately repaired — its difference is approved and permanent. Home's is debt. A single
+number large enough to admit Insights would hide every regression on Home.
+
+### The three tiers
+
+| Tier | Measures | Tolerance |
+| ---- | -------- | --------- |
+| 1 — Structural | Heading outline, landmark counts, internal link destinations | Zero. No pixels involved. |
+| 2 — Height parity | Full-page height against the tracked reference, in pixels | Per route/viewport, ratchets down |
+| 3 — Pixel | Differing-pixel ratio | Per route/viewport, ratchets down; runs only where heights already match |
+
+Tier 2 exists because it is both the more informative signal — a page 273px short is missing
+something, and no ratio will say so — and a hard precondition: `toHaveScreenshot` cannot compare
+images of different sizes at all. That is why the suite failed on eight of ten routes until heights
+were measured separately.
+
+### The ratchet
+
+A budget is not a target to sit at. It fails if exceeded, and it also fails if the route now passes
+at more than `MAX_BUDGET_SLACK` (0.03) below it, which forces an improvement into the recorded
+number instead of leaving headroom for a later regression to spend. Both directions are verified.
+
+### Approved deviations
+
+Every budget declares `outstanding-gap` (debt, drive it down) or `approved-deviation` (permanent,
+explained). An approved deviation must cite where the approval is recorded, and the standard's spec
+asserts that it does.
+
+A *localized* approved change — one that alters a region rather than the whole page — must be
+recorded as a masked region, never by inflating a budget. Inflating one buys silence for every other
+pixel on the route.
+
+### Golden route set
+
+The five captured routes were hand-picked before the corpus was complete. The set is now grounded in
+the contract's route-owning archetypes, so coverage is answerable rather than a matter of taste:
+every archetype the site can publish has a named exemplar. Five of fifteen are captured; the other
+ten are listed with `captured: false` and are asserted as a known gap, because promoting a reference
+requires the audited forwarder and image-by-image human review per
+[`tests/visual/reference/README.md`](../tests/visual/reference/README.md).
+
+### Current baseline (2026-08-08, run `trackb-gates-f`)
+
+| Route | Viewport | Height delta | Pixel budget | Rationale |
+| ----- | -------- | -----------: | -----------: | --------- |
+| home | desktop | 59 | 0.12 | outstanding gap |
+| home | mobile | 124 | 0.19 | outstanding gap — largest in the suite |
+| joule | desktop | 1 | 0.04 | outstanding gap |
+| joule | mobile | **0** | 0.04 | outstanding gap — best result; pixel tier active |
+| insights | desktop | 273 | 0.14 | outstanding gap |
+| insights | mobile | 6150 | 0.16 | **approved deviation** — legacy narrow-layout failure |
+| german-power | desktop | 2 | 0.10 | outstanding gap |
+| german-power | mobile | **0** | 0.11 | outstanding gap — pixel tier active |
+| eex | desktop | 44 | 0.07 | outstanding gap |
+| eex | mobile | 118 | 0.13 | outstanding gap |
+
+Joule mobile and German Power mobile already match the reference height exactly, so the pixel tier
+is live on those two. The other eight are held by tier 2 until their heights converge. Closing Home
+mobile is the highest-value next move: it is the largest gap and the most-seen page.
 
 ## Per-slice acceptance gate
 

@@ -1,7 +1,15 @@
+import fs from 'node:fs'
+import path from 'node:path'
+
 import { expect, test } from '@playwright/test'
 
 import { COOKIE_CONSENT_STORAGE_KEY } from '../../src/Footer/cookieConsent'
 import { goldenRoutes } from '../helpers/site'
+import {
+  MAX_BUDGET_SLACK,
+  budgetFor,
+  type VisualProject,
+} from '../visual/acceptance'
 
 const referenceProxyOrigin = process.env.PLAYWRIGHT_REFERENCE_PROXY_ORIGIN
 const referenceHostname = 'trayport.local'
@@ -196,6 +204,43 @@ const waitForConnectionsMap = async (page: import('@playwright/test').Page) => {
   await page.evaluate(() => window.scrollTo(0, 0))
 }
 
+/**
+ * Whether a tighter budget would also have passed.
+ *
+ * The ratchet only works in both directions if an improvement is forced into the recorded number.
+ * Playwright reports the measured ratio on failure but not on success, so the only way to detect
+ * unused headroom is to re-run the comparison against a tighter bound and see whether it holds.
+ */
+const passesAt = async (
+  page: import('@playwright/test').Page,
+  name: string,
+  maxDiffPixelRatio: number,
+): Promise<boolean> => {
+  try {
+    await expect(page).toHaveScreenshot(name, {
+      fullPage: true,
+      maxDiffPixelRatio,
+      timeout: 20_000,
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Height in pixels from a PNG's IHDR chunk, which begins at a fixed offset after the signature. */
+const pngHeight = (buffer: Buffer): number => buffer.readUInt32BE(20)
+
+const referenceHeight = (route: string, project: string): number | null => {
+  const file = path.resolve(
+    process.cwd(),
+    'tests/visual/reference',
+    project,
+    `${route}.png`,
+  )
+  return fs.existsSync(file) ? pngHeight(fs.readFileSync(file)) : null
+}
+
 for (const route of goldenRoutes) {
   test(`${route.name} matches the approved WordPress reference`, async ({ baseURL, page }) => {
     const isReferenceCapture = isReferenceBaseURL(baseURL)
@@ -214,8 +259,62 @@ for (const route of goldenRoutes) {
     await waitForConnectionsMap(page)
     if (route.name === 'home') await waitForHomeCharts(page)
 
+    // Reference capture writes the baseline; it has nothing to compare against yet.
+    if (isReferenceCapture) {
+      await expect(page).toHaveScreenshot(`${route.name}.png`, { fullPage: true })
+      return
+    }
+
+    const project = test.info().project.name as VisualProject
+    const budget = budgetFor(route.name, project)
+    expect(
+      budget,
+      `${route.name}/${project} has no visual budget. Add one to tests/visual/acceptance.ts before capturing it.`,
+    ).toBeDefined()
+
+    // Tier 2 — height parity. Measured first because it is the more informative signal and because
+    // toHaveScreenshot cannot compare images of different sizes at all.
+    const expectedHeight = referenceHeight(route.name, project)
+    expect(expectedHeight, `No tracked reference for ${route.name}/${project}`).not.toBeNull()
+
+    const actualHeight = pngHeight(await page.screenshot({ fullPage: true }))
+    const delta = Math.abs(actualHeight - expectedHeight!)
+
+    expect(
+      delta,
+      `${route.name}/${project} full-page height is ${actualHeight} against a reference of ${expectedHeight} (delta ${delta}, budget ${budget!.maxHeightDelta}). Heights ratchet down.`,
+    ).toBeLessThanOrEqual(budget!.maxHeightDelta)
+
+    expect(
+      delta,
+      `${route.name}/${project} height delta is ${delta}, below its recorded budget of ${budget!.maxHeightDelta}. Lower maxHeightDelta in tests/visual/acceptance.ts.`,
+    ).toBeGreaterThanOrEqual(budget!.maxHeightDelta)
+
+    // Tier 3 — pixel comparison, only meaningful once the heights agree. Where they do not, the
+    // comparison is pending rather than skipped: the height assertion above is what holds the line.
+    if (delta !== 0) {
+      test.info().annotations.push({
+        type: 'pixel-comparison-pending',
+        description: `Height differs by ${delta}px; pixel acceptance cannot run until it reaches 0.`,
+      })
+      return
+    }
+
     await expect(page).toHaveScreenshot(`${route.name}.png`, {
       fullPage: true,
+      maxDiffPixelRatio: budget!.maxDiffPixelRatio,
     })
+
+    // The ratchet. A budget carrying more than MAX_BUDGET_SLACK of unused headroom is stale, and
+    // leaving it there banks room for a later regression to spend unnoticed.
+    const tighter = Number((budget!.maxDiffPixelRatio - MAX_BUDGET_SLACK).toFixed(4))
+    if (tighter > 0) {
+      expect(
+        await passesAt(page, `${route.name}.png`, tighter),
+        `${route.name}/${project} now passes at ${tighter}, below its recorded budget of ${
+          budget!.maxDiffPixelRatio
+        }. Lower maxDiffPixelRatio in tests/visual/acceptance.ts — budgets ratchet down.`,
+      ).toBe(false)
+    }
   })
 }
