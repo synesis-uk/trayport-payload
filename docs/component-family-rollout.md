@@ -202,22 +202,36 @@ which need transform changes and therefore belong to the single batched reload i
 - Per-paragraph inset figures and inline prose images are dropped by the transform and by the
   HTML-to-Lexical converter respectively.
 
-### Phase 3 — promote the index template
+### Phase 3 — promote the index template (delivered 2026-08-08)
 
-The clearest instance of the rule paying off. `parity-insights.css` is locked to
-`[data-page-path='/resources/insights/']`, but **all five index routes already carry
-`.trayport-page--index`**. Renaming the prefix fixes the other four for free.
+The rule paying for itself. `parity-insights.css` was keyed to
+`[data-page-path='/resources/insights/']`, but every `page.content-index` route already carries
+`.trayport-page--index` — verified on all five. Replacing the prefix was the entire change: 60
+selectors, one `sed`, four routes fixed.
 
-Two conditions. First, `parity-blocks.css`'s own `--index` block is dead code — it sits inside
-`@layer components` while the generic defaults it means to override are *unlayered*, and unlayered
-declarations beat layered ones regardless of specificity. Delete it rather than merging it; it
-encodes a different, denser design that would undershoot. Second, wrap the row geometry in
-`@media (min-width: 48rem)`: `parity-insights.css:181` sets `min-height: 3.8125rem` outside any media
-query, which is exactly why the "control" route is 50% short on mobile. Broadcasting it as-is spreads
-that defect to three more routes.
+Rows on News, Events and the combined index were falling back to the generic 96px row while Insights
+rendered the reference-matching 61px. All four now render 61px.
 
-Also unaddressed by any row-height fix: the rebuild renders 35 article rows where the reference
-renders 39, and the reference has a "Show more" control we do not.
+| | Before | After |
+| --- | ---: | ---: |
+| `/resources/news/` desktop | +1,267 | **−62** |
+| `page.content-index` mean, desktop | 602 | **232** |
+| `page.content-index` impact, desktop | 3,010 | **1,160** |
+
+**Mobile moved the other way, and that is correct.** `page.content-index` mobile impact rose from
+19,750 to 23,110, because the compact mobile rows now apply to all four routes. Measured at 390px,
+the reference's rows are **117–447px tall with a median of ~230–257px** — for a title and a date —
+against ours at 50–93px. That is the narrow-layout failure already recorded in
+`tests/visual/reference/README.md`, not a target. The approved-deviation rationale that previously
+covered only Insights on mobile now covers the template, which is the honest description: we render a
+compact readable list where the reference blows each row up to a third of the screen.
+
+This is exactly the case the standard was built for — a bigger height delta that is a better page.
+
+**Not done here:** `parity-blocks.css` still holds 42 superseded `--index` selectors. They are dead
+(the promoted file is unlayered and wins), but a first attempt at removing them took out
+neighbouring rules and blanked the listings, so they need a careful pass of their own rather than a
+span delete.
 
 ### Phase 4 — one batched transform and reload
 

@@ -128,7 +128,7 @@ export const visualBudgets: VisualBudget[] = [
     maxHeightDelta: 6128,
     maxDiffPixelRatio: 0.16,
     rationale: 'approved-deviation',
-    note: 'The legacy mobile page has an extreme narrow-layout failure recorded in tests/visual/reference/README.md; our repaired page is 12105px against 5955px. This difference is intended and permanent, so the budget will not fall to the others.',
+    note: 'The legacy mobile listing is broken, not merely different: measured 2026-08-08 its rows are 117-447px tall with a median of ~230px for a title and a date, against ours at 50-93px. Recorded in tests/visual/reference/README.md. The repair now applies to the whole index template rather than this one route, so every page.content-index route carries the same intended difference on mobile.',
   },
   {
     route: 'german-power',

@@ -1,52 +1,56 @@
 /*
- * Insights index parity slice.
+ * The listing/index template.
  *
- * The route attribute is emitted from the managed Page record, so these rules
- * stay bounded to the accepted WordPress Insights template and can be removed
- * without changing the shared listing component or imported content.
+ * These rules were written against `/resources/insights/` alone, keyed to its path. Every
+ * `page.content-index` route already carries `.trayport-page--index`, so the geometry was correct
+ * for one route and absent from the other four — which is why Insights rendered 61px rows while
+ * News, Events and the combined index fell back to the generic 96px row.
+ *
+ * Promoting the prefix is the whole change: the template teaches every route that uses it, which is
+ * the rule this codebase now works to. Nothing here may reference an individual page again.
  */
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-listing {
+.trayport-page--index .trayport-listing {
   padding-block: 6rem;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-listing > .trayport-container {
+.trayport-page--index .trayport-listing > .trayport-container {
   max-width: 80rem;
   padding-inline: 3rem;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-featured-articles,
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-filters,
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-list {
+.trayport-page--index .trayport-featured-articles,
+.trayport-page--index .trayport-article-filters,
+.trayport-page--index .trayport-article-list {
   max-width: none;
   width: 100%;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-featured-articles {
+.trayport-page--index .trayport-featured-articles {
   margin-bottom: 2.5rem;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-listing__subheading {
+.trayport-page--index .trayport-listing__subheading {
   border: 0;
   margin-bottom: 1.5rem;
   padding: 0;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-listing__subheading h3 {
+.trayport-page--index .trayport-listing__subheading h3 {
   color: #1f2937;
   font-size: 1.5rem;
   font-weight: 600;
   line-height: 2rem;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-featured-articles__grid {
+.trayport-page--index .trayport-featured-articles__grid {
   gap: 1.5rem;
   grid-template-columns: 1fr;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-card,
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-card.is-lead,
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-card:not(.is-lead) {
+.trayport-page--index .trayport-article-card,
+.trayport-page--index .trayport-article-card.is-lead,
+.trayport-page--index .trayport-article-card:not(.is-lead) {
   border-color: #e5e5e5;
   border-radius: 0.5rem;
   box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
@@ -58,19 +62,19 @@
   min-height: 0;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] a.trayport-article-card:hover {
+.trayport-page--index a.trayport-article-card:hover {
   border-color: #e5e5e5;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%);
   transform: none;
 }
 
-.trayport-page[data-page-path='/resources/insights/']
+.trayport-page--index
   .trayport-article-card
   .trayport-article-card__media,
-.trayport-page[data-page-path='/resources/insights/']
+.trayport-page--index
   .trayport-article-card.is-lead
   .trayport-article-card__media,
-.trayport-page[data-page-path='/resources/insights/']
+.trayport-page--index
   .trayport-article-card:not(.is-lead)
   .trayport-article-card__media {
   aspect-ratio: 16 / 9;
@@ -78,12 +82,12 @@
   min-height: 0;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-card__body {
+.trayport-page--index .trayport-article-card__body {
   justify-content: initial;
   padding: 1.5rem;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-card__meta {
+.trayport-page--index .trayport-article-card__meta {
   color: #6b7280;
   font-size: 0.875rem;
   gap: 0.25rem;
@@ -93,21 +97,21 @@
   text-transform: none;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-card__meta time {
+.trayport-page--index .trayport-article-card__meta time {
   order: -1;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-card__meta span {
+.trayport-page--index .trayport-article-card__meta span {
   color: #6b7280;
   font-weight: 400;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-card__meta span::before {
+.trayport-page--index .trayport-article-card__meta span::before {
   content: '·';
   margin-right: 0.25rem;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-card h4 {
+.trayport-page--index .trayport-article-card h4 {
   color: #1f2937;
   font-size: 1.25rem;
   font-weight: 600;
@@ -115,14 +119,14 @@
   margin: 0;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-card .trayport-inline-link {
+.trayport-page--index .trayport-article-card .trayport-inline-link {
   font-size: 0.875rem;
   line-height: 1.25rem;
   margin-top: auto;
   padding-top: 1rem;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-filters {
+.trayport-page--index .trayport-article-filters {
   background: transparent;
   gap: 1rem;
   grid-template-areas:
@@ -133,36 +137,36 @@
   padding: 0;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-filters__category {
+.trayport-page--index .trayport-article-filters__category {
   grid-area: category;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-filters__year {
+.trayport-page--index .trayport-article-filters__year {
   grid-area: year;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-filters__search {
+.trayport-page--index .trayport-article-filters__search {
   grid-area: search;
 }
 
-.trayport-page[data-page-path='/resources/insights/']
+.trayport-page--index
   .trayport-article-filters
   label
   > span:first-child {
   display: none;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-filters__input {
+.trayport-page--index .trayport-article-filters__input {
   background: #fafafa;
   height: 3.625rem;
   padding: 0;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-filters__input > svg {
+.trayport-page--index .trayport-article-filters__input > svg {
   display: none;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-filters input {
+.trayport-page--index .trayport-article-filters input {
   background: #fafafa;
   font-size: 1rem;
   height: 100%;
@@ -170,7 +174,7 @@
   padding-inline: 2rem;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-filters select {
+.trayport-page--index .trayport-article-filters select {
   font-size: 1rem;
   height: 2.625rem;
   line-height: 1.5rem;
@@ -178,20 +182,20 @@
   padding-right: 3rem;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-row {
+.trayport-page--index .trayport-article-row {
   gap: 2rem;
   grid-template-columns: 1.5rem 4.8125rem minmax(0, 1fr) auto;
   min-height: 3.8125rem;
   padding: 1rem;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-row__icon {
+.trayport-page--index .trayport-article-row__icon {
   color: #4b5563;
   height: 1.5rem !important;
   width: 1.5rem !important;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-row__meta {
+.trayport-page--index .trayport-article-row__meta {
   color: #6b7280;
   display: block;
   font-size: 1.25rem;
@@ -201,19 +205,19 @@
   white-space: nowrap;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-row__meta time {
+.trayport-page--index .trayport-article-row__meta time {
   color: inherit;
   font-size: inherit;
   line-height: inherit;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-row h3 {
+.trayport-page--index .trayport-article-row h3 {
   font-size: 1.25rem;
   font-weight: 400;
   line-height: 1.75rem;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] .trayport-article-row__action {
+.trayport-page--index .trayport-article-row__action {
   color: #374151;
   display: block;
   font-size: 1.125rem;
@@ -222,27 +226,27 @@
   text-align: right;
 }
 
-.trayport-page[data-page-path='/resources/insights/'] a.trayport-article-row:hover {
+.trayport-page--index a.trayport-article-row:hover {
   background: #fafafa;
 }
 
 @media (max-width: 47.999rem) {
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-hero__inner {
+  .trayport-page--index .trayport-hero__inner {
     padding-block: 1.25rem 0.25rem;
   }
 
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-hero__content {
+  .trayport-page--index .trayport-hero__content {
     padding-inline: 1rem;
   }
 
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-hero__content h1 {
+  .trayport-page--index .trayport-hero__content h1 {
     font-size: 1.875rem;
     font-weight: 600;
     line-height: 1.75rem;
     position: relative;
   }
 
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-hero__content h1::after {
+  .trayport-page--index .trayport-hero__content h1::after {
     background: linear-gradient(90deg, #00c1d5 0 33.333%, #f7ea48 33.333% 66.666%, #ff6021 66.666%);
     height: 0.125rem;
     left: 0;
@@ -252,7 +256,7 @@
     width: 100%;
   }
 
-  .trayport-page[data-page-path='/resources/insights/']
+  .trayport-page--index
     .trayport-hero__content
     .trayport-richtext--lead {
     font-size: 1.125rem;
@@ -261,36 +265,36 @@
     margin-top: 2.125rem;
   }
 
-  .trayport-page[data-page-path='/resources/insights/']
+  .trayport-page--index
     .trayport-hero__content
     .trayport-richtext--lead
     p {
     margin-bottom: 0;
   }
 
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-listing {
+  .trayport-page--index .trayport-listing {
     padding-block: 2rem 4rem;
   }
 
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-listing > .trayport-container {
+  .trayport-page--index .trayport-listing > .trayport-container {
     max-width: none;
     padding-inline: 0.5rem;
   }
 
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-article-card,
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-article-card.is-lead,
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-article-card:not(.is-lead) {
+  .trayport-page--index .trayport-article-card,
+  .trayport-page--index .trayport-article-card.is-lead,
+  .trayport-page--index .trayport-article-card:not(.is-lead) {
     flex-direction: column;
     gap: 0;
   }
 
-  .trayport-page[data-page-path='/resources/insights/']
+  .trayport-page--index
     .trayport-article-card
     .trayport-article-card__media,
-  .trayport-page[data-page-path='/resources/insights/']
+  .trayport-page--index
     .trayport-article-card.is-lead
     .trayport-article-card__media,
-  .trayport-page[data-page-path='/resources/insights/']
+  .trayport-page--index
     .trayport-article-card:not(.is-lead)
     .trayport-article-card__media {
     flex-basis: auto;
@@ -298,43 +302,43 @@
     width: 100%;
   }
 
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-article-card__body {
+  .trayport-page--index .trayport-article-card__body {
     min-height: 11.25rem;
   }
 
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-article-filters {
+  .trayport-page--index .trayport-article-filters {
     grid-template-areas:
       'category year'
       'search search';
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-article-row {
+  .trayport-page--index .trayport-article-row {
     gap: 0.45rem 0.75rem;
     grid-template-columns: 1.125rem 4.75rem minmax(0, 1fr);
     min-height: 0;
     padding: 0.85rem 0;
   }
 
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-article-row__icon {
+  .trayport-page--index .trayport-article-row__icon {
     height: 1.125rem !important;
     width: 1.125rem !important;
   }
 
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-article-row__meta {
+  .trayport-page--index .trayport-article-row__meta {
     font-size: 0.72rem;
     grid-column: auto;
     line-height: 1.3;
   }
 
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-article-row h3 {
+  .trayport-page--index .trayport-article-row h3 {
     font-size: 1rem;
     line-height: 1.35;
     min-width: 0;
     overflow-wrap: anywhere;
   }
 
-  .trayport-page[data-page-path='/resources/insights/'] .trayport-article-row__action {
+  .trayport-page--index .trayport-article-row__action {
     display: none;
   }
 }
