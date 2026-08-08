@@ -7,7 +7,7 @@ import {
   venueWebsiteFromWordPress,
 } from '../../migration/transform'
 import { mapArticleLayout, mapPageLayout } from '../../migration/transform/blocks'
-import type { TransformCoverage } from '../../migration/transform/types'
+import { emptyTransformCoverage, type TransformCoverage } from '../../migration/transform/types'
 import { describe, expect, it } from 'vitest'
 
 const venuePost = (overrides: Partial<SourcePost> = {}): SourcePost => ({
@@ -47,14 +47,7 @@ const hub = (id: number) => ({
   path: `/market-coverage/hub-${id}/`,
 })
 
-const coverage = (): TransformCoverage => ({
-  componentLayouts: {},
-  ignoredComponentLayouts: {},
-  topLevelLayouts: {},
-  ignoredTaxonomies: {},
-  unsupportedComponentLayouts: [],
-  unsupportedTopLevelLayouts: [],
-})
+const coverage = (): TransformCoverage => emptyTransformCoverage()
 
 describe('structured-route WordPress transform', () => {
   it('preserves intentionally blank table headers and cells without inventing display text', () => {

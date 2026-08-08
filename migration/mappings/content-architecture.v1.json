@@ -204,11 +204,41 @@
         "legacyId": 2233,
         "path": "/resources/commodities-report/"
       }
+    ],
+    "sourceEmptyArticleBodies": [
+      {
+        "id": "event-eworld-2025",
+        "legacyId": 2461,
+        "path": "/event/eworld-2025/",
+        "reason": "WordPress source carries no acf.sections body; the migrated page renders a hero and a placeholder heading only."
+      },
+      {
+        "id": "event-women-of-silicon-roundabout-2024",
+        "legacyId": 2463,
+        "path": "/event/women-of-silicon-roundabout-2024/",
+        "reason": "WordPress source carries no acf.sections body; the migrated page renders a hero only."
+      },
+      {
+        "id": "event-fia-expo-2024",
+        "legacyId": 2464,
+        "path": "/event/fia-expo-2024/",
+        "reason": "WordPress source carries no acf.sections body; the migrated page renders a hero only."
+      }
+    ],
+    "approvedLiveFallbackPaths": [
+      "/products/",
+      "/resources/",
+      "/home/enterprise-security/"
     ]
   },
   "blocks": {
     "implemented": {
-      "topLevel": ["trayportHero", "contentSection", "articleListing", "learningVideoListing"],
+      "topLevel": [
+        "trayportHero",
+        "contentSection",
+        "articleListing",
+        "learningVideoListing"
+      ],
       "sectionComponents": [
         "heading",
         "richText",
@@ -275,7 +305,10 @@
       },
       "routePolicy": "required",
       "contentOwner": "layout",
-      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "allowedTopLevelBlocks": [
+        "trayportHero",
+        "contentSection"
+      ],
       "editorCapabilities": [
         "compose-layout",
         "manage-seo",
@@ -296,7 +329,10 @@
       },
       "routePolicy": "required",
       "contentOwner": "layout",
-      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "allowedTopLevelBlocks": [
+        "trayportHero",
+        "contentSection"
+      ],
       "editorCapabilities": [
         "compose-layout",
         "manage-seo",
@@ -317,7 +353,10 @@
       },
       "routePolicy": "required",
       "contentOwner": "layout",
-      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "allowedTopLevelBlocks": [
+        "trayportHero",
+        "contentSection"
+      ],
       "editorCapabilities": [
         "compose-layout",
         "manage-seo",
@@ -338,7 +377,10 @@
       },
       "routePolicy": "required",
       "contentOwner": "layout",
-      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "allowedTopLevelBlocks": [
+        "trayportHero",
+        "contentSection"
+      ],
       "editorCapabilities": [
         "compose-layout",
         "manage-seo",
@@ -359,7 +401,10 @@
       },
       "routePolicy": "required",
       "contentOwner": "layout",
-      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "allowedTopLevelBlocks": [
+        "trayportHero",
+        "contentSection"
+      ],
       "editorCapabilities": [
         "compose-layout",
         "manage-seo",
@@ -380,7 +425,10 @@
       },
       "routePolicy": "required",
       "contentOwner": "layout-and-hubspot-form",
-      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "allowedTopLevelBlocks": [
+        "trayportHero",
+        "contentSection"
+      ],
       "editorCapabilities": [
         "compose-layout",
         "configure-hubspot-form",
@@ -400,7 +448,9 @@
       "routePolicy": "required",
       "contentOwner": "temporary-managed-redirect",
       "allowedTopLevelBlocks": [],
-      "editorCapabilities": ["manage-redirects"],
+      "editorCapabilities": [
+        "manage-redirects"
+      ],
       "implementationStatus": "passing",
       "gap": null
     },
@@ -413,7 +463,10 @@
       },
       "routePolicy": "required",
       "contentOwner": "layout-and-managed-market-relationships",
-      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "allowedTopLevelBlocks": [
+        "trayportHero",
+        "contentSection"
+      ],
       "editorCapabilities": [
         "compose-layout",
         "configure-market-matrix",
@@ -462,7 +515,10 @@
       },
       "routePolicy": "required",
       "contentOwner": "layout",
-      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "allowedTopLevelBlocks": [
+        "trayportHero",
+        "contentSection"
+      ],
       "editorCapabilities": [
         "compose-layout",
         "manage-editorial-metadata",
@@ -486,7 +542,11 @@
       "routePolicy": "forbidden",
       "contentOwner": "listing-metadata-only",
       "allowedTopLevelBlocks": [],
-      "editorCapabilities": ["manage-editorial-metadata", "manage-taxonomy", "draft"],
+      "editorCapabilities": [
+        "manage-editorial-metadata",
+        "manage-taxonomy",
+        "draft"
+      ],
       "implementationStatus": "passing",
       "gap": null
     },
@@ -517,7 +577,10 @@
       },
       "routePolicy": "required",
       "contentOwner": "video-metadata-and-managed-media",
-      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "allowedTopLevelBlocks": [
+        "trayportHero",
+        "contentSection"
+      ],
       "editorCapabilities": [
         "compose-layout",
         "manage-video",
@@ -541,7 +604,11 @@
       "routePolicy": "forbidden",
       "contentOwner": "listing-metadata-only",
       "allowedTopLevelBlocks": [],
-      "editorCapabilities": ["manage-video-metadata", "manage-taxonomy", "draft"],
+      "editorCapabilities": [
+        "manage-video-metadata",
+        "manage-taxonomy",
+        "draft"
+      ],
       "implementationStatus": "passing",
       "gap": null
     },
@@ -554,7 +621,10 @@
       },
       "routePolicy": "required",
       "contentOwner": "layout-and-structured-market-data",
-      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "allowedTopLevelBlocks": [
+        "trayportHero",
+        "contentSection"
+      ],
       "editorCapabilities": [
         "compose-layout",
         "manage-market-relationships",
@@ -577,7 +647,12 @@
       "routePolicy": "forbidden",
       "contentOwner": "structured-market-data",
       "allowedTopLevelBlocks": [],
-      "editorCapabilities": ["manage-market-relationships", "draft", "publish", "schedule-publish"],
+      "editorCapabilities": [
+        "manage-market-relationships",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
       "implementationStatus": "passing",
       "gap": null
     },
@@ -591,7 +666,12 @@
       "routePolicy": "forbidden",
       "contentOwner": "structured-market-data",
       "allowedTopLevelBlocks": [],
-      "editorCapabilities": ["manage-market-relationships", "draft", "publish", "schedule-publish"],
+      "editorCapabilities": [
+        "manage-market-relationships",
+        "draft",
+        "publish",
+        "schedule-publish"
+      ],
       "implementationStatus": "passing",
       "gap": null
     },
@@ -604,7 +684,10 @@
       },
       "routePolicy": "required",
       "contentOwner": "layout-and-structured-market-data",
-      "allowedTopLevelBlocks": ["trayportHero", "contentSection"],
+      "allowedTopLevelBlocks": [
+        "trayportHero",
+        "contentSection"
+      ],
       "editorCapabilities": [
         "compose-layout",
         "manage-market-relationships",
@@ -657,63 +740,87 @@
       "scope": "page-top-level",
       "source": "hero",
       "disposition": "map",
-      "targets": ["trayportHero"],
+      "targets": [
+        "trayportHero"
+      ],
       "reason": "Preserve the page proposition, media, and actions in the managed hero block."
     },
     {
       "scope": "page-top-level",
       "source": "columns",
       "disposition": "consolidate",
-      "targets": ["contentSection"],
+      "targets": [
+        "contentSection"
+      ],
       "reason": "Normalize legacy columns and nested components to the constrained responsive section model."
     },
     {
       "scope": "page-top-level",
       "source": "single",
       "disposition": "consolidate",
-      "targets": ["contentSection"],
+      "targets": [
+        "contentSection"
+      ],
       "reason": "Represent a legacy single-column section as one twelve-column content section."
     },
     {
       "scope": "article-top-level",
       "source": "media",
       "disposition": "consolidate",
-      "targets": ["contentSection", "media"],
+      "targets": [
+        "contentSection",
+        "media"
+      ],
       "reason": "Wrap article media in a reading-width content section."
     },
     {
       "scope": "article-top-level",
       "source": "paragraph",
       "disposition": "consolidate",
-      "targets": ["contentSection", "richText"],
+      "targets": [
+        "contentSection",
+        "richText"
+      ],
       "reason": "Wrap article copy in a reading-width content section."
     },
     {
       "scope": "article-top-level",
       "source": "divider",
       "disposition": "consolidate",
-      "targets": ["contentSection", "divider"],
+      "targets": [
+        "contentSection",
+        "divider"
+      ],
       "reason": "Preserve the semantic separation inside the article reading column."
     },
     {
       "scope": "article-top-level",
       "source": "buttons",
       "disposition": "consolidate",
-      "targets": ["contentSection", "actions"],
+      "targets": [
+        "contentSection",
+        "actions"
+      ],
       "reason": "Normalize article calls to action into the shared action component."
     },
     {
       "scope": "article-top-level",
       "source": "index-point",
       "disposition": "consolidate",
-      "targets": ["contentSection", "heading"],
+      "targets": [
+        "contentSection",
+        "heading"
+      ],
       "reason": "Preserve article section navigation anchors and headings."
     },
     {
       "scope": "article-top-level",
       "source": "form",
       "disposition": "consolidate",
-      "targets": ["contentSection", "hubspotForm"],
+      "targets": [
+        "contentSection",
+        "hubspotForm"
+      ],
       "observedCount": 16,
       "reason": "Wrap article forms in a reading-width content section and retain their approved HubSpot identifier for the shared bounded embed."
     },
@@ -721,7 +828,10 @@
       "scope": "article-top-level",
       "source": "header",
       "disposition": "consolidate",
-      "targets": ["contentSection", "heading"],
+      "targets": [
+        "contentSection",
+        "heading"
+      ],
       "observedCount": 42,
       "reason": "Wrap article headings in a reading-width content section while preserving their supported semantic level."
     },
@@ -729,7 +839,10 @@
       "scope": "article-top-level",
       "source": "post-content",
       "disposition": "consolidate",
-      "targets": ["contentSection", "richText"],
+      "targets": [
+        "contentSection",
+        "richText"
+      ],
       "observedCount": 4,
       "reason": "Convert the legacy post-content payload to Lexical rich text inside a reading-width content section."
     },
@@ -737,7 +850,10 @@
       "scope": "article-top-level",
       "source": "table",
       "disposition": "consolidate",
-      "targets": ["contentSection", "dataTable"],
+      "targets": [
+        "contentSection",
+        "dataTable"
+      ],
       "observedCount": 1,
       "reason": "Wrap the structured article table in a reading-width content section and preserve headers, rows, and caption."
     },
@@ -745,70 +861,92 @@
       "scope": "component",
       "source": "header",
       "disposition": "map",
-      "targets": ["heading"],
+      "targets": [
+        "heading"
+      ],
       "reason": "Preserve heading text and supported semantic levels."
     },
     {
       "scope": "component",
       "source": "subheader",
       "disposition": "consolidate",
-      "targets": ["heading"],
+      "targets": [
+        "heading"
+      ],
       "reason": "Normalize visual subheaders to the controlled heading component."
     },
     {
       "scope": "component",
       "source": "preheader",
       "disposition": "consolidate",
-      "targets": ["heading"],
+      "targets": [
+        "heading"
+      ],
       "reason": "Normalize preheaders to heading eyebrow content."
     },
     {
       "scope": "component",
       "source": "paragraph",
       "disposition": "map",
-      "targets": ["richText"],
+      "targets": [
+        "richText"
+      ],
       "reason": "Convert supported HTML to Payload Lexical JSON."
     },
     {
       "scope": "component",
       "source": "buttons",
       "disposition": "map",
-      "targets": ["actions"],
+      "targets": [
+        "actions"
+      ],
       "reason": "Normalize supported button styles and destinations."
     },
     {
       "scope": "component",
       "source": "image",
       "disposition": "map",
-      "targets": ["media"],
+      "targets": [
+        "media"
+      ],
       "reason": "Resolve WordPress attachments through the media collection."
     },
     {
       "scope": "component",
       "source": "videos",
       "disposition": "consolidate",
-      "targets": ["media"],
+      "targets": [
+        "media"
+      ],
       "reason": "Resolve reusable local video records through the shared media component."
     },
     {
       "scope": "component",
       "source": "features",
       "disposition": "map",
-      "targets": ["featureList"],
+      "targets": [
+        "featureList"
+      ],
       "reason": "Preserve feature items while constraining their presentation variant."
     },
     {
       "scope": "component",
       "source": "stats",
       "disposition": "map",
-      "targets": ["statistics"],
+      "targets": [
+        "statistics"
+      ],
       "reason": "Preserve structured values, labels, and descriptions."
     },
     {
       "scope": "component",
       "source": "stats-right",
       "disposition": "consolidate",
-      "targets": ["heading", "richText", "statistics"],
+      "targets": [
+        "heading",
+        "richText",
+        "statistics"
+      ],
       "observedCount": 2,
       "reason": "Preserve the legacy Event stats-right heading, prose, and any authored structured statistics in managed section components."
     },
@@ -816,175 +954,226 @@
       "scope": "component",
       "source": "faqs",
       "disposition": "map",
-      "targets": ["faq"],
+      "targets": [
+        "faq"
+      ],
       "reason": "Preserve structured questions and answers."
     },
     {
       "scope": "component",
       "source": "people",
       "disposition": "consolidate",
-      "targets": ["peopleList"],
+      "targets": [
+        "peopleList"
+      ],
       "reason": "Keep explicit People relationships or a live team query so current profiles, ordering, biographies, quotations, portraits, and links remain managed."
     },
     {
       "scope": "component",
       "source": "products",
       "disposition": "consolidate",
-      "targets": ["featureList"],
+      "targets": [
+        "featureList"
+      ],
       "reason": "Flatten reusable product records into image feature tiles with bounded actions."
     },
     {
       "scope": "component",
       "source": "clients",
       "disposition": "consolidate",
-      "targets": ["entityList"],
+      "targets": [
+        "entityList"
+      ],
       "reason": "Flatten reusable client records into the shared entity-list shape."
     },
     {
       "scope": "component",
       "source": "timeline",
       "disposition": "map",
-      "targets": ["timeline"],
+      "targets": [
+        "timeline"
+      ],
       "reason": "Preserve ordered milestone content."
     },
     {
       "scope": "component",
       "source": "table",
       "disposition": "map",
-      "targets": ["dataTable"],
+      "targets": [
+        "dataTable"
+      ],
       "reason": "Preserve tabular headers, rows, and caption."
     },
     {
       "scope": "component",
       "source": "gallery",
       "disposition": "map",
-      "targets": ["gallery"],
+      "targets": [
+        "gallery"
+      ],
       "reason": "Resolve gallery attachments into managed media relationships."
     },
     {
       "scope": "component",
       "source": "divider",
       "disposition": "map",
-      "targets": ["divider"],
+      "targets": [
+        "divider"
+      ],
       "reason": "Preserve content separation without legacy presentation settings."
     },
     {
       "scope": "component",
       "source": "connections",
       "disposition": "consolidate",
-      "targets": ["marketCoverage"],
+      "targets": [
+        "marketCoverage"
+      ],
       "reason": "Render editorial map configuration from Payload-owned hub and region relationships."
     },
     {
       "scope": "component",
       "source": "charts-new",
       "disposition": "split",
-      "targets": ["dataChart", "app.market_volume_monthly"],
+      "targets": [
+        "dataChart",
+        "app.market_volume_monthly"
+      ],
       "reason": "Keep chart configuration in Payload and move market facts to application PostgreSQL."
     },
     {
       "scope": "component",
       "source": "column",
       "disposition": "structure",
-      "targets": ["contentSection.columns"],
+      "targets": [
+        "contentSection.columns"
+      ],
       "reason": "Normalize a nested legacy column as structural contentSection column data rather than rendering a presentational wrapper block."
     },
     {
       "scope": "component",
       "source": "form",
       "disposition": "map",
-      "targets": ["hubspotForm"],
+      "targets": [
+        "hubspotForm"
+      ],
       "reason": "Retain approved HubSpot identifiers for page and article forms; omit only unused generic WordPress form-builder behavior."
     },
     {
       "scope": "component",
       "source": "checklist",
       "disposition": "map",
-      "targets": ["checklist"],
+      "targets": [
+        "checklist"
+      ],
       "reason": "Preserve checklist items as a typed accessible list."
     },
     {
       "scope": "component",
       "source": "lifecycle",
       "disposition": "map",
-      "targets": ["lifecycle"],
+      "targets": [
+        "lifecycle"
+      ],
       "reason": "Preserve lifecycle records and ordering in a managed component."
     },
     {
       "scope": "component",
       "source": "market-matrix",
       "disposition": "map",
-      "targets": ["marketMatrix"],
+      "targets": [
+        "marketMatrix"
+      ],
       "reason": "Replace legacy market-matrix rendering with an interactive component backed by managed public hub and venue route owners."
     },
     {
       "scope": "component",
       "source": "office",
       "disposition": "map",
-      "targets": ["office"],
+      "targets": [
+        "office"
+      ],
       "reason": "Preserve structured office address and contact semantics without legacy template coupling."
     },
     {
       "scope": "component",
       "source": "markets-map",
       "disposition": "consolidate",
-      "targets": ["marketCoverage"],
+      "targets": [
+        "marketCoverage"
+      ],
       "reason": "Consolidate the legacy markets map into the implemented managed market-coverage map presentation."
     },
     {
       "scope": "component",
       "source": "regions",
       "disposition": "consolidate",
-      "targets": ["featureList"],
+      "targets": [
+        "featureList"
+      ],
       "reason": "Consolidate the curated region listing into linked feature-list items backed by managed region pages."
     },
     {
       "scope": "component",
       "source": "icon",
       "disposition": "map",
-      "targets": ["standaloneIcon"],
+      "targets": [
+        "standaloneIcon"
+      ],
       "reason": "Map the three in-scope volume-card icons to bounded semantic Font Awesome roles."
     },
     {
       "scope": "shortcode",
       "source": "wcc_category_list",
       "disposition": "map",
-      "targets": ["cookiePreferences"],
+      "targets": [
+        "cookiePreferences"
+      ],
       "reason": "Replace [wcc_category_list] with CookieYes-backed category and preference behavior; arbitrary shortcode execution remains excluded."
     },
     {
       "scope": "taxonomy",
       "source": "category",
       "disposition": "map",
-      "targets": ["article-categories"],
+      "targets": [
+        "article-categories"
+      ],
       "reason": "Preserve article classification used by listings."
     },
     {
       "scope": "taxonomy",
       "source": "lh-category",
       "disposition": "consolidate",
-      "targets": ["learning-video-categories"],
+      "targets": [
+        "learning-video-categories"
+      ],
       "reason": "Preserve Learning Hub discovery classification in a dedicated, non-routable managed collection related from learning-videos."
     },
     {
       "scope": "taxonomy",
       "source": "asset-class",
       "disposition": "map",
-      "targets": ["asset-classes"],
+      "targets": [
+        "asset-classes"
+      ],
       "reason": "Preserve market classification and market-data lookup relationships."
     },
     {
       "scope": "taxonomy",
       "source": "venue-type",
       "disposition": "map",
-      "targets": ["venue-types"],
+      "targets": [
+        "venue-types"
+      ],
       "reason": "Preserve venue grouping used by hub connectivity."
     },
     {
       "scope": "taxonomy",
       "source": "region",
       "disposition": "map",
-      "targets": ["regions"],
+      "targets": [
+        "regions"
+      ],
       "reason": "Preserve map grouping and region relationships."
     },
     {
@@ -998,7 +1187,9 @@
       "scope": "taxonomy",
       "source": "product-feature",
       "disposition": "consolidate",
-      "targets": ["featureList"],
+      "targets": [
+        "featureList"
+      ],
       "reason": "Feature semantics are absorbed into typed feature blocks rather than retained as a public taxonomy."
     },
     {
@@ -1013,37 +1204,53 @@
     {
       "id": "insights-listing-block",
       "sourceCondition": "WordPress page legacyId 9248",
-      "targets": ["page.content-index", "articleListing"],
+      "targets": [
+        "page.content-index",
+        "articleListing"
+      ],
       "reason": "The listing is a target-system behavior derived from the Insights index archetype."
     },
     {
       "id": "map-only-hubs",
       "sourceCondition": "Scoped map-hub records other than the public German Power root",
-      "targets": ["hub.map-only"],
+      "targets": [
+        "hub.map-only"
+      ],
       "reason": "Map markers are normalized as non-routable structured hub records."
     },
     {
       "id": "article-listing-metadata",
       "sourceCondition": "Insights listing records without an extracted article body",
-      "targets": ["article.listing-metadata"],
+      "targets": [
+        "article.listing-metadata"
+      ],
       "reason": "This is a PoC migration state, not an acceptable public production detail-page state."
     },
     {
       "id": "venue-index-route",
       "sourceCondition": "Virtual WordPress archive /venue/",
-      "targets": ["index.venue", "venues"],
+      "targets": [
+        "index.venue",
+        "venues"
+      ],
       "reason": "The target frontend owns the virtual index while each listed venue owns its public detail route."
     },
     {
       "id": "market-coverage-index-route",
       "sourceCondition": "Virtual WordPress archive /market-coverage/",
-      "targets": ["index.market-coverage", "hubs"],
+      "targets": [
+        "index.market-coverage",
+        "hubs"
+      ],
       "reason": "The target frontend owns the virtual index while each listed public hub owns its detail route."
     },
     {
       "id": "learning-video-route-ownership",
       "sourceCondition": "Published learning-hub-video records selected by the learning-hub listing",
-      "targets": ["learning-video.public-detail", "learning-videos"],
+      "targets": [
+        "learning-video.public-detail",
+        "learning-videos"
+      ],
       "reason": "Every listed learning video must resolve to a complete Payload-owned public detail route."
     }
   ],
@@ -1228,7 +1435,13 @@
   "editorCapabilities": [
     {
       "resourceGroup": "routable-content",
-      "resources": ["pages", "articles", "people", "hubs", "learning-videos"],
+      "resources": [
+        "pages",
+        "articles",
+        "people",
+        "hubs",
+        "learning-videos"
+      ],
       "administrator": [
         "create",
         "read",
@@ -1250,11 +1463,15 @@
         "preview",
         "read-versions"
       ],
-      "public": ["read-published"]
+      "public": [
+        "read-published"
+      ]
     },
     {
       "resourceGroup": "versioned-market-records",
-      "resources": ["venues"],
+      "resources": [
+        "venues"
+      ],
       "administrator": [
         "create",
         "read",
@@ -1276,14 +1493,35 @@
         "preview",
         "read-versions"
       ],
-      "public": ["read-published"]
+      "public": [
+        "read-published"
+      ]
     },
     {
       "resourceGroup": "versioned-editorial-records",
-      "resources": ["offices"],
-      "administrator": ["create", "read", "update", "delete", "draft", "publish", "read-versions"],
-      "editor": ["create", "read", "update", "draft", "publish", "read-versions"],
-      "public": ["read-published"]
+      "resources": [
+        "offices"
+      ],
+      "administrator": [
+        "create",
+        "read",
+        "update",
+        "delete",
+        "draft",
+        "publish",
+        "read-versions"
+      ],
+      "editor": [
+        "create",
+        "read",
+        "update",
+        "draft",
+        "publish",
+        "read-versions"
+      ],
+      "public": [
+        "read-published"
+      ]
     },
     {
       "resourceGroup": "taxonomies",
@@ -1294,51 +1532,129 @@
         "venue-types",
         "regions"
       ],
-      "administrator": ["create", "read", "update", "delete"],
-      "editor": ["create", "read", "update"],
-      "public": ["read"]
+      "administrator": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "editor": [
+        "create",
+        "read",
+        "update"
+      ],
+      "public": [
+        "read"
+      ]
     },
     {
       "resourceGroup": "media",
-      "resources": ["media"],
-      "administrator": ["create", "read", "update", "delete"],
-      "editor": ["create", "read", "update"],
-      "public": ["read"]
+      "resources": [
+        "media"
+      ],
+      "administrator": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "editor": [
+        "create",
+        "read",
+        "update"
+      ],
+      "public": [
+        "read"
+      ]
     },
     {
       "resourceGroup": "site-configuration",
-      "resources": ["navigation", "footer", "site-settings", "route-indexes"],
-      "administrator": ["read", "update", "draft", "publish", "schedule-publish", "read-versions"],
-      "editor": ["read", "update", "draft", "publish", "schedule-publish", "read-versions"],
-      "public": ["read-published"]
+      "resources": [
+        "navigation",
+        "footer",
+        "site-settings",
+        "route-indexes"
+      ],
+      "administrator": [
+        "read",
+        "update",
+        "draft",
+        "publish",
+        "schedule-publish",
+        "read-versions"
+      ],
+      "editor": [
+        "read",
+        "update",
+        "draft",
+        "publish",
+        "schedule-publish",
+        "read-versions"
+      ],
+      "public": [
+        "read-published"
+      ]
     },
     {
       "resourceGroup": "route-infrastructure",
-      "resources": ["route-registry"],
-      "administrator": ["read-derived"],
+      "resources": [
+        "route-registry"
+      ],
+      "administrator": [
+        "read-derived"
+      ],
       "editor": [],
       "public": []
     },
     {
       "resourceGroup": "redirects",
-      "resources": ["redirects"],
-      "administrator": ["create", "read", "update", "delete"],
-      "editor": ["create", "read", "update"],
-      "public": ["read"]
+      "resources": [
+        "redirects"
+      ],
+      "administrator": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "editor": [
+        "create",
+        "read",
+        "update"
+      ],
+      "public": [
+        "read"
+      ]
     },
     {
       "resourceGroup": "users",
-      "resources": ["users"],
-      "administrator": ["create", "read", "update", "delete", "unlock", "manage-roles"],
-      "editor": ["read-self", "update-self"],
+      "resources": [
+        "users"
+      ],
+      "administrator": [
+        "create",
+        "read",
+        "update",
+        "delete",
+        "unlock",
+        "manage-roles"
+      ],
+      "editor": [
+        "read-self",
+        "update-self"
+      ],
       "public": []
     },
     {
       "resourceGroup": "application-market-data",
-      "resources": ["app.market_volume_monthly"],
+      "resources": [
+        "app.market_volume_monthly"
+      ],
       "administrator": [],
       "editor": [],
-      "public": ["read-through-frontend"]
+      "public": [
+        "read-through-frontend"
+      ]
     }
   ],
   "validationGates": [
@@ -1365,7 +1681,7 @@
       "evidence": [
         "src/blocks/Trayport/config.ts",
         "src/blocks/Trayport/components.ts",
-        "src/components/Trayport/BlockRenderer.tsx",
+        "src/components/blocks/registry.tsx",
         "tests/int/content-architecture-contract.int.spec.ts"
       ],
       "remediation": null
@@ -1452,33 +1768,37 @@
       "id": "article-detail-content-ownership",
       "requiredFor": "production",
       "severity": "blocker",
-      "status": "blocked",
-      "enforcement": "not-implemented",
-      "assertion": "Every published internal article listing destination owns a complete Payload body; metadata-only records are non-routable or have an explicit external destination or redirect.",
+      "status": "passing",
+      "enforcement": "gate-ledger-and-vitest",
+      "assertion": "Every published internal article listing destination owns a complete Payload body, or is a contract-declared source-empty legacy event whose WordPress source carries no body; metadata-only records are non-routable or have an explicit external destination or redirect. No source section carrying content is dropped by the transform.",
       "evidence": [
+        "migration/gates/articleBodyOwnership.ts",
+        "tests/int/gate-article-body-ownership.int.spec.ts",
+        "migration/transform/blocks.ts",
         "migration/transform/index.ts",
-        "src/components/Trayport/ArticleListingClient.tsx",
-        "src/components/Trayport/ContentViews.tsx"
+        "src/components/content/PageArticleViews.tsx"
       ],
-      "remediation": "Extend the production importer to extract and transform every in-scope article body or record an explicitly approved external/redirect destination. No plan-only listing may become an empty internal route."
+      "remediation": null
     },
     {
       "id": "listing-detail-route-ownership",
       "requiredFor": "production",
       "severity": "blocker",
-      "status": "blocked",
-      "enforcement": "not-implemented",
+      "status": "passing",
+      "enforcement": "gate-ledger-and-vitest",
       "assertion": "Every listing-linked article, hub, venue, and learning video resolves to one complete managed public route owner, while dependency-only records remain non-routable.",
       "evidence": [
-        "migration/mappings/content-architecture.v1.json",
+        "migration/gates/listingRouteOwnership.ts",
+        "tests/int/gate-listing-route-ownership.int.spec.ts",
+        "tests/int/archetype-invariants.int.spec.ts",
         "src/collections/Articles.ts",
         "src/collections/Hubs.ts",
         "src/collections/Venues.ts",
         "src/collections/LearningVideos.ts",
-        "src/components/Trayport/ContentViews.tsx",
-        "src/app/(frontend)/contentRoute.renderer.tsx"
+        "src/collections/RouteRegistry.ts",
+        "src/routing/archetypes.ts"
       ],
-      "remediation": "Populate the implemented owners with complete bodies, parity fields, and route metadata for all 90 posts, 72 hubs, 66 venues, and 15 learning videos; validate every listing destination against the shared route registry and approved access policy."
+      "remediation": null
     },
     {
       "id": "production-block-catalogue-implemented",
@@ -1500,16 +1820,19 @@
       "id": "managed-internal-link-integrity",
       "requiredFor": "production",
       "severity": "blocker",
-      "status": "blocked",
-      "enforcement": "not-implemented",
-      "assertion": "Internal links in navigation, actions, feature lists, entity lists, and rich text are managed references or are validated against the shared route namespace; path changes create or require redirects.",
+      "status": "passing",
+      "enforcement": "gate-ledger-and-vitest",
+      "assertion": "Every internal link resolves against the shared route namespace of published paths, managed redirect sources, and virtual indexes; no link is bridged to the live site for a destination the corpus serves; the remaining live fallbacks match the declared allowlist exactly; and no redirect is duplicated, shadowing, unresolved, or aimed outside the collections the proxy can resolve.",
       "evidence": [
+        "migration/gates/managedLinkIntegrity.ts",
+        "tests/int/gate-managed-link-integrity.int.spec.ts",
+        "migration/scopes/productionRedirects.ts",
+        "migration/transform/url.ts",
         "src/fields/navigationLink.ts",
-        "src/fields/actions.ts",
-        "src/blocks/Trayport/components.ts",
-        "migration/transform/blocks.ts"
+        "src/proxy.ts",
+        "src/routing/registry.ts"
       ],
-      "remediation": "Reuse one managed link field for CTA-bearing blocks and all six content owner collections, preserve internal source references during transformation, validate rich-text links, and reject missing, private, chained, looped, or unsafe redirect destinations."
+      "remediation": null
     },
     {
       "id": "editor-controls-have-runtime-effect",
@@ -1520,7 +1843,7 @@
       "assertion": "Every editor-visible control changes validated frontend behavior or is removed from the schema.",
       "evidence": [
         "src/blocks/Trayport/components.ts",
-        "src/components/Trayport/BlockRenderer.tsx"
+        "src/components/blocks/registry.tsx"
       ],
       "remediation": "Make marketCoverage.regions constrain the hub query, make dataChart.dataType select the correct dataset and rendering, implement embed.poster behavior, and add field-level behavior tests."
     },

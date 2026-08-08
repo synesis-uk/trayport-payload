@@ -28,6 +28,48 @@ export type ManagedLinkLookup = Map<
 
 // WordPress `map-all` is the standard dark connection-map background used by the live site.
 const LEGACY_MAP_ALL_BACKGROUND_MEDIA_ID = 6101
+
+/**
+ * ACF keys that describe how a section is presented rather than what it says.
+ *
+ * `content_settings` lists which sub-fields the editor enabled, `acf_fc_layout` names the layout,
+ * and `anchor`/`size`/`tag` are markup and typography concerns. All of them carry a value even on a
+ * completely blank section — an empty article header still reports `size: 'h1', tag: 'div'` — so
+ * counting them as content would mark every empty section as populated and hide the real losses
+ * this classification exists to surface.
+ *
+ * `icon` is deliberately absent: choosing a glyph is an authoring decision, so it counts.
+ */
+const STRUCTURAL_SECTION_KEYS = new Set([
+  'acf_fc_layout',
+  'anchor',
+  'content_settings',
+  'size',
+  'tag',
+])
+
+/**
+ * Whether a source section carries anything an editor authored.
+ *
+ * Used only to classify a section the mapper discarded, so that a drop can be recorded as either a
+ * harmless empty stub or a genuine content loss. Media references count: a section holding just an
+ * image is still content.
+ */
+export const sourceSectionHasContent = (section: unknown): boolean => {
+  const walk = (node: unknown): boolean => {
+    if (Array.isArray(node)) return node.some(walk)
+    if (typeof node === 'number') return node > 0
+    if (!node || typeof node !== 'object') return false
+
+    return Object.entries(node as Record<string, unknown>).some(([key, value]) => {
+      if (STRUCTURAL_SECTION_KEYS.has(key)) return false
+      if (typeof value === 'string') return value.trim().length > 0
+      return walk(value)
+    })
+  }
+
+  return walk(section)
+}
 const LEGACY_ASSET_CLASS_ID_BY_SLUG: Record<string, number> = {
   bulk: 108,
   climate: 109,
@@ -1358,6 +1400,13 @@ export const mapPageLayout = (
     // section, so wrap it in a reading-width section rather than introducing a second table path.
     if (layout === 'table') {
       const mapped = mapComponent(section, coverage, reusables, links)
+      if (!mapped.length) {
+        coverage.droppedSections.push({
+          layout: layout || '(missing)',
+          hadContent: sourceSectionHasContent(section),
+          scope: 'page',
+        })
+      }
       if (mapped.length) {
         blocks.push({
           blockType: 'contentSection',
@@ -1573,6 +1622,13 @@ export const mapArticleLayout = (
 
     if (component) {
       const mapped = mapComponent(component, coverage, new Map(), links)
+      if (!mapped.length) {
+        coverage.droppedSections.push({
+          layout: layout || '(missing)',
+          hadContent: sourceSectionHasContent(section),
+          scope: 'article',
+        })
+      }
       const block: TargetSection | null = mapped.length
         ? {
             blockType: 'contentSection',

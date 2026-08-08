@@ -15,6 +15,7 @@ import {
   verifyAcceptedRun,
 } from '../lib/acceptedRun'
 import { migrationConfig } from '../lib/config'
+import { contentArchitectureContract } from '../mappings/contentArchitecture'
 import { productionRedirects } from '../scopes/productionRedirects'
 import { pilotScope } from '../scopes/pilot'
 import type { LegacyReference, TargetCollection, TargetRecord } from '../transform/types'
@@ -37,11 +38,16 @@ const pilotTargetPageCount = pilotScope.roots.filter(
   ({ targetOwner }) => targetOwner === 'pages',
 ).length
 /**
- * CA-021 bridges navigation and footer destinations that the corpus does not yet own to canonical
- * www.trayport.com URLs. Widening the corpus from the 26-root pilot to all 317 routes retires 24
- * of them: only these remain unowned.
+ * CA-021 bridges navigation and footer destinations that the corpus does not own to canonical
+ * www.trayport.com URLs. Widening the corpus from the 26-root pilot to all 317 routes retired 24 of
+ * the original 30; treating the corpus's own redirect sources as owned retired three more.
+ *
+ * Declared as a set in the contract rather than counted here. A count cannot tell a fallback that
+ * was retired from one that was newly leaked — both keep the total the same.
  */
-const expectedNavigationFooterLiveFallbacks = 6
+const expectedNavigationFooterLiveFallbacks = [
+  ...contentArchitectureContract.approvedProductionScope.approvedLiveFallbackPaths,
+].sort()
 
 const expectedPeopleLegacyIDs = [
   2561, 2563, 2570, 2571, 2667, 2668, 2670, 4145, 4146, 4837, 4839, 4841, 4843, 9253, 10395, 11232,
@@ -2081,7 +2087,11 @@ export const validateTransformed = (
     assert.equal(parsed.hostname, 'www.trayport.com')
     navigationFooterLiveFallbacks.add(parsed.pathname)
   }
-  assert.equal(navigationFooterLiveFallbacks.size, expectedNavigationFooterLiveFallbacks)
+  assert.deepEqual(
+    [...navigationFooterLiveFallbacks].sort(),
+    expectedNavigationFooterLiveFallbacks,
+    'Navigation and footer live fallbacks must match approvedLiveFallbackPaths exactly',
+  )
   assert.equal(
     Array.isArray(navigation.data.primaryItems) ? navigation.data.primaryItems.length : 0,
     5,
@@ -2150,8 +2160,11 @@ export const validateTransformed = (
       bannerDependencyPages: sourceBannerDependencyPages.length,
       banners: banners.length,
       articles: 93,
-      fullArticles: 24,
-      listingArticles: 69,
+      // Measured, not asserted. These were literals describing the 26-root pilot and stayed at
+      // 24/69 after the corpus widened to 93 full and 0 listing articles — a report that quietly
+      // contradicted the database it was meant to describe.
+      fullArticles: fullArticles.length,
+      listingArticles: listingArticles.length,
       eventArticles: 23,
       people: 17,
       hubs: 72,
@@ -2190,7 +2203,11 @@ export const validateTransformed = (
       navigationFooterLinksClosed: navigationAndFooterURLs.length,
       navigationFooterLiveFallbacks: navigationFooterLiveFallbacks.size,
       cookieNoticeImported: true,
-      articleBodyBlocks: 12,
+      // Measured across every full article, not the single-article literal this replaced.
+      articleBodyBlocks: fullArticles.reduce(
+        (total, { data }) => total + arrayValue(data.layout).length,
+        0,
+      ),
       commoditiesReportExcluded: true,
     },
   }

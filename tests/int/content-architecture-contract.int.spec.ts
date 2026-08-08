@@ -16,6 +16,7 @@ import {
   contentArchitectureContractSchema,
 } from '../../migration/mappings/contentArchitecture'
 import rawContract from '../../migration/mappings/content-architecture.v1.json'
+import { gateEnforcers } from '../../migration/mappings/gateEnforcement'
 import { describe, expect, it } from 'vitest'
 
 const root = process.cwd()
@@ -53,10 +54,7 @@ describe('production content-architecture contract', () => {
       ({ severity, status }) => severity === 'blocker' && status !== 'passing',
     )
     expect(blockers.map(({ id, status }) => ({ id, status }))).toEqual([
-      { id: 'article-detail-content-ownership', status: 'blocked' },
-      { id: 'listing-detail-route-ownership', status: 'blocked' },
       { id: 'production-block-catalogue-implemented', status: 'blocked' },
-      { id: 'managed-internal-link-integrity', status: 'blocked' },
       { id: 'editor-controls-have-runtime-effect', status: 'blocked' },
       { id: 'editor-role-capability-enforcement', status: 'partial' },
     ])
@@ -76,6 +74,71 @@ describe('production content-architecture contract', () => {
     ).toBe(false)
     expect(contentArchitectureContract.milestoneStatus).toBe('complete')
     expect(contentArchitectureContract.productionReadiness).toBe('blocked')
+  })
+
+  /**
+   * The gate that guards the other gates.
+   *
+   * `enforcement` used to be free text that nothing read, and `evidence` was an unverified list of
+   * paths — five of which pointed at files that had been deleted, including two cited by gates this
+   * suite reports on. A gate could therefore claim a mechanism it did not have, or be graded green
+   * with nothing measuring it. These assertions make both impossible.
+   */
+  describe('gate enforcement is bound to real code', () => {
+    it('registers every gate exactly once, with no ghosts', () => {
+      expect(sorted(Object.keys(gateEnforcers))).toEqual(
+        sorted(contentArchitectureContract.validationGates.map(({ id }) => id)),
+      )
+    })
+
+    it('agrees with each gate about how it is enforced', () => {
+      const declared = Object.fromEntries(
+        contentArchitectureContract.validationGates.map(({ enforcement, id }) => [id, enforcement]),
+      )
+      const registered = Object.fromEntries(
+        Object.entries(gateEnforcers).map(([id, { enforcement }]) => [id, enforcement]),
+      )
+
+      expect(registered).toEqual(declared)
+    })
+
+    it('refuses to let a gate pass without a named enforcing spec', () => {
+      const unbacked = contentArchitectureContract.validationGates
+        .filter(({ status }) => status === 'passing')
+        .filter(({ id }) => (gateEnforcers[id]?.specs.length ?? 0) === 0)
+        .map(({ id }) => id)
+
+      expect(unbacked).toEqual([])
+    })
+
+    it('cites only evidence and specs that exist on disk', () => {
+      const missing: string[] = []
+
+      for (const gate of contentArchitectureContract.validationGates) {
+        const cited = [...gate.evidence, ...(gateEnforcers[gate.id]?.specs ?? [])]
+        for (const citation of cited) {
+          // A templated run directory names an artifact produced per run rather than a tracked
+          // file, so it is exempt from existence — but only in that explicit form.
+          if (citation.includes('<run-id>')) continue
+          if (!fs.existsSync(path.resolve(root, citation))) missing.push(`${gate.id}: ${citation}`)
+        }
+      }
+
+      expect(missing).toEqual([])
+    })
+
+    it('rejects a contract that grades an unenforced gate as passing', () => {
+      const rigged = {
+        ...rawContract,
+        validationGates: rawContract.validationGates.map((gate) =>
+          gate.id === 'editor-controls-have-runtime-effect'
+            ? { ...gate, status: 'passing', remediation: null }
+            : gate,
+        ),
+      }
+
+      expect(contentArchitectureContractSchema.safeParse(rigged).success).toBe(false)
+    })
   })
 
   it('keeps the contract block library aligned with Payload configuration', () => {

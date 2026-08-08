@@ -55,4 +55,29 @@ export type TransformCoverage = {
   ignoredTaxonomies: Record<string, number>
   unsupportedComponentLayouts: string[]
   unsupportedTopLevelLayouts: string[]
+  /**
+   * Source sections that mapped to no target block at all.
+   *
+   * The transform drops these silently — a supported layout whose component mapper returns nothing
+   * simply vanishes, with no warning and no counter. That is correct for an unfilled ACF stub and a
+   * content loss for anything else, and until this existed nothing could tell the two apart.
+   * `article-detail-content-ownership` asserts that every drop had `hadContent: false`.
+   */
+  droppedSections: Array<{ layout: string; hadContent: boolean; scope: 'page' | 'article' }>
 }
+
+/**
+ * A fresh, empty coverage accumulator.
+ *
+ * Shared so that adding a counter here does not silently leave call sites behind — seven specs and
+ * the transform itself each built this literal by hand.
+ */
+export const emptyTransformCoverage = (): TransformCoverage => ({
+  componentLayouts: {},
+  ignoredComponentLayouts: {},
+  topLevelLayouts: {},
+  ignoredTaxonomies: {},
+  unsupportedComponentLayouts: [],
+  unsupportedTopLevelLayouts: [],
+  droppedSections: [],
+})

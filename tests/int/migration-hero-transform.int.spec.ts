@@ -2,17 +2,10 @@
 
 import type { NormalizedValue } from '../../migration/contracts/v1'
 import { mapPageLayout } from '../../migration/transform/blocks'
-import type { TransformCoverage } from '../../migration/transform/types'
+import { emptyTransformCoverage, type TransformCoverage } from '../../migration/transform/types'
 import { describe, expect, it } from 'vitest'
 
-const coverage = (): TransformCoverage => ({
-  componentLayouts: {},
-  ignoredComponentLayouts: {},
-  topLevelLayouts: {},
-  ignoredTaxonomies: {},
-  unsupportedComponentLayouts: [],
-  unsupportedTopLevelLayouts: [],
-})
+const coverage = (): TransformCoverage => emptyTransformCoverage()
 
 const media = (id: number, url: string): NormalizedValue => ({
   $ref: 'media',

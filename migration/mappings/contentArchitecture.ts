@@ -36,6 +36,18 @@ const approvedScopeExceptionSchema = z.object({
   path: z.string().startsWith('/'),
 })
 
+/**
+ * A route whose WordPress source carries no body, so the migrated page is faithfully empty.
+ *
+ * `reason` is required because this list is the one place the article-body gate can be weakened,
+ * and an unexplained entry is indistinguishable from a silenced defect. The gate additionally
+ * re-derives emptiness from the source records, so an entry whose source does have a body fails
+ * rather than granting itself an exemption.
+ */
+const sourceEmptyBodySchema = approvedScopeExceptionSchema.extend({
+  reason: z.string().min(1),
+})
+
 const blockSourceSchema = z.object({
   scope: z.enum(['article-top-level', 'component', 'shortcode']),
   source: z.string().min(1),
@@ -113,7 +125,28 @@ const validationGateSchema = z.object({
   requiredFor: z.literal('production'),
   severity: z.enum(['blocker', 'warning']),
   status: statusSchema,
-  enforcement: z.string().min(1),
+  /**
+   * How the gate is enforced. An enum rather than free text because the previous string field let
+   * a gate assert its own enforcement with nothing behind it; `migration/mappings/gateEnforcement.ts`
+   * now binds each value to the specs that implement it.
+   *
+   * `not-implemented` and `contract-only` are honest declarations of an unbacked gate, and the
+   * refinement below forbids either alongside a `passing` status.
+   */
+  enforcement: z.enum([
+    'vitest',
+    'contract-vitest',
+    'contract-only',
+    'gate-ledger-and-vitest',
+    'production-inventory-verification',
+    'payload-transaction-hooks-postgres-unique-index-and-vitest',
+    'payload-publication-hooks-target-plan-validation-and-vitest',
+    'payload-access-and-integration-tests',
+    'migration-validation',
+    'schema-and-migration-validation',
+    'migration-report-and-manual-review',
+    'not-implemented',
+  ]),
   assertion: z.string().min(1),
   evidence: z.array(z.string().min(1)).min(1),
   remediation: z.string().min(1).nullable(),
@@ -137,6 +170,13 @@ export const contentArchitectureContractSchema = z
       routeOwners: z.array(approvedRouteOwnerSchema).min(1),
       requiredIncludes: z.array(approvedScopeExceptionSchema),
       requiredExclusions: z.array(approvedScopeExceptionSchema),
+      sourceEmptyArticleBodies: z.array(sourceEmptyBodySchema),
+      /**
+       * Navigation and footer destinations the corpus does not own, still served by the live site.
+       * Declared as a set so the check is set equality rather than the bare count it replaces —
+       * a count cannot tell a retired fallback from a newly leaked one.
+       */
+      approvedLiveFallbackPaths: z.array(z.string().startsWith('/')),
     }),
     blocks: z.object({
       implemented: z.object({
@@ -404,6 +444,18 @@ export const contentArchitectureContractSchema = z
           code: 'custom',
           message: 'A partial or blocked gate must declare remediation.',
           path: ['validationGates', gate.id, 'remediation'],
+        })
+      }
+      /**
+       * The anti-lying rule. Three blocker gates once sat at `not-implemented` while the work they
+       * described was substantially delivered, and nothing prevented the reverse either: grading a
+       * gate green while nothing measured it. A green gate must now name a real mechanism.
+       */
+      if (gate.status === 'passing' && ['not-implemented', 'contract-only'].includes(gate.enforcement)) {
+        context.addIssue({
+          code: 'custom',
+          message: `A passing gate cannot declare enforcement '${gate.enforcement}'.`,
+          path: ['validationGates', gate.id, 'enforcement'],
         })
       }
     }

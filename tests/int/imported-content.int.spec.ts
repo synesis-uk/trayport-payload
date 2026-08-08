@@ -24,6 +24,7 @@ import {
   resolveCompleteMigrationRun,
 } from '../helpers/migrationRun'
 import { managedRedirectRoutes, representativeRoutes } from '../helpers/site'
+import { contentArchitectureContract } from '../../migration/mappings/contentArchitecture'
 
 let payload: Payload
 let marketPool: Pool
@@ -161,14 +162,14 @@ describe.sequential('post-import acceptance', () => {
       bannerTargetPages: 0,
       commoditiesReportExcluded: true,
       eexConnections: 37,
-      fullArticles: 24,
+      fullArticles: 93,
       globals: 3,
       cookieNoticeImported: true,
       footerLinks: 13,
       hubs: 72,
       learningListingVideos: 0,
       learningVideos: 15,
-      listingArticles: 69,
+      listingArticles: 0,
       offices: 4,
       pages: 51,
       deferredHubSpotForms: 2,
@@ -186,7 +187,10 @@ describe.sequential('post-import acceptance', () => {
       marketMatrixDuplicateMergeValidated: true,
       marketMatrixVenueRows: 64,
       // Widening the corpus retires 24 CA-021 live bridges: those destinations are owned now.
-      navigationFooterLiveFallbacks: 6,
+      // Derived from the contract rather than pinned. The literal that stood here said 6 long
+      // after the corpus started serving three of them through its own redirects.
+      navigationFooterLiveFallbacks:
+        contentArchitectureContract.approvedProductionScope.approvedLiveFallbackPaths.length,
       venues: 66,
       venueWebsitesHTTPS: true,
     })

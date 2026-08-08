@@ -59,7 +59,7 @@ user acceptance is complete.
 
 **Superseded.** This section is retained as the record of the order agreed on
 2026-08-04. The current working plan is [remaining-plan.md](remaining-plan.md),
-which restructures the same work around the six non-passing blocker gates and
+which restructures the same work around the non-passing blocker gates and
 adds the parity change policy.
 
 ### 1. Complete stakeholder local acceptance

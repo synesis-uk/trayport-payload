@@ -37,7 +37,12 @@ import {
   type ManagedLinkLookup,
   type ReusableLookup,
 } from './blocks'
-import type { LegacyReference, TargetRecord, TransformCoverage } from './types'
+import {
+  emptyTransformCoverage,
+  type LegacyReference,
+  type TargetRecord,
+  type TransformCoverage,
+} from './types'
 import {
   legacyExternalHTTPSDestination,
   migrationDestination,
@@ -168,6 +173,32 @@ const removeSearchActions = (value: unknown): unknown => {
   return value
 }
 
+/**
+ * Applies the CA-021 bridge policy to fetchable URLs inside imported JSON-LD.
+ *
+ * Stripping `http://trayport.local` from the schema markup leaves every URL site-relative, which is
+ * right for routes the corpus owns and wrong for anything else. Home's Organization logo pointed at
+ * `/app/themes/trayport/public/images/id/tmx-trayport-logo-white.svg` — a WordPress *theme* asset,
+ * so it is not in the uploads corpus and never can be — and would have 404ed as structured data on
+ * every page that carries the graph.
+ *
+ * Only `url` is rewritten. `@id` values are graph identifiers rather than fetchable locations, and
+ * rewriting them would break the internal references (`publisher.@id` -> `/#organization`).
+ */
+const bridgeStructuredDataURLs = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(bridgeStructuredDataURLs)
+  if (!value || typeof value !== 'object') return value
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([key, child]) => {
+      if (key === 'url' && typeof child === 'string' && child.startsWith('/')) {
+        return [key, migrationDestination(child) ?? child]
+      }
+      return [key, bridgeStructuredDataURLs(child)]
+    }),
+  )
+}
+
 const truncateAtWord = (value: string, maxLength: number): string => {
   if (value.length <= maxLength) return value
   const candidate = value.slice(0, maxLength - 1)
@@ -194,8 +225,8 @@ const seoFrom = (
   let structuredData: unknown
   if (schemaMarkup) {
     try {
-      structuredData = removeSearchActions(
-        JSON.parse(schemaMarkup.replaceAll('http://trayport.local', '')),
+      structuredData = bridgeStructuredDataURLs(
+        removeSearchActions(JSON.parse(schemaMarkup.replaceAll('http://trayport.local', ''))),
       )
     } catch {
       structuredData = undefined
@@ -1305,14 +1336,7 @@ export const transform = (requestedRunId?: string): { runId: string; targets: Ta
   const runDir = path.resolve(migrationConfig.workDir, runId)
   assertRunNotAccepted(runId, runDir)
   const records = readRecords(runDir)
-  const coverage: TransformCoverage = {
-    componentLayouts: {},
-    ignoredComponentLayouts: {},
-    topLevelLayouts: {},
-    ignoredTaxonomies: {},
-    unsupportedComponentLayouts: [],
-    unsupportedTopLevelLayouts: [],
-  }
+  const coverage: TransformCoverage = emptyTransformCoverage()
   const targets: TargetRecord[] = []
 
   const hubConnections = records.find(

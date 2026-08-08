@@ -14,7 +14,7 @@ import {
   mapPageLayout,
   statsRightComponentsFromWordPress,
 } from '../../migration/transform/blocks'
-import type { TransformCoverage } from '../../migration/transform/types'
+import { emptyTransformCoverage, type TransformCoverage } from '../../migration/transform/types'
 import {
   migrationDestination,
   setMigrationOwnedCorpusPaths,
@@ -22,14 +22,7 @@ import {
 import { productionFixture } from '../fixtures/productionInventory'
 import { describe, expect, it } from 'vitest'
 
-const coverage = (): TransformCoverage => ({
-  componentLayouts: {},
-  ignoredComponentLayouts: {},
-  ignoredTaxonomies: {},
-  topLevelLayouts: {},
-  unsupportedComponentLayouts: [],
-  unsupportedTopLevelLayouts: [],
-})
+const coverage = (): TransformCoverage => emptyTransformCoverage()
 
 const firstComponent = (layout: ReturnType<typeof mapPageLayout>): unknown => {
   const columns = layout[0]?.columns

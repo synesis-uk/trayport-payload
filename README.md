@@ -386,9 +386,10 @@ reports as migration evidence.
 Before a migration release, rerun `make content-inventory` against the approved
 source and review any diff from the retained architecture baseline. A passing
 scope inventory proves source closure only; it does not clear the separate
-importer, rendering, block, media, link, role, or content-review gates.
-Production readiness remains blocked even though cross-collection route
-uniqueness and archetype publication invariants now pass.
+rendering, block, role, or content-review gates. Production readiness remains
+blocked on the block catalogue, editor-control runtime parity, and editor-role
+capability enforcement; route uniqueness, archetype invariants, article bodies,
+listing route ownership, and managed link integrity now pass.
 
 The Dockerfile now exposes separate `migrator` and `runner` targets. The first
 production release runs one web replica with a stop-first replacement strategy;

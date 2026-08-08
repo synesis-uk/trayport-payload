@@ -1,5 +1,6 @@
 import type { SourceRecord } from '../contracts/v1'
 import { pilotScope } from '../scopes/pilot'
+import { productionRedirects } from '../scopes/productionRedirects'
 import {
   externalHTTPSDestinationPolicy,
   managedLinkDestinationPolicy,
@@ -16,6 +17,16 @@ const sourceHosts = new Set([
 const baselineMigrationOwnedPaths = [
   ...pilotScope.roots.map(({ path }) => path),
   ...pilotScope.acceptedRouteDependencies.map(({ path }) => path),
+  /**
+   * A path the corpus redirects is a path the corpus owns.
+   *
+   * Without these, `migrationDestination` sent every link to `/company/`, `/markets/`, `/regions/`,
+   * `/traders/joule/`, `/products/solutions-providers/` and `/legal-notice/` out to
+   * www.trayport.com — pushing visitors onto the live WordPress site for destinations this build
+   * already serves through its own 301s. Linking to a redirect source is established practice here;
+   * roughly sixty action links already point at `/request-a-demo/`.
+   */
+  ...productionRedirects.map(({ from }) => from),
   '/market-coverage/',
   '/venue/',
 ]

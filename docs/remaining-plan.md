@@ -13,9 +13,16 @@ architecture decisions. Those stay in
 [content-architecture/scope.md](content-architecture/scope.md), and the
 machine-readable contract remains authoritative for gate status.
 
-The plan is organised around the six non-passing blocker gates rather than
-around feature areas, because those gates are already machine-checked. A track
-is finished when its gates pass, not when its description feels complete.
+The plan is organised around the non-passing blocker gates rather than around
+feature areas, because those gates are machine-checked. A track is finished when
+its gates pass, not when its description feels complete.
+
+That premise was only half true when this plan was written. Six gates were
+non-passing, but three of them carried `enforcement: "not-implemented"` — they
+measured nothing, and their status was hand-maintained prose. Those three were
+given real assertion ledgers on 2026-08-08 and re-graded on the evidence, leaving
+three. The contract schema now refuses a `passing` status on any gate that names
+no enforcing spec, so the premise holds going forward.
 
 ## Change policy
 
@@ -197,19 +204,19 @@ headlines a URL because its source display name is a link).
 
 **Open items carried forward**
 
-Navigation and footer live fallbacks fell from 30 to 6. The remaining six are not
-all equivalent, and four are straightforwardly ownable:
+Navigation and footer live fallbacks fell from 30 to 6, and then to 3 on
+2026-08-08 once the transform started treating a path the corpus redirects as a
+path the corpus owns. `/company/`, `/markets/` and `/regions/` are now internal
+links served by our own 301s. Three remain, declared in the contract as
+`approvedLiveFallbackPaths` and asserted by set equality rather than by count:
 
-| Path | Reference | Action |
+| Path | Reference | Status |
 | ---- | --------- | ------ |
-| `/company/` | 301 → `/company/about-us/` | Own as a managed redirect |
-| `/markets/` | 301 → `/resources/markets-map/` | Own as a managed redirect |
-| `/regions/` | 301 → `/regions/europe/` | Own as a managed redirect |
-| `/home/enterprise-security/` | 301 → `/products/enterprise-security/` | Own as a managed redirect |
 | `/products/` | **200** | Not in the 317-route plan — investigate before launch |
 | `/resources/` | **200** | Not in the 317-route plan — investigate before launch |
+| `/home/enterprise-security/` | 301 → `/products/enterprise-security/` | Destination is outside the corpus, so the bridge stands |
 
-The last two matter: the reference serves real pages there and the discovery-led
+The first two matter: the reference serves real pages there and the discovery-led
 inventory did not classify them as route owners. That is either a scope decision
 to record or a gap in the inventory, and it should be settled before the route
 total is treated as final.
@@ -266,6 +273,40 @@ or shadowing redirects. Then retire the CA-021 bridges to `www.trayport.com` as
 their target routes become internal.
 
 Exit gate: `managed-internal-link-integrity`.
+
+### B5 — Gate enforcement (delivered 2026-08-08)
+
+B1–B3 were substantially delivered by 2026-08-07, but their gates could not say so:
+all three carried `enforcement: "not-implemented"`, meaning nothing measured them
+and their status was hand-maintained prose. Each now has a pure assertion-ledger
+builder under [`migration/gates/`](../migration/gates/) and an integration spec that
+exercises both the passing case and negative-drift mutations, following the shape
+`production-source-scope-complete` established.
+
+Writing the checks found eight defects the previous validation could not see:
+
+- Six links pointed at `www.trayport.com` for paths the corpus already redirects
+  (`/company/`, `/markets/`, `/regions/`, `/traders/joule/`,
+  `/products/solutions-providers/`, `/legal-notice/`) — visitors were being sent to
+  the live WordPress site for pages this build serves. The transform now treats a
+  redirect source as an owned path.
+- Home's JSON-LD organisation logo pointed at `/app/themes/...`, a WordPress *theme*
+  asset that is not in the uploads corpus and would 404 here. Structured-data URLs now
+  go through the same live-site bridge policy as every other link. It was invisible
+  because the old scan walked `data.layout` only.
+- A link carrying `?page_id=2207` (a retired private Careers page) read as the
+  homepage to a pathname-only comparison. The check now compares path *and* query.
+  Bridging it to the live site is correct — the corpus genuinely does not own it.
+
+Two further reporting defects were corrected in the same pass. The acceptance report
+hard-coded `fullArticles: 24, listingArticles: 69` and `articleBodyBlocks: 12` from
+the 26-root pilot while the corpus held 93 full, 0 listing and 819 body blocks; those
+are now measured. And `blocks.ts` discarded any source section whose component mapper
+returned nothing, with no counter — the transform now records each drop and whether it
+carried content, so a future body regression cannot be silent.
+
+Exit gates: all three passing, bound to their specs by
+[`gateEnforcement.ts`](../migration/mappings/gateEnforcement.ts).
 
 ### B4 — SEO and indexing review
 
@@ -346,14 +387,19 @@ Track B then becomes the critical path, with Track D running alongside it since
 it shares no files. Track C follows B for exact acceptance, though C1 and C3 can
 start earlier. Track E follows product acceptance.
 
-| Gate                                     | Closed by |
-| ---------------------------------------- | --------- |
-| `article-detail-content-ownership`       | B2        |
-| `listing-detail-route-ownership`         | B1        |
-| `managed-internal-link-integrity`        | B3        |
-| `production-block-catalogue-implemented` | C3        |
-| `editor-controls-have-runtime-effect`    | C3        |
-| `editor-role-capability-enforcement`     | C3        |
+| Gate                                     | Closed by | Status                |
+| ---------------------------------------- | --------- | --------------------- |
+| `article-detail-content-ownership`       | B2        | **Passing 2026-08-08** |
+| `listing-detail-route-ownership`         | B1        | **Passing 2026-08-08** |
+| `managed-internal-link-integrity`        | B3        | **Passing 2026-08-08** |
+| `production-block-catalogue-implemented` | C3        | Blocked, unbacked      |
+| `editor-controls-have-runtime-effect`    | C3        | Blocked, unbacked      |
+| `editor-role-capability-enforcement`     | C3        | Partial                |
+
+"Unbacked" is a declared state, not an oversight: both gates name no enforcing
+spec in [`gateEnforcement.ts`](../migration/mappings/gateEnforcement.ts), and the
+contract schema forbids grading either `passing` while that is true. They can only
+go green by acquiring a real check.
 
 ## Deferred class 3 proposals
 

@@ -8,10 +8,11 @@ approved production target, source evidence, editor tasks, and launch gates.
 The content-architecture milestone is complete. The routable-content foundation
 is also implemented: a transaction-backed shared route registry and all 19
 content-route runtime discriminator/publication invariants now pass their gates.
-Production readiness remains `blocked` because complete article bodies,
-complete listing-linked route owners, managed internal links, external-service
-acceptance, editor-control runtime parity, and full editor-role capability
-enforcement are not yet complete. The current local delivery does include the
+Article bodies, listing-linked route owners, and managed internal links closed
+their gates on 2026-08-08, each backed by a measured assertion ledger rather than
+prose. Production readiness remains `blocked` on the production block catalogue,
+external-service acceptance, editor-control runtime parity, and full editor-role
+capability enforcement. The current local delivery does include the
 Payload/admin, market-map, Market Matrix, and chart/market-data slices described
 in the [delivery plan](../delivery-slices.md).
 

@@ -11,16 +11,9 @@ import {
 } from '../../migration/contracts/v1'
 import { mapPageLayout } from '../../migration/transform/blocks'
 import { mapLifecycleReusable } from '../../migration/transform/lifecycle'
-import type { TransformCoverage } from '../../migration/transform/types'
+import { emptyTransformCoverage, type TransformCoverage } from '../../migration/transform/types'
 
-const coverage = (): TransformCoverage => ({
-  componentLayouts: {},
-  ignoredComponentLayouts: {},
-  topLevelLayouts: {},
-  ignoredTaxonomies: {},
-  unsupportedComponentLayouts: [],
-  unsupportedTopLevelLayouts: [],
-})
+const coverage = (): TransformCoverage => emptyTransformCoverage()
 
 const lifecycleReusable = ({
   id,

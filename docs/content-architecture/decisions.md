@@ -66,10 +66,10 @@ of this documentation:
 | `production-source-scope-complete`       | Passing                                | Generated inventory proves the exact 317 routes, inclusions/exclusions, and zero unknown or duplicate included route owners                                                                                       |
 | `cross-collection-route-uniqueness`      | Passing                                | Transaction-backed registry hooks plus a PostgreSQL unique path index enforce one owner across content, virtual indexes, and redirects                                                                            |
 | `archetype-discriminator-invariants`     | Passing                                | Schema/publication hooks and target-plan validation enforce all 19 content-route policies, discriminators, allowed blocks, and derived-index rules; redirects use their own guarded collection workflow           |
-| `article-detail-content-ownership`       | **Blocked**                            | Every internal listed article owns a complete body or has an approved non-route destination                                                                                                                       |
-| `listing-detail-route-ownership`         | **Blocked**                            | All 93 Articles, 17 People, 72 hubs, 66 venues, and 15 learning videos resolve to complete managed details                                                                                                        |
+| `article-detail-content-ownership`       | Passing                                | Every listed article owns a body with rendered text, or is one of three contract-declared source-empty legacy events; no source section carrying content is dropped by the transform                              |
+| `listing-detail-route-ownership`         | Passing                                | All 93 articles, 72 hubs, 66 venues, and 15 learning videos resolve to one published registry claim with no path or archetype drift, and are reachable from their listing                                         |
 | `production-block-catalogue-implemented` | **Blocked**                            | Structural columns, checklist, lifecycle, Matrix, regional maps, charts, and office rendering are implemented for the accepted local slice; HubSpot form and CookieYes consent targets must still work end to end |
-| `managed-internal-link-integrity`        | **Blocked**                            | Internal links are managed/validated and route changes integrate redirects                                                                                                                                        |
+| `managed-internal-link-integrity`        | Passing                                | Every internal link resolves against published paths, redirect sources and virtual indexes; the live fallbacks match the declared allowlist; the redirect graph is clean                                          |
 | `editor-controls-have-runtime-effect`    | **Blocked**                            | Every visible control has tested frontend behavior or is removed                                                                                                                                                  |
 | `editor-role-capability-enforcement`     | Partial                                | Access tests cover all resources, versions, publish actions, deletion, roles, and provenance                                                                                                                      |
 | `migration-relationship-resolution`      | Passing baseline                       | Unresolved legacy relationships fail with explicit evidence                                                                                                                                                       |
@@ -83,14 +83,16 @@ environment ownership now matches this decision record.
 
 Any non-passing blocker keeps `productionReadiness` set to `blocked`.
 
-The current v1 machine snapshot contains exactly six non-passing blocker gates:
+The current v1 machine snapshot contains exactly three non-passing blocker gates:
 
-1. `article-detail-content-ownership` — blocked;
-2. `listing-detail-route-ownership` — blocked;
-3. `production-block-catalogue-implemented` — blocked;
-4. `managed-internal-link-integrity` — blocked;
-5. `editor-controls-have-runtime-effect` — blocked; and
-6. `editor-role-capability-enforcement` — partial.
+1. `production-block-catalogue-implemented` — blocked;
+2. `editor-controls-have-runtime-effect` — blocked; and
+3. `editor-role-capability-enforcement` — partial.
+
+Each gate is bound to the code that enforces it by
+[`gateEnforcement.ts`](../../migration/mappings/gateEnforcement.ts), and the contract schema
+refuses a `passing` status on any gate whose enforcement is `not-implemented` or `contract-only`.
+Both remaining blocked gates are honestly unbacked and name no enforcing spec.
 
 `content-review-queue-cleared` is also partial, but it is a warning rather than
 a blocker. TIM launch acceptance from CA-022 is an additional required condition
@@ -219,10 +221,9 @@ plan deterministically describes 317 routes: 315 Payload documents (71 marked
 accepted/pilot-ready and 244 plan-only) plus two system-ready virtual indexes. It is
 planning evidence, not a content load or remediation report.
 
-The retained scope evidence and the two route-foundation gates pass while
-`productionReadiness` remains blocked. The actual imported/rendered acceptance
-slice now covers 70 rendered content routes and one redirect; with the two
-virtual indexes, 73 route owners are accepted;
-full article/listing ownership, importer
-transformations, planned renderers, managed links, role coverage, media review,
-and the other gates above are still incomplete.
+The retained scope evidence, the two route-foundation gates, and the three content
+gates closed on 2026-08-08 (article bodies, listing route ownership, managed link
+integrity) all pass while `productionReadiness` remains blocked. The imported and
+rendered acceptance slice now covers all 316 content routes plus 41 redirects and the
+two virtual indexes. The block catalogue, editor-control runtime parity, and full
+editor-role capability enforcement are still incomplete.

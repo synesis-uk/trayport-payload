@@ -4,7 +4,7 @@ import type { NormalizedValue, SourceRecord } from '../../migration/contracts/v1
 import { footerFromOptions, navigationFromOptions } from '../../migration/transform'
 import { mapPageLayout } from '../../migration/transform/blocks'
 import { htmlToLexical } from '../../migration/transform/lexical'
-import type { TransformCoverage } from '../../migration/transform/types'
+import { emptyTransformCoverage, type TransformCoverage } from '../../migration/transform/types'
 import { migrationDestination } from '../../migration/transform/url'
 import { managedLexicalLinkCollections, managedLexicalLinkFields } from '@/fields/defaultLexical'
 import { describe, expect, it } from 'vitest'
@@ -32,14 +32,7 @@ type LexicalNode = {
 
 type SourceOptions = Extract<SourceRecord, { entity: 'options' }>
 
-const coverage = (): TransformCoverage => ({
-  componentLayouts: {},
-  ignoredComponentLayouts: {},
-  topLevelLayouts: {},
-  ignoredTaxonomies: {},
-  unsupportedComponentLayouts: [],
-  unsupportedTopLevelLayouts: [],
-})
+const coverage = (): TransformCoverage => emptyTransformCoverage()
 
 const lexicalChildren = (value: Record<string, unknown>): LexicalNode[] =>
   ((value.root as LexicalNode | undefined)?.children || []) as LexicalNode[]

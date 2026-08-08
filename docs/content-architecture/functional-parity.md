@@ -91,7 +91,7 @@ The authoritative feature catalogue is
 - The authoritative generated route corpus is now 317 after the published banner
   exposed the previously undiscovered EEX News Page and the approved People/Event
   scope added 20 net owners; the Commodities Report remains excluded.
-- Production readiness remains blocked.
+- Production readiness remains blocked, now on three gates rather than six.
 - HubSpot provider activation/submission, CookieYes, and TIM remain outside the
   completed local slice.
 
