@@ -6,7 +6,7 @@ import { getPayload } from 'payload'
 
 import RichText from '@/components/RichText'
 import { AppIcon } from '@/components/icons'
-import { DynamicFeatureCarousel } from '@/components/site/DynamicFeatureCarousel.client'
+import { FeatureCarousel } from '@/components/site/FeatureCarousel.client'
 import { AppLink } from '@/components/site/AppLink'
 import { TrayportMedia } from '@/components/Trayport/TrayportMedia'
 import type { Person } from '@/payload-types'
@@ -19,12 +19,11 @@ type PeopleListPerson = Pick<Person, 'id' | 'path' | 'team' | 'title'> &
   Partial<
     Pick<
       Person,
-      'description' | 'displayOrder' | 'externalProfileURL' | 'image' | 'jobRole' | 'quote'
+      'displayOrder' | 'externalProfileURL' | 'image' | 'jobRole' | 'quote'
     >
   >
 
 const personSelect = {
-  description: true,
   displayOrder: true,
   externalProfileURL: true,
   image: true,
@@ -63,7 +62,12 @@ export const PeopleListCard = ({
     >
       {person.image ? (
         <div className="trayport-people-card__portrait">
-          <TrayportMedia composition="content" media={person.image} showFallbackLink={false} />
+          <TrayportMedia
+            className="trayport-media trayport-media--portrait"
+            composition="content"
+            media={person.image}
+            showFallbackLink={false}
+          />
         </div>
       ) : null}
       <div className="trayport-people-card__content">
@@ -79,13 +83,6 @@ export const PeopleListCard = ({
               enableProse={false}
             />
           </blockquote>
-        ) : null}
-        {person.description ? (
-          <RichText
-            className="trayport-people-card__biography trayport-richtext"
-            data={person.description as DefaultTypedEditorState}
-            enableGutter={false}
-          />
         ) : null}
         <AppLink className="trayport-people-card__link" link={link}>
           Read profile <AppIcon aria-hidden name={link.newTab ? 'externalLink' : 'arrowRight'} />
@@ -131,21 +128,24 @@ export const PeopleListComponentAdapter = async ({
       ? await loadTeamPeople({ draft, team: block.team })
       : storedPeople
   const presentation = block.presentation || 'leadershipGrid'
+  const careersPresentation = presentation === 'careersCarousel'
   const cards = people.map((person) => (
     <PeopleListCard key={person.id} person={person} presentation={presentation} />
   ))
 
   if (!cards.length) return null
 
-  return presentation === 'careersCarousel' ? (
-    <DynamicFeatureCarousel
-      className="trayport-people-list trayport-people-list--careers"
+  // Both presentations are carousels, matching the reference, which renders the leadership list
+  // as a single row of slides. The previous leadership grid reflowed nine cards onto three rows
+  // and equalised each row to its tallest card, which is what made the section 3,337px against
+  // the reference's 756px — and 7,983px at 390px, where it collapsed to one column.
+  return (
+    <FeatureCarousel
+      className={`trayport-people-list trayport-people-list--${careersPresentation ? 'careers' : 'leadership'}`}
       items={cards}
       label="Trayport people"
       nextIcon={<AppIcon aria-hidden name="chevronRight" />}
       previousIcon={<AppIcon aria-hidden name="chevronLeft" />}
     />
-  ) : (
-    <div className="trayport-people-list trayport-people-list--leadership">{cards}</div>
   )
 }

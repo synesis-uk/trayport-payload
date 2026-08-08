@@ -19,6 +19,14 @@ export interface FeatureCarouselProps extends HTMLAttributes<HTMLElement> {
   previousIcon: ReactNode
 }
 
+/**
+ * `matchMedia` is not universally present — JSDOM omits it entirely, and it is absent in some
+ * embedded webviews. Treat a missing implementation as "no match" rather than letting the carousel
+ * throw during mount, which would take the whole surrounding section down with it.
+ */
+const matchesMedia = (query: string): boolean =>
+  typeof window.matchMedia === 'function' && window.matchMedia(query).matches
+
 const visibleItemCount = (carousel: HTMLElement | null): number => {
   const configuredCount = Number.parseInt(
     carousel
@@ -31,8 +39,8 @@ const visibleItemCount = (carousel: HTMLElement | null): number => {
   // JSDOM and non-CSS consumers do not expose the component custom property.
   // Keep the reference breakpoints as a deterministic compatibility fallback;
   // production browsers take their count from the rendered CSS above.
-  if (window.matchMedia('(min-width: 1600px)').matches) return 3
-  if (window.matchMedia('(min-width: 998px)').matches) return 2
+  if (matchesMedia('(min-width: 1600px)')) return 3
+  if (matchesMedia('(min-width: 998px)')) return 2
   return 1
 }
 
@@ -81,8 +89,8 @@ export function FeatureCarousel({
       const viewport = viewportRef.current
       if (!slide || !viewport) return
 
-      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      viewport.scrollTo({
+      const reduceMotion = matchesMedia('(prefers-reduced-motion: reduce)')
+      viewport.scrollTo?.({
         behavior: reduceMotion ? 'auto' : 'smooth',
         left: slide.offsetLeft,
       })

@@ -1685,16 +1685,28 @@
     aspect-ratio: 4 / 5;
   }
 
+  /*
+   * Leadership shows two slides at a time on desktop, matching the reference's 582px slides.
+   * `--trayport-carousel-visible-items` is read by the carousel to decide how far each control
+   * press advances, so the CSS and the behaviour stay in step from one declaration.
+   */
   .trayport-people-list--leadership {
-    display: grid;
-    gap: clamp(1.5rem, 3vw, 3rem);
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    --trayport-carousel-visible-items: 1;
+  }
+
+  @media (width >= 48rem) {
+    .trayport-people-list--leadership {
+      --trayport-carousel-visible-items: 2;
+    }
+
+    .trayport-people-list--leadership .trayport-carousel__slide {
+      flex-basis: calc((100% - 1.25rem) / 2);
+    }
   }
 
   .trayport-people-card {
     background: var(--color-surface);
     border-top: 0.0625rem solid var(--color-border);
-    min-height: 100%;
     overflow: hidden;
     padding-top: 1.25rem;
   }
@@ -1706,9 +1718,17 @@
     overflow: hidden;
   }
 
+  .trayport-people-card__portrait > div,
+  .trayport-people-card__portrait picture {
+    display: block;
+    height: 100%;
+  }
+
   .trayport-people-card__portrait img {
     height: 100%;
+    object-fit: cover;
     object-position: 50% 25%;
+    width: 100%;
   }
 
   .trayport-people-card__content h3 {
@@ -1730,10 +1750,6 @@
     font-size: 1.0625rem;
     margin-block: 1rem;
     padding-left: 1rem;
-  }
-
-  .trayport-people-card__biography {
-    margin-block: 1rem;
   }
 
   .trayport-people-card__link {

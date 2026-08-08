@@ -130,25 +130,43 @@ people list is two sections but is the largest single verified defect once mobil
 measurement without failing anything. A viewport bug meant the first runs silently measured
 1280×720 regardless of the flag; both are fixed.
 
-### Phase 1 — people list
+### Phase 1 — people list (delivered 2026-08-08)
 
-The largest verified win, and the cheapest: one adapter file plus a few CSS lines, no corpus reload,
-no shared selectors.
+Three changes to `peopleListAdapter.server.tsx` plus a CSS pass. No corpus reload.
 
-- `peopleListAdapter.server.tsx:83-89` renders `person.description` inline. The reference emits the
-  same text and hides it (`.people-description { @apply hidden }`). A three-paragraph bio becomes
-  1,076px of copy in a 288px column. **~1,962px on `/company/about-us/`.**
-- The portrait never fills its aspect box: `TrayportMedia` is called with no `className`, so the
-  sizing rules never apply, `object-fit` computes to `fill`, and faces are clipped rather than
-  cropped. No height impact, but it is the visible fidelity defect.
-- The grid reflows 9 cards onto 3 rows and `min-height: 100%` equalises each row to its tallest
-  card, multiplying the bio problem. At 390px it collapses to a single column: **+7,639px on one
-  section.**
+- **Stopped printing the biography.** The reference emits the same text and hides it
+  (`.people-description { @apply hidden }`); we rendered it into a card-width column, where a
+  three-paragraph bio became 1,076px of copy. The text still lives on the person's profile route,
+  which the card links to.
+- **Made the portrait crop.** `TrayportMedia` was called with no `className`, so the media sizing
+  rules never applied, `object-fit` computed to `fill`, and faces were clipped rather than cropped.
+- **Leadership now uses the same carousel as careers**, matching the reference's single row of
+  slides. The grid reflowed nine cards onto three rows and `min-height: 100%` equalised each row to
+  its tallest card, compounding the bio problem.
 
-Do the bio and portrait fixes first; they are independently safe. **Do not** adopt the existing
-careers carousel for the leadership list yet — with JavaScript disabled its container computes to
-height 0, and it has no `role`, no `tabindex`, and `aria-label="Featured content"` on a people list.
-Fix those first or the conversion is a regression.
+Two defects found and fixed on the way:
+
+- **`DynamicFeatureCarousel` was hiding a whole content section without JavaScript.**
+  `next/dynamic` suspends during SSR, so React streamed the markup into a `<div hidden>` that only
+  JavaScript moves into place: the careers people section measured 733px with JS and **0px
+  without**. The component is 185 lines importing only `IconButton`, so the lazy boundary saved
+  almost nothing and cost a section. It is now imported directly, and the lazy-island contract
+  records why.
+- **The carousel threw on mount wherever `window.matchMedia` is absent** (JSDOM, some embedded
+  webviews), which would take the surrounding section down with it. Guarded, along with
+  `viewport.scrollTo`.
+
+| | Before | After | Reference |
+| --- | ---: | ---: | ---: |
+| `/company/about-us/` desktop | +1,826 | **−658** | — |
+| `/company/about-us/` mobile | +5,666 | **−1,824** | — |
+| `page.standard` mean, desktop | 622 | **339** | — |
+| `page.standard` mean, mobile | 1,665 | **705** | — |
+
+Archetype impact fell from 10,574 to 5,763 desktop and 28,305 to 11,985 mobile. All ten golden
+comparisons still pass. `/company/about-us/` is now *shorter* than the reference at both viewports,
+which points at separate missing content — the reference has three carousels on that route and only
+the leadership one has been diagnosed.
 
 ### Phase 2 — article body, scoped
 
@@ -226,18 +244,19 @@ By this point most of the 309 violating selectors should be redundant. Delete th
 still load-bearing to its template. Then turn the Phase 0 gate from a ratchet into a hard zero, and
 retire the C4 compatibility-bridge item — it is the same work.
 
-## Decisions needed before the relevant phase
+## Decisions (settled 2026-08-08)
 
-1. **Learning-video routes (15).** The reference `<main>` is empty because WordPress gates video
-   behind login; we render title, player, access notice and metadata. Is that "clearly better", or a
-   content-gating regression to fix? Nothing can be measured on these routes until this is settled.
-2. **Index pagination.** The reference progressively discloses with "Show more"; we stream all 89
-   rows. Keep ours as the simplification, or match?
-3. **Leadership presentation.** The reference uses a carousel; we use a grid. The grid is arguably
-   better — it shows all nine people without interaction — but it is the reason the section is tall.
-   Keep the grid and accept the difference, or match the carousel?
-4. **Four missing articles** on `/resources/insights/` (35 rendered against 39). Content gap to
-   investigate, separate from layout.
+1. **Learning-video routes (15).** Keep rendering title, player, access notice and metadata. The
+   reference `<main>` is empty because WordPress gates video behind login; showing the metadata
+   publicly is the clearly-better outcome. These 15 routes are therefore an **approved deviation**,
+   excluded from height comparison — measuring them would mean deleting correct content.
+2. **Index pagination.** Streaming all rows is fine. No "Show more"; our simplification stands, and
+   the reference's progressive disclosure is not reproduced.
+3. **Leadership presentation.** Preserve the carousel — match the reference. This makes Phase 1
+   step 2 in scope, and it must be preceded by fixing the existing carousel's zero-height-without-JS
+   behaviour and its missing role/tabindex, which are regressions today.
+4. **Article list completeness.** The listing must match production data. The 35-against-39 gap on
+   `/resources/insights/` is a content defect to find and fix, not a layout difference.
 
 ## Traps
 

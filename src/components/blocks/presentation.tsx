@@ -11,7 +11,7 @@ import {
   StatGrid,
   type StatItem,
 } from '@/components/site'
-import { DynamicFeatureCarousel } from '@/components/site/DynamicFeatureCarousel.client'
+import { FeatureCarousel } from '@/components/site/FeatureCarousel.client'
 import type { ContentLink } from '@/routing/contentLink'
 import { cn } from '@/utilities/ui'
 
@@ -352,7 +352,7 @@ export function FeatureListPresentation({
 
   if (model.presentation === 'carousel') {
     return (
-      <DynamicFeatureCarousel
+      <FeatureCarousel
         className={className}
         items={cards}
         label="Featured content"
@@ -369,7 +369,7 @@ export function FeatureListPresentation({
         {...props}
       >
         <div className="trayport-features__lead">{cards[0]}</div>
-        <DynamicFeatureCarousel
+        <FeatureCarousel
           className="trayport-features__carousel"
           items={cards.slice(1)}
           label="More featured content"

@@ -34,10 +34,6 @@ const dynamicBoundaries = [
     implementation: './DynamicRegionalMarketMap.client',
     path: 'src/components/blocks/DynamicRegionalMarketMapIsland.client.tsx',
   },
-  {
-    implementation: './FeatureCarousel.client',
-    path: 'src/components/site/DynamicFeatureCarousel.client.tsx',
-  },
 ] as const
 
 describe('lazy client islands', () => {
@@ -74,8 +70,19 @@ describe('lazy client islands', () => {
     expect(videoBoundary).toContain('<Suspense fallback={null}>')
     expect(videoBoundary).not.toContain("from 'next/dynamic'")
     expect(owners.serverAdapters).toContain('DynamicMarketMatrixPresentation.client')
-    expect(owners.presentation).toContain('DynamicFeatureCarousel.client')
-    expect(owners.presentation).not.toContain("from '@/components/site/FeatureCarousel.client'")
+    /*
+     * FeatureCarousel is deliberately NOT behind a lazy boundary.
+     *
+     * `next/dynamic` suspends during SSR, so React streams the markup into a `<div hidden>` and
+     * only moves it into place once JavaScript runs. Measured on /company/careers/, that made the
+     * entire people section 733px with JS and 0px without — a whole content block vanishing. The
+     * component is 185 lines importing only IconButton, so the boundary saved almost nothing and
+     * cost a section. Imported directly it renders in the main SSR stream, and because the viewport
+     * is already a CSS scroll-snap carousel it stays swipeable without JS; the buttons and status
+     * are the only parts that need hydration.
+     */
+    expect(owners.presentation).toContain("from '@/components/site/FeatureCarousel.client'")
+    expect(owners.presentation).not.toContain('DynamicFeatureCarousel')
   })
 
   it('keeps global and regional Mapbox runtimes behind viewport boundaries and out of route modules', () => {

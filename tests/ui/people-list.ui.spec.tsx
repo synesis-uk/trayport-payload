@@ -81,7 +81,11 @@ describe('People listing runtime', () => {
     expect(screen.getByRole('region', { name: 'Trayport people' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Toby Smith' })).toBeTruthy()
     expect(screen.getByText('Senior developer')).toBeTruthy()
-    expect(screen.getByText('Current biography')).toBeTruthy()
+    // The card deliberately does not print the biography. The WordPress template emits it and the
+    // theme hides it (`.people-description { @apply hidden }`), and rendering it into a card-width
+    // column turned a three-paragraph bio into 1,076px of copy. The text still lives on the
+    // person's own profile route, which the card links to.
+    expect(screen.queryByText('Current biography')).toBeNull()
     expect(screen.getByText('Current quotation')).toBeTruthy()
     expect(screen.getByTestId('person-portrait')).toBeTruthy()
     expect(screen.getByRole('link', { name: /Read profile/ }).getAttribute('href')).toBe(
