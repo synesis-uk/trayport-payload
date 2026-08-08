@@ -168,29 +168,39 @@ comparisons still pass. `/company/about-us/` is now *shorter* than the reference
 which points at separate missing content — the reference has three carousels on that route and only
 the leadership one has been diagnosed.
 
-### Phase 2 — article body, scoped
+### Phase 2 — article body, scoped (first cut delivered 2026-08-08)
 
-93 routes, the largest impact. We are *shorter* than the reference, which usually means missing
-content rather than styling.
+CSS only, everything scoped under `.trayport-article__body`. No corpus reload.
 
-- `.trayport-article__body` has a hard 800px ceiling (70rem cap, minus `margin-inline` gutter, minus
-  the inner container's padding). The reference card is `max-w-6xl` with a 992px inner grid, so the
-  same hero image renders 992×661 there and 760×428 here — **−233px on each of 66 articles.**
-- The transform flattens every article layout into one envelope: `width: 'reading'`,
-  `spacing: 'tight'`, `span: '12'`. The reference varies span and margin per layout type.
-- Two reference blocks have no data at all: the exporter's ACF allowlist omits `show_nav`,
-  `show_disclaimer`, `show_location` and `show_date`, so the sticky index bar and legal disclaimer
-  cannot be rendered. **−188px universally** for the disclaimer.
-- `index-point` — an invisible 0px anchor in WordPress — is converted into a visible `<h2>`,
-  duplicating the following paragraph's lead. Reference article bodies contain **zero** `h2`; ours
-  contain up to 17. This is why heading-based section pairing fails on articles.
+- **Width.** The card was capped at 70rem and then lost the gutter twice — `margin-inline` on each
+  section plus the inner container's own padding — leaving 800px of usable width at any viewport.
+  The reference card is 1152px with a 992px inner grid, so the same hero rendered 992×661 there and
+  760×428 here. Now expressed as the reference's two real measures: 813px for prose, 992px for
+  sections containing media, actions, dividers or tables, selected with `:has()` so it keys on what
+  the section *contains* rather than on any route.
+- **Rhythm.** `parity-blocks.css` redefines the tight step globally with no route selector, halving
+  every article section boundary and killing the ≥64rem step-up. The real values are now scoped to
+  the article body, which stops that reaching articles without touching the shared file — that file
+  still needs its own review.
 
-Scope every new rule under `.trayport-article__body` and leave `parity-blocks.css:276-290` alone in
-the first cut. Removing the duplicate `index-point` headings *before* the width fix lands makes the
-sample worse (813 → 1,033), because they are currently masking the deficits.
+`article.full` impact fell from 74,586 to 63,612 desktop and 103,881 to 100,812 mobile. The two
+insight articles improved (−886 → −583 and −963 → −728 desktop) while `/event/e-world-2026/` moved
+the wrong way (+558 → +741), which is consistent with events carrying little body content and so
+gaining more from a wider measure than they lose.
 
-The article index nav is `display: none` at 390px in the reference. Build it desktop-only or it adds
-height on mobile across 51 of 90 posts.
+The rest of this family is not CSS. What remains is missing content and per-layout geometry, both of
+which need transform changes and therefore belong to the single batched reload in Phase 4:
+
+- The exporter's ACF allowlist omits `show_nav`, `show_disclaimer`, `show_location` and `show_date`,
+  so the sticky index bar and the legal disclaimer have no data to render from — **−188px
+  universally** for the disclaimer alone.
+- Every article layout is emitted with the same `width: 'reading'`, `spacing: 'tight'`, `span: '12'`
+  envelope, where the reference varies span and margin per layout type.
+- `index-point` — an invisible 0px anchor in WordPress — becomes a visible `<h2>` duplicating the
+  next paragraph's lead. Removing these *before* the per-layout spacing lands makes the sample worse
+  (813 → 1,033), because they currently mask the deficits.
+- Per-paragraph inset figures and inline prose images are dropped by the transform and by the
+  HTML-to-Lexical converter respectively.
 
 ### Phase 3 — promote the index template
 

@@ -2509,13 +2509,24 @@ a.trayport-video-card:hover {
   margin-right: 1rem;
 }
 
+/*
+ * Article body width.
+ *
+ * The card was capped at 70rem and then lost the gutter twice over — `margin-inline` on each
+ * section plus the inner container's own padding — leaving 800px of usable width no matter the
+ * viewport. The reference card is 1152px with a 992px inner grid, so the same hero image rendered
+ * 992x661 there and 760x428 here, costing ~233px on each of the 66 articles that carry one.
+ *
+ * The reference also uses two widths rather than one: prose sits in a 10-of-12 column (813px) and
+ * anything full-bleed — media, actions, dividers, tables — takes all 12 (992px). Both are expressed
+ * here as container widths so the section machinery is unchanged.
+ */
 .trayport-article__body {
-  margin-inline: auto;
-  max-width: 70rem;
-}
+  --article-prose: 50.8125rem;
+  --article-full: 62rem;
 
-.trayport-article__body .trayport-section {
-  margin-inline: var(--gutter);
+  margin-inline: auto;
+  max-width: 72rem;
 }
 
 .trayport-article__body .trayport-section:first-child {
@@ -2533,7 +2544,31 @@ a.trayport-video-card:hover {
 }
 
 .trayport-article__body .trayport-container--reading {
-  max-width: calc(var(--container-reading) + (2 * var(--gutter)));
+  max-width: calc(var(--article-prose) + (2 * var(--gutter)));
+}
+
+/*
+ * Sections whose content is meant to run full width. `:has()` keeps the rule keyed to what the
+ * section actually contains rather than to any route, so an editor adding an image to an article
+ * gets the wider measure without anyone touching CSS.
+ */
+.trayport-article__body .trayport-section:has(.trayport-media, .trayport-actions, .trayport-divider, .trayport-data-table)
+  .trayport-container--reading {
+  max-width: calc(var(--article-full) + (2 * var(--gutter)));
+}
+
+/*
+ * Restore the article rhythm. `parity-blocks.css` redefines the tight step globally to
+ * clamp(0.5rem, 1.5vw, 1rem) with no route selector, which halves every article section boundary
+ * and kills the >=64rem step-up. Scoping the real values here stops that reaching articles without
+ * touching the shared file, which still needs its own review.
+ */
+.trayport-article__body .trayport-section--space-top-tight {
+  padding-top: 2rem;
+}
+
+.trayport-article__body .trayport-section--space-bottom-tight {
+  padding-bottom: 2rem;
 }
 
 .trayport-connectivity {
