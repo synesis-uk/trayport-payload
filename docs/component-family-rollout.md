@@ -255,8 +255,15 @@ retire the C4 compatibility-bridge item — it is the same work.
 3. **Leadership presentation.** Preserve the carousel — match the reference. This makes Phase 1
    step 2 in scope, and it must be preceded by fixing the existing carousel's zero-height-without-JS
    behaviour and its missing role/tabindex, which are regressions today.
-4. **Article list completeness.** The listing must match production data. The 35-against-39 gap on
-   `/resources/insights/` is a content defect to find and fix, not a layout difference.
+4. **Article list completeness.** Verified 2026-08-08: **there is no gap.** Comparing unique article
+   URLs rather than row counts, both `/resources/insights/` pages list exactly 39 articles, with
+   nothing present on one and absent from the other. The reported "35 against 39" counted
+   `.trayport-article-row` only and missed the four featured cards rendered above the list.
+
+   A second false alarm on the way: seven "(On-Demand Webinar)" articles appeared missing under
+   text matching, because the transform strips that prefix from the title. All seven are in the
+   corpus, published, and reachable — six typed `insight` and one `webinar`, all inside the insights
+   family.
 
 ## Traps
 
