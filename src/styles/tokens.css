@@ -7,24 +7,39 @@
 
   --font-sans: var(--font-inter);
 
-  --text-display: clamp(2.4rem, 5vw, 4.25rem);
-  --text-display--line-height: 1.04;
-  --text-display--letter-spacing: -0.035em;
-  --text-title: clamp(2.125rem, 3vw, 3rem);
-  --text-title--line-height: 1.08;
-  --text-title--letter-spacing: -0.025em;
-  --text-section: clamp(1.75rem, 2.4vw, 2.25rem);
-  --text-section--line-height: 1.15;
-  --text-section--letter-spacing: -0.025em;
-  --text-subsection: clamp(1.375rem, 1.8vw, 1.75rem);
-  --text-subsection--line-height: 1.2;
-  --text-subsection--letter-spacing: -0.02em;
+  /*
+   * Heading scale.
+   *
+   * Fluid clamps rather than the reference's stepped breakpoints — that part is a deliberate
+   * improvement, since it removes four magic breakpoint values per heading and scales smoothly
+   * between them. What was wrong was the range, not the technique: these were invented rather than
+   * derived, and topped out 42% above the design they are meant to echo (display capped at 4.25rem
+   * against the reference's 3rem). Because the display size lands on the hero, first in the
+   * document, that error rebased the vertical rhythm of every section below it on every route.
+   *
+   * The caps now match the reference's rendered maxima — h1 3rem, h2 2.25rem, h3 1.875rem,
+   * h4 1.5rem — and the minima match its mobile sizes, so the two read as the same design at both
+   * ends while ours interpolates properly in between.
+   */
+  --text-display: clamp(1.875rem, 4vw, 3rem);
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.02em;
+  --text-title: clamp(1.875rem, 3vw, 2.25rem);
+  --text-title--line-height: 1.11;
+  --text-title--letter-spacing: -0.015em;
+  --text-section: clamp(1.5rem, 2.4vw, 1.875rem);
+  --text-section--line-height: 1.2;
+  --text-section--letter-spacing: -0.015em;
+  --text-subsection: clamp(1.25rem, 1.8vw, 1.5rem);
+  --text-subsection--line-height: 1.25;
+  --text-subsection--letter-spacing: -0.01em;
   --font-weight-heading: 600;
   --font-weight-action: 650;
   --tracking-eyebrow: 0.08em;
 
   --container-reading: 47.5rem;
-  --container-page: 77.5rem;
+  /* 1300px — the reference's own content width (`.content-w-medium`), not a rounded invention. */
+  --container-page: 81.25rem;
   --container-wide: 87.5rem;
   --container-frame: 106.25rem;
 
@@ -37,6 +52,21 @@
   --spacing-control-sm: 2.25rem;
   --spacing-control: 2.75rem;
   --spacing-control-lg: 3rem;
+  /*
+   * Per-edge section spacing, chosen by the editor on each section.
+   *
+   * These match the reference's *rendered* rhythm, which is not what its stylesheet appears to say.
+   * It declares `.spacing-regular { @apply py-8 }` — 2rem — but applies that class to an empty
+   * spacer div, so the rendered edge is 2rem + 2rem = 4rem. Reading the declaration and setting
+   * 2rem here would ship half the intended spacing while looking like a faithful copy. The values
+   * below are the rendered heights.
+   */
+  --space-section-none: 0rem;
+  --space-section-tight: 1rem;
+  --space-section-tight-wide: 2rem;
+  --space-section-regular: 4rem;
+  --space-section-large: 8rem;
+
   --spacing-section-compact: 2.5rem;
   --spacing-section-regular: 4rem;
   --spacing-section-generous: 5rem;
@@ -204,7 +234,12 @@
   --color-text-muted: var(--muted-foreground);
   --color-footer-base: var(--trayport-footer);
   --parity-page-max: 106.25rem;
-  --gutter: 1.25rem;
+  /*
+   * Horizontal page inset. The reference reaches 1rem/2rem/5rem by nesting two paddings
+   * (`.section-wrapper` px-2 md:px-4 lg:px-12 plus `.section` px-2 md:px-4 lg:px-8); we express the
+   * same rendered inset as one value, which is the simplification, not a different look.
+   */
+  --gutter: 1rem;
   --header-height: 5.375rem;
 }
 
@@ -262,6 +297,6 @@
 
 @media (width >= 64rem) {
   :root {
-    --gutter: 3rem;
+    --gutter: 5rem;
   }
 }

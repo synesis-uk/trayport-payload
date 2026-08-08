@@ -693,8 +693,8 @@ export interface ContentSectionBlock {
    */
   anchor?: string | null;
   width: 'reading' | 'standard' | 'wide' | 'full';
-  spacingTop?: ('tight' | 'regular' | 'large') | null;
-  spacingBottom?: ('tight' | 'regular' | 'large') | null;
+  spacingTop?: ('none' | 'tight' | 'regular' | 'large') | null;
+  spacingBottom?: ('none' | 'tight' | 'regular' | 'large') | null;
   columnGap?: ('tight' | 'regular') | null;
   id?: string | null;
   blockName?: string | null;

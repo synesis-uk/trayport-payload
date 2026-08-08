@@ -52,8 +52,8 @@ export interface ContentSectionPresentationModel {
   backgroundOpacity: 'none' | '10' | '20' | '50'
   columnGap: 'regular' | 'tight'
   columns: ContentSectionPresentationColumn[]
-  spacingBottom: 'large' | 'regular' | 'tight'
-  spacingTop: 'large' | 'regular' | 'tight'
+  spacingBottom: 'large' | 'none' | 'regular' | 'tight'
+  spacingTop: 'large' | 'none' | 'regular' | 'tight'
   surfacePadding: 'medium' | 'none'
   surfaceRadius: 'default' | 'xl'
   surfaceTone: 'dark' | 'none' | 'softBlue' | 'white'

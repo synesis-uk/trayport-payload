@@ -467,6 +467,7 @@ export const ContentSection: Block = {
               dbName: 'spacing_top',
               defaultValue: 'regular',
               options: [
+                { label: 'None', value: 'none' },
                 { label: 'Compact', value: 'tight' },
                 { label: 'Standard', value: 'regular' },
                 { label: 'Spacious', value: 'large' },
@@ -479,6 +480,7 @@ export const ContentSection: Block = {
               dbName: 'spacing_bottom',
               defaultValue: 'regular',
               options: [
+                { label: 'None', value: 'none' },
                 { label: 'Compact', value: 'tight' },
                 { label: 'Standard', value: 'regular' },
                 { label: 'Spacious', value: 'large' },

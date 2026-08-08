@@ -1147,10 +1147,23 @@ const hasActiveBorder = (column: Record<string, NormalizedValue>): boolean => {
       : false
 }
 
-const spacingValue = (value: unknown): 'tight' | 'regular' | 'large' => {
+/**
+ * Maps WordPress's five ACF spacing steps onto four deliberate ones.
+ *
+ * `none` is kept because zero spacing is a distinct intent an editor needs and 31 imported sections
+ * use it; collapsing it into `regular` — which is what this function did before, along with `xl` —
+ * silently changed the page. `xl` folds into `large` because two steps above standard is exactly
+ * the kind of near-duplicate choice the rebuild exists to remove.
+ *
+ * The order matters: `spacing-none` must be tested before the substring checks, and the fallback
+ * stays `regular` so an unrecognised value lands on the documented default rather than collapsing
+ * to zero.
+ */
+const spacingValue = (value: unknown): 'none' | 'tight' | 'regular' | 'large' => {
   const spacing = asString(value)
+  if (spacing.includes('none')) return 'none'
   if (spacing.includes('tight')) return 'tight'
-  if (spacing.includes('large')) return 'large'
+  if (spacing.includes('large') || spacing.includes('xl')) return 'large'
   return 'regular'
 }
 

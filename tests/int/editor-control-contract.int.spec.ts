@@ -216,8 +216,14 @@ describe('bounded editor controls', () => {
       'softBlue',
       'dark',
     ])
-    expect(optionValues(findField(fields, 'spacingTop'))).toEqual(['tight', 'regular', 'large'])
-    expect(optionValues(findField(fields, 'spacingBottom'))).toEqual(['tight', 'regular', 'large'])
+    // Four deliberate steps against WordPress's five. `none` is kept because zero spacing is a
+    // distinct intent an editor needs and 45 imported section edges use it — collapsing it into
+    // `regular`, as the importer did, silently changed those pages. `xl` folds into `large`,
+    // because a second step above standard is the kind of near-duplicate choice this rebuild exists
+    // to remove.
+    const spacingSteps = ['none', 'tight', 'regular', 'large']
+    expect(optionValues(findField(fields, 'spacingTop'))).toEqual(spacingSteps)
+    expect(optionValues(findField(fields, 'spacingBottom'))).toEqual(spacingSteps)
     expect(optionValues(findField(fields, 'columnGap'))).toEqual(['tight', 'regular'])
     expect(optionValues(findField(fields, 'horizontalAlign'))).toEqual(['left', 'center'])
     expect(optionValues(findField(fields, 'verticalAlign'))).toEqual(['start', 'center'])
