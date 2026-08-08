@@ -41,6 +41,13 @@ already strong — deterministic settling, an audited reference forwarder, hash-
 applied. Against a WordPress capture that can never pass, so the suite was never run to green rather
 than failing loudly.
 
+The phrase "exact visual acceptance" was itself the problem, and it is retired. The bar is the one
+in [remaining-plan.md](remaining-plan.md#change-policy): **indistinguishable to a client, or clearly
+better** — never pixel-identity. This is a rebuild, not a copy of the WordPress theme, so identical
+pixels were never the deliverable and pursuing them on a route that already reads as the same page
+is waste. Where the reference is inconsistent or plainly broken, the target is to improve on it,
+recorded as a class 3 change. What is held exact is structure and content, which is tier 1 below.
+
 The standard is machine-readable in [`tests/visual/acceptance.ts`](../tests/visual/acceptance.ts),
 enforced by [`visual-regression.e2e.spec.ts`](../tests/e2e/visual-regression.e2e.spec.ts), and kept
 from rotting by [`visual-acceptance-standard.int.spec.ts`](../tests/int/visual-acceptance-standard.int.spec.ts).

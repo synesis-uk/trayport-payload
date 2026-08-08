@@ -26,8 +26,25 @@ no enforcing spec, so the premise holds going forward.
 
 ## Change policy
 
-The live public site is the acceptance bar. Every difference from it falls into
-exactly one of three classes, and they carry different approval costs.
+The live public site is the acceptance bar. **The bar is "indistinguishable to a
+client, or clearly better" — not pixel-identical.** That distinction is load-bearing
+and was previously left implicit, which let "exact visual acceptance" creep into the
+completion matrix and imply a standard nobody intended:
+
+1. **Parity does not have to be exact.** This is a rebuild, not a copy. A difference
+   that a client would not notice, or would have to be shown to see, is not a defect.
+   Chasing the last pixel on a route that already reads as the same page is waste.
+2. **Where the current design is inconsistent or plainly wrong, improve it rather
+   than reproduce it.** The reference has real defects — a broken mobile layout on
+   Insights, a hover-only map control unusable by touch or keyboard, headings that
+   are not headings. Faithfully reproducing those would be a worse outcome, not a
+   more accurate one. Improvements still go through the class 3 test below.
+3. What must be exact is **structure and content**: the same headings in the same
+   order, the same links, the same information. That is what "the same page" means,
+   and it is the one tier of the visual standard held at zero tolerance.
+
+Every difference from the reference falls into exactly one of three classes, and
+they carry different approval costs.
 
 | Class                      | Definition                                                                | Approval                                          | Record                                                          |
 | -------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------- |
