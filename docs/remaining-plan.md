@@ -318,16 +318,38 @@ the full corpus.
 Blocked on Track B for exact acceptance: visual comparison against the
 WordPress reference is not meaningful on routes with no content.
 
-### C1 — Define the visual acceptance standard
+### C1 — Define the visual acceptance standard (delivered 2026-08-08)
 
-Requirements 9 and 10 of
-[frontend-plan-completion.md](frontend-plan-completion.md) are open because
-"exact visual acceptance" has never been given a threshold. Decide the
-comparison tolerance, the golden route set, and what counts as an approved
-deviation, then apply it retrospectively to Home and Joule.
+The standard is in [`tests/visual/acceptance.ts`](../tests/visual/acceptance.ts),
+written up in [frontend-plan-completion.md](frontend-plan-completion.md), enforced
+by the visual suite, and kept from rotting by an integration spec. All ten golden
+comparisons pass against it — the first time the suite has run to green.
 
-Exit: the standard is written into the completion matrix and enforced by the
-visual suite.
+Three findings shaped it:
+
+- **A single tolerance was the wrong instrument.** Insights mobile differs by 15%
+  and Home mobile by 18%, and those mean opposite things. Insights' legacy narrow
+  layout is broken and we deliberately repaired it, so that difference is approved
+  and permanent; Home's is debt. A threshold generous enough to admit Insights
+  would hide every regression on Home.
+- **Height parity had to become its own tier.** A page 273px short is missing
+  something no pixel ratio will report — and `toHaveScreenshot` cannot compare
+  differently-sized images at all, so eight of the ten routes failed outright
+  regardless of tolerance until heights were measured separately. Only Joule mobile
+  and German Power mobile currently match the reference height, so those are the
+  only two where the pixel tier is live.
+- **Budgets ratchet both ways.** Exceeding one fails; so does passing more than
+  0.03 under it, which forces an improvement into the recorded number rather than
+  banking headroom a later regression can spend.
+
+The golden set is now one exemplar per route-owning archetype rather than five
+hand-picked routes. Five are captured; the other ten are asserted as a known gap,
+because promoting a reference needs the audited forwarder and image-by-image human
+review.
+
+**Next:** Home mobile is the highest-value target — the largest gap in the suite
+and the most-seen page. Capturing the ten missing archetype references is the other
+half, and it needs a human review pass.
 
 ### C2 — Component-family rollout
 
