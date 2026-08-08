@@ -260,12 +260,25 @@ The ratchet caught an 8px movement on Home mobile (127 → 135) from the heading
 with its cause rather than chased — 8px on an 11,599px page is exactly the kind of difference the
 standard says not to spend time on.
 
-**Still outstanding in this batch**, both needing a further transform pass:
+**Completed in a second pass**, same day:
 
-- `clients` loses its selection mode and item data when `category.type == 'company_type'`, so client
-  and partner lists render as empty chips or vanish — about −2,262px across two product routes.
-- The legal company-data reusable is flattened into `<p><strong>Label</strong><br>Value</p>` instead
-  of the reference's two-column table, costing roughly 76px per row against 45px.
+- **`clients` selection by company type.** A `clients` component can select by type rather than by
+  naming each client, and only the explicit mode was read — so `/products/exchange-trading-system/`
+  rendered its "Our Exchange Clients" heading above an empty block while the reference lists 17.
+  Two causes, and the first one cost a wrong turn: `company_type` is an **ACF field on each client,
+  not a taxonomy**, so an initial fix that exported reusable taxonomies produced empty objects and
+  was reverted. The real blocker was that the exporter enumerated 26 client IDs by hand, and only 2
+  of the 17 exchanges were among them. It now exports every published client (88), which fixes the
+  class rather than the instance — a type selection resolves for any component that uses one. All
+  17 exchanges now render, matching the reference exactly.
+- **Legal company-data tables.** The reusable was flattened into
+  `<p><strong>Label</strong><br>Value</p>` per field, reading as a stack of paragraphs rather than
+  the label/value table the legal pages show. It now emits a real `dataTable`, and the four tables
+  on `/legal/legal-notice/` carry 12, 12, 11 and 10 rows — the reference's own row counts.
+  `/legal/legal-notice/` moves **+1,327 → +200**; `page.legal` mean falls 1,376 → 1,053.
+
+Widening the client export added 84 media items, all recovered, so the run still reports 0 missing
+media. Desktop mean absolute delta is now **509px**, from 645 at the start of C2.
 
 Feature-grid density is deliberately **not** here: it is verified to move `/products/joule/` by
 +503px, so it belongs in Phase 6 behind a pixel check rather than a height one.

@@ -355,6 +355,29 @@ const actionsFrom = (value: unknown, links: ManagedLinkLookup): Record<string, u
     .map((item) => linkFromValue(item, links))
     .filter((item): item is Record<string, unknown> => Boolean(item))
 
+/**
+ * Every `clients` reusable carrying the given company-type term, as legacy post references so the
+ * shared entity resolver handles them exactly like an explicit selection.
+ */
+const clientsInCompanyType = (
+  typeValue: unknown,
+  reusables: ReusableLookup,
+): Record<string, unknown>[] => {
+  const companyType = asString(typeValue)
+  if (!companyType) return []
+
+  return [...reusables.values()]
+    .filter(
+      (reusable) =>
+        reusable.postType === 'clients' && asString(reusable.data.company_type) === companyType,
+    )
+    .sort(
+      (left, right) =>
+        (left.menuOrder || 0) - (right.menuOrder || 0) || left.legacyId - right.legacyId,
+    )
+    .map((reusable) => ({ $ref: 'post', id: reusable.legacyId }))
+}
+
 const entityItemsFrom = (
   value: unknown,
   reusables: ReusableLookup,
@@ -930,7 +953,18 @@ const mapComponent = (
     }
     case 'clients': {
       const category = asObject(component.category)
-      const items = entityItemsFrom(category.specific || category.single, reusables, links)
+      /*
+       * WordPress offers two selection modes and only the explicit one was read, so a component
+       * that selects by company type resolved to nothing — /products/exchange-trading-system/
+       * rendered its "Our Exchange Clients" heading above an empty block while the reference lists
+       * seventeen. Reusable taxonomies are now exported, so a type selection resolves to every
+       * client carrying that term, in the reusable order WordPress itself uses.
+       */
+      const selection =
+        asString(category.type) === 'company_type'
+          ? clientsInCompanyType(category.company_type, reusables)
+          : category.specific || category.single
+      const items = entityItemsFrom(selection, reusables, links)
       return items.length
         ? [
             {
@@ -1535,7 +1569,45 @@ export const mapPageLayout = (
   return blocks
 }
 
-const companyDataHTML = (source: SourceReusable): string => {
+/**
+ * Company registration details as a two-column table, matching the reference.
+ *
+ * These were previously flattened into `<p><strong>Label</strong><br>Value</p>` per field, which
+ * reads as a stack of paragraphs rather than the label/value table the legal pages show, and costs
+ * roughly 76px per row against the reference's 45px.
+ */
+/** The single-column envelope every article section is emitted in. */
+const articleSection = (components: Record<string, unknown>[]): TargetSection => ({
+  blockType: 'contentSection',
+  surfaceTone: 'white',
+  wrapperTheme: 'none',
+  backgroundOpacity: 'none',
+  surfaceRadius: 'default',
+  surfacePadding: 'none',
+  width: 'reading',
+  spacingTop: 'tight',
+  spacingBottom: 'tight',
+  columnGap: 'regular',
+  columns: [
+    {
+      span: '12',
+      horizontalAlign: 'left',
+      verticalAlign: 'start',
+      heightMode: 'fill',
+      componentGap: 'regular',
+      padding: 'none',
+      surface: 'none',
+      border: 'none',
+      backgroundOpacity: 'none',
+      radius: 'default',
+      components,
+    },
+  ],
+})
+
+const companyDataTable = (
+  source: SourceReusable,
+): { blockType: 'dataTable'; caption: string; headers: never[]; rows: unknown[] } => {
   const fields = [
     ['name', 'Name'],
     ['company_type', 'Company Type'],
@@ -1552,25 +1624,26 @@ const companyDataHTML = (source: SourceReusable): string => {
     ['company_secretary', 'Company Secretary'],
   ] as const
 
-  return fields
-    .flatMap(([field, label]) => {
-      const rawValue = source.data[field]
-      const value = Array.isArray(rawValue)
-        ? rawValue
-            .map((item) => asString(item))
-            .filter(Boolean)
-            .join(', ')
-        : asString(rawValue)
-      if (!value) return []
-      if (/\[[^\]]+\]/.test(value)) {
-        throw new Error(
-          `Company-data reusable ${source.legacyId} retains unresolved shortcode content in ${field}.`,
-        )
-      }
+  const rows = fields.flatMap(([field, label]) => {
+    const rawValue = source.data[field]
+    const value = Array.isArray(rawValue)
+      ? rawValue
+          .map((item) => asString(item))
+          .filter(Boolean)
+          .join(', ')
+      : asString(rawValue)
+    if (!value) return []
+    if (/\[[^\]]+\]/.test(value)) {
+      throw new Error(
+        `Company-data reusable ${source.legacyId} retains unresolved shortcode content in ${field}.`,
+      )
+    }
 
-      return [`<p><strong>${label}</strong><br>${value}</p>`]
-    })
-    .join('')
+    return [{ cells: [{ text: label }, { text: htmlToPlainText(value) }] }]
+  })
+
+  // The reference gives these tables no header row; the label column carries the meaning.
+  return { blockType: 'dataTable', caption: asString(source.title), headers: [], rows }
 }
 
 export const mapArticleLayout = (
@@ -1631,11 +1704,9 @@ export const mapArticleLayout = (
           `Article post-content requires an exported company-data reusable; received ${postLegacyId || 'no source ID'}.`,
         )
       }
-      component = {
-        acf_fc_layout: 'paragraph',
-        paragraph: companyDataHTML(source),
-        text_size: 'regular',
-      }
+      // Emitted directly rather than through mapComponent: this is already a target block.
+      blocks.push(articleSection([companyDataTable(source)]))
+      continue
     } else if (layout === 'form') {
       component = {
         ...section,
@@ -1661,35 +1732,7 @@ export const mapArticleLayout = (
           scope: 'article',
         })
       }
-      const block: TargetSection | null = mapped.length
-        ? {
-            blockType: 'contentSection',
-            surfaceTone: 'white',
-            wrapperTheme: 'none',
-            backgroundOpacity: 'none',
-            surfaceRadius: 'default',
-            surfacePadding: 'none',
-            width: 'reading',
-            spacingTop: 'tight',
-            spacingBottom: 'tight',
-            columnGap: 'regular',
-            columns: [
-              {
-                span: '12',
-                horizontalAlign: 'left',
-                verticalAlign: 'start',
-                heightMode: 'fill',
-                componentGap: 'regular',
-                padding: 'none',
-                surface: 'none',
-                border: 'none',
-                backgroundOpacity: 'none',
-                radius: 'default',
-                components: mapped,
-              },
-            ],
-          }
-        : null
+      const block: TargetSection | null = mapped.length ? articleSection(mapped) : null
       if (block) {
         // An index-point carries no content of its own, so its anchor attaches to the next section
         // that does. That keeps in-page links working without emitting an empty section for them.

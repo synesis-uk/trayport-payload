@@ -790,10 +790,26 @@ function tp_export_curated_reusables(array &$mediaIds, array &$termIds): void
         tp_export_company_data_reusable($companyDataId, $mediaIds, $termIds);
     }
 
-    foreach ([
-        3097, 3098, 3099, 4442, 4443, 4444, 4445, 4446, 4447, 8550, 8561, 8562, 8563,
-        8564, 8565, 8566, 8567, 8569, 8570, 8572, 8620, 8764, 8765, 8766, 8767, 8768,
-    ] as $clientId) {
+    /*
+     * Every published client, not a hand-listed subset.
+     *
+     * A `clients` component can select by company type rather than by naming each client, and the
+     * curated list of 26 held only 2 of the 17 exchanges — so /products/exchange-trading-system/
+     * rendered its "Our Exchange Clients" heading above an empty block. Exporting the class rather
+     * than an enumeration means a type selection resolves for any component that uses one.
+     */
+    $clientIds = get_posts([
+        'fields' => 'ids',
+        'no_found_rows' => true,
+        'numberposts' => -1,
+        'order' => 'ASC',
+        'orderby' => 'ID',
+        'post_status' => 'publish',
+        'post_type' => 'clients',
+        'suppress_filters' => true,
+    ]);
+
+    foreach ($clientIds as $clientId) {
         $clientFields = function_exists('get_fields') ? (get_fields($clientId) ?: []) : [];
         $directLogo = $clientFields['logo'] ?? null;
         $relatedVenue = $clientFields['related_venue'] ?? null;
