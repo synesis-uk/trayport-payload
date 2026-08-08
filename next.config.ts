@@ -22,6 +22,13 @@ const nextConfig: NextConfig = {
     .map((origin) => origin.trim())
     .filter(Boolean),
   cacheComponents: true,
+  /*
+   * A production build normally writes to `.next`, which a running `next dev` is also using, so
+   * verifying production behaviour meant stopping development first. Allowing the directory to be
+   * overridden lets a build run alongside a dev server:
+   *   NEXT_DIST_DIR=.next-verify corepack pnpm build
+   */
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   experimental: {
     globalNotFound: true,
   },

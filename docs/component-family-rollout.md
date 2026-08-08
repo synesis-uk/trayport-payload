@@ -265,6 +265,35 @@ retire the C4 compatibility-bridge item — it is the same work.
    corpus, published, and reachable — six typed `insight` and one `webinar`, all inside the insights
    family.
 
+## Open finding — the site renders blank without JavaScript
+
+Verified in a **production build** on 2026-08-08, not a development artifact. On
+`/company/about-us/`, `<main>` opens 21 characters inside `<div hidden id="S:5">`: the entire page
+body sits in a streamed Suspense shell that only JavaScript moves into place. Measured with
+JavaScript disabled, `main` is 0px tall and the whole document reports 20 characters of visible
+text, against 6,517 with JavaScript. Production and development agree exactly once JavaScript runs
+(5,769px page, 4,887px main), so the build is otherwise sound.
+
+The cause is `cacheComponents: true` in [`next.config.ts`](../next.config.ts). Cache Components
+prerenders a static shell and streams everything uncached inside Suspense boundaries; because the
+content routes are entirely database-driven and uncached, the whole body lands in those boundaries.
+The page produced 95 hidden shells.
+
+The content *is* present in the HTML, so a crawler that parses markup can read it, and Google
+executes JavaScript. What is affected is anything that does not: text browsers, JavaScript-disabled
+users, some social-preview scrapers, and any assistive tooling that reads the served document.
+
+This is outside C2 and larger than it. Three routes forward, in order of preference:
+
+1. Mark the content route's data loaders cacheable (`use cache`), so pages prerender into the
+   shell and the streamed boundaries carry only genuinely per-request content. Keeps the
+   performance benefit and fixes the rendering.
+2. Set `cacheComponents: false` and accept conventional SSR.
+3. Accept it, and record it as a deliberate trade-off.
+
+It should be decided before launch, and it is worth deciding before much more C2 work, because it
+changes what "the page renders" means for every measurement taken here.
+
 ## Traps
 
 - **Fix-largest-first is wrong when a route is short at the other viewport.** The legal fixes remove
