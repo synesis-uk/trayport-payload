@@ -34,7 +34,8 @@
     "test:visual": "cross-env PLAYWRIGHT_SKIP_WEBSERVER=true NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.visual.config.ts",
     "test:visual:dev": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.visual.config.ts",
     "visual:update-reference": "cross-env PLAYWRIGHT_BASE_URL=http://trayport.local PLAYWRIGHT_SKIP_WEBSERVER=true NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.visual.config.ts --update-snapshots",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "measure:parity": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" node scripts/measure-parity.mjs"
   },
   "dependencies": {
     "@awesome.me/kit-9e17af3472": "1.0.10",

@@ -370,9 +370,21 @@ half, and it needs a human review pass.
 
 ### C2 — Component-family rollout
 
-Work the remaining families — shell/navigation, heroes, content sections,
-cards/listings/filters, forms/CTA, structured market content, charts and data
-tables — through the same per-family gate the map used in Track A.
+**Detailed plan: [component-family-rollout.md](component-family-rollout.md).**
+
+Work the remaining families through the same per-family gate the map used in Track A,
+under one architectural rule: *all layout and styling comes from modular components
+that can be added to any page; nothing is styled by which page it happens to be.*
+The only legitimate axis of variation is the template — page, article, careers,
+learning hub, listing, hub/venue detail, hub/venue listings.
+
+309 selectors currently breach that rule, and 3,790 of the 4,975 parity-CSS lines are
+globally-applying rules living in files named after routes. That is not untidiness: it
+is why the five routes with per-route CSS sit within ~100px of the reference while
+untouched routes average ~1,000px. Hand-tuning a page teaches the codebase nothing.
+
+Measure with `corepack pnpm measure:parity`; the baseline and the family-by-family
+sequence are in the linked plan.
 
 ### C3 — Editor-control and block-catalogue closure
 
