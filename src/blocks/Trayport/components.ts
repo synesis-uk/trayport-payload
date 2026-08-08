@@ -77,7 +77,7 @@ export const HeadingComponent: Block = {
         description: 'Visual scale is independent from the semantic heading level.',
       },
       defaultValue: 'h2',
-      options: ['h1', 'h2', 'h3', 'h4'],
+      options: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
     },
   ],
 }

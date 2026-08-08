@@ -28,7 +28,7 @@ export interface ActionsPresentationModel {
 }
 
 export interface HeadingPresentationModel {
-  appearance: 'h1' | 'h2' | 'h3' | 'h4'
+  appearance: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
   eyebrow?: string
   eyebrowOnly?: boolean
   heading: string

@@ -119,6 +119,13 @@ export const hubSpotFormComponentFromWordPress = (
   }
 }
 
+const columnPadding = (value: unknown): 'none' | 'medium' | 'large' => {
+  const padding = asString(value)
+  if (padding === 'column-p-md') return 'medium'
+  if (padding === 'column-p-lg' || padding === 'column-p-xl') return 'large'
+  return 'none'
+}
+
 const normalizedFeatureIcon = (value: unknown): string | undefined => {
   const icon = asString(value)
   if (icon === 'arrow-trend-up') return 'trend'
@@ -262,14 +269,24 @@ const dataChartDisplayInterval = (value: NormalizedValue): 'month' | 'quarter' |
   return intervals[asString(value)] || 'quarter'
 }
 
-const normalizedHeadingAppearance = (value: unknown): 'h1' | 'h2' | 'h3' | 'h4' => {
+type HeadingAppearance = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
+
+/**
+ * WordPress authors use all six heading scales; the block previously offered only four and fell
+ * back to `h2` for the rest. 81 `h6` and 7 `h5` headings were therefore rendering at display scale
+ * — 43px where the reference renders 18px — which was the single largest source of over-height on
+ * product and standard pages.
+ */
+const normalizedHeadingAppearance = (value: unknown): HeadingAppearance => {
   const size = asString(value)
-  return ['h1', 'h2', 'h3', 'h4'].includes(size) ? (size as 'h1' | 'h2' | 'h3' | 'h4') : 'h2'
+  return (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] as const).includes(size as HeadingAppearance)
+    ? (size as HeadingAppearance)
+    : 'h2'
 }
 
 const normalizedHeadingLevel = (
   tagValue: unknown,
-  appearance: 'h1' | 'h2' | 'h3' | 'h4',
+  appearance: HeadingAppearance,
 ): 'h2' | 'h3' | 'h4' => {
   const tag = asString(tagValue)
   if (['h2', 'h3', 'h4'].includes(tag)) return tag as 'h2' | 'h3' | 'h4'
@@ -1280,7 +1297,10 @@ const mapColumnsSection = (
         heightMode: asString(column.height) === 'content' ? 'content' : 'fill',
         componentGap:
           asString(column.component_spacing) === 'component-space-none' ? 'none' : 'regular',
-        padding: asString(column.padding) === 'column-p-md' ? 'medium' : 'none',
+        // WordPress offers md/lg/xl; only md was mapped, so 32 surfaced or bordered columns lost
+        // their inner padding entirely. lg and xl both fold into `large` — a third step above
+        // medium is the kind of near-duplicate choice this rebuild exists to remove.
+        padding: columnPadding(column.padding),
         surface: activeColumnSurface(column),
         border: hasActiveBorder(column) ? 'subtle' : 'none',
         backgroundMedia,
@@ -1560,6 +1580,7 @@ export const mapArticleLayout = (
   reusables: ReusableLookup = new Map(),
 ): TargetSection[] => {
   const blocks: TargetSection[] = []
+  let pendingAnchor = ''
 
   for (const value of asArray(sectionsValue)) {
     const section = asObject(value)
@@ -1592,13 +1613,11 @@ export const mapArticleLayout = (
     } else if (layout === 'buttons') {
       component = { acf_fc_layout: 'buttons', buttons: section.buttons }
     } else if (layout === 'index-point') {
-      component = {
-        acf_fc_layout: 'header',
-        header: {
-          text: section.contents_label,
-          tag: 'h2',
-        },
-      }
+      // An anchor, not a heading. WordPress renders this as a 0px scroll target whose label is
+      // consumed only by the sticky article index; emitting it as a visible <h2> duplicated the
+      // next paragraph's bolded lead and put up to 17 headings on pages the reference gives none.
+      pendingAnchor = asString(section.anchor) || pendingAnchor
+      component = null
     } else if (layout === 'header') {
       component = {
         acf_fc_layout: 'header',
@@ -1672,7 +1691,12 @@ export const mapArticleLayout = (
           }
         : null
       if (block) {
-        if (layout === 'index-point') block.anchor = asString(section.anchor)
+        // An index-point carries no content of its own, so its anchor attaches to the next section
+        // that does. That keeps in-page links working without emitting an empty section for them.
+        if (pendingAnchor) {
+          block.anchor = pendingAnchor
+          pendingAnchor = ''
+        }
         blocks.push(block)
       }
     }

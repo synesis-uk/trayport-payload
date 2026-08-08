@@ -263,6 +263,7 @@ export const ContentSection: Block = {
                   options: [
                     { label: 'None', value: 'none' },
                     { label: 'Medium', value: 'medium' },
+                    { label: 'Large', value: 'large' },
                   ],
                 },
                 {

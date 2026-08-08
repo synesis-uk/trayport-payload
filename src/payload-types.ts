@@ -662,7 +662,7 @@ export interface ContentSectionBlock {
     verticalAlign?: ('start' | 'center') | null;
     heightMode?: ('fill' | 'content') | null;
     componentGap?: ('none' | 'regular') | null;
-    padding?: ('none' | 'medium') | null;
+    padding?: ('none' | 'medium' | 'large') | null;
     surface?: ('none' | 'muted' | 'soft') | null;
     border?: ('none' | 'subtle') | null;
     radius?: ('default' | 'xl') | null;
@@ -711,7 +711,7 @@ export interface HeadingComponent {
   /**
    * Visual scale is independent from the semantic heading level.
    */
-  appearance?: ('h1' | 'h2' | 'h3' | 'h4') | null;
+  appearance?: ('h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6') | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'heading';

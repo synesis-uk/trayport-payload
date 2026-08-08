@@ -1199,8 +1199,11 @@ export const validateTransformed = (
   assert.equal(layoutCount('pages', 7589), 2)
   assert.equal(layoutCount('pages', 2231), 2)
   assert.equal(layoutCount('pages', 5920), 2)
-  assert.equal(layoutCount('pages', 4803), 21)
-  assert.equal(layoutCount('pages', 7573), 21)
+  // 15, not 21: `index-point` sections no longer emit a block. WordPress renders them as 0px scroll
+  // anchors whose label feeds the sticky article index, and emitting each as a visible heading put
+  // six empty sections on both legal pages. The anchors now attach to the following section.
+  assert.equal(layoutCount('pages', 4803), 15)
+  assert.equal(layoutCount('pages', 7573), 15)
   assert.equal(layoutCount('pages', 34), 2)
   assert.equal(layoutCount('pages', 9248), 2)
   const cookiePolicy = targets.find(
@@ -1210,7 +1213,8 @@ export const validateTransformed = (
   assert.equal(cookiePolicy.data.title, 'Cookie and Privacy Policy')
   assert.match(JSON.stringify(cookiePolicy.data.layout), /Our Use Of Cookies/)
   assert.match(JSON.stringify(cookiePolicy.data.layout), /WHAT ARE COOKIES\?/)
-  assert.equal(layoutCount('articles', 9351), 9)
+  // 7, not 9: two `index-point` anchors no longer emit empty heading sections of their own.
+  assert.equal(layoutCount('articles', 9351), 7)
   assert.equal(layoutCount('articles', 10030), 5)
   const eWorldArticle = targets.find(
     ({ legacy, target }) => target === 'articles' && legacy.legacyId === 10030,

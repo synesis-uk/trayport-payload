@@ -24,6 +24,7 @@ import * as migration_20260805_105208_banner_notification_jobs from './20260805_
 import * as migration_20260805_111442_banner_notification_delivery_ledger from './20260805_111442_banner_notification_delivery_ledger';
 import * as migration_20260805_130343_people_events_search_parity from './20260805_130343_people_events_search_parity';
 import * as migration_20260808_103312_section_spacing_none from './20260808_103312_section_spacing_none';
+import * as migration_20260808_140300_heading_rungs_and_column_padding from './20260808_140300_heading_rungs_and_column_padding';
 
 export const migrations = [
   {
@@ -154,6 +155,11 @@ export const migrations = [
   {
     up: migration_20260808_103312_section_spacing_none.up,
     down: migration_20260808_103312_section_spacing_none.down,
-    name: '20260808_103312_section_spacing_none'
+    name: '20260808_103312_section_spacing_none',
+  },
+  {
+    up: migration_20260808_140300_heading_rungs_and_column_padding.up,
+    down: migration_20260808_140300_heading_rungs_and_column_padding.down,
+    name: '20260808_140300_heading_rungs_and_column_padding'
   },
 ];

@@ -10,7 +10,7 @@ export function Eyebrow({ className, ...props }: EyebrowProps) {
 }
 
 export interface HeadingGroupProps extends HTMLAttributes<HTMLDivElement> {
-  appearance?: 'h1' | 'h2' | 'h3' | 'h4'
+  appearance?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
   description?: ReactNode
   eyebrow?: ReactNode
   eyebrowOnly?: boolean

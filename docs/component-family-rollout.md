@@ -233,17 +233,42 @@ This is exactly the case the standard was built for — a bigger height delta th
 neighbouring rules and blanked the listings, so they need a careful pass of their own rather than a
 span delete.
 
-### Phase 4 — one batched transform and reload
+### Phase 4 — one batched transform and reload (partially delivered 2026-08-08)
 
-Heading rungs (h5/h6 fall back to h2, rendering at 43px instead of 20px — **+5,234px across 8
-routes**, the single largest defect in the product/standard family), `clients` selection mode,
-feature presentation, column padding tokens (`column-p-lg` and `-xl` both collapse to `none`),
-`index-point` anchors, per-layout article width and spacing, and the legal `dataTable`.
+Three of the batch landed in a single re-derive and reload, as intended — 66 documents updated, 0
+missing media, 0 lossy section drops.
 
-**All of these must land in one re-derive and one reload.** Four diagnoses each independently assume
-their own `content:transform` + `content:load`; run separately they overwrite each other's corpus.
-Resolve the `index-point` collision here too — the article and legal diagnoses prescribe opposite
-treatments for `blocks.ts:1594-1601`.
+- **Heading rungs.** The block offered `h1`–`h4` and mapped everything below onto `h2`, so **81
+  `h6` and 7 `h5` source headings rendered at display scale** — 43px where the reference renders
+  18px. The schema, component, transform and CSS now carry six rungs, and all six are aligned to the
+  reference's rendered maxima (3 / 2.25 / 1.875 / 1.5 / 1.25 / 1.125rem); `h2` and `h3` were capped
+  above the reference and `h4` below it.
+- **Column padding.** WordPress offers `md`/`lg`/`xl` and only `md` was mapped, so 32 surfaced or
+  bordered columns lost their inner padding entirely. `lg` and `xl` now fold into a single `large`
+  step — a considered simplification rather than a third near-duplicate.
+- **`index-point` anchors.** These are 0px scroll targets in WordPress whose label feeds the sticky
+  article index. Emitting each as a visible `<h2>` duplicated the following paragraph's lead and put
+  up to 17 headings on pages where the reference has none. They now emit no block, and the anchor
+  carries forward to the next section that does — verified: 51 articles retain a working anchor,
+  matching the 51 the diagnosis found, and the two legal pages fell from 21 sections to 15.
+
+Desktop mean absolute delta fell 532 → **517px**. `page.legal` improved 1,616 → 1,376 and
+`page.landing` 753 → 574. `page.product` moved slightly the *wrong* way, 688 → 705, which the
+diagnosis predicted: the oversized headings were masking the content deficits that Phase 5 addresses.
+
+The ratchet caught an 8px movement on Home mobile (127 → 135) from the heading correction. Recorded
+with its cause rather than chased — 8px on an 11,599px page is exactly the kind of difference the
+standard says not to spend time on.
+
+**Still outstanding in this batch**, both needing a further transform pass:
+
+- `clients` loses its selection mode and item data when `category.type == 'company_type'`, so client
+  and partner lists render as empty chips or vanish — about −2,262px across two product routes.
+- The legal company-data reusable is flattened into `<p><strong>Label</strong><br>Value</p>` instead
+  of the reference's two-column table, costing roughly 76px per row against 45px.
+
+Feature-grid density is deliberately **not** here: it is verified to move `/products/joule/` by
++503px, so it belongs in Phase 6 behind a pixel check rather than a height one.
 
 ### Phase 5 — restore missing content
 

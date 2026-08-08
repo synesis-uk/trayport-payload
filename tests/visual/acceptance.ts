@@ -93,10 +93,10 @@ export const visualBudgets: VisualBudget[] = [
   {
     route: 'home',
     project: 'visual-mobile',
-    maxHeightDelta: 127,
+    maxHeightDelta: 135,
     maxDiffPixelRatio: 0.19,
     rationale: 'tracked-difference',
-    note: 'Our page renders 127px taller than the reference. The largest difference among the captured routes, though small next to the ~1000px seen on routes with no parity CSS.',
+    note: 'Our page renders 135px taller than the reference, up from 127 when the heading scale was corrected to six rungs on 2026-08-08 — an 8px movement on an 11,599px page, accepted deliberately rather than chased. Still the largest difference among the captured routes, and small next to the ~1000px seen on routes with no parity CSS.',
   },
   {
     route: 'joule',

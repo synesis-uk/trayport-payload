@@ -200,11 +200,15 @@ describe('bounded editor controls', () => {
       'h3',
       'h4',
     ])
+    // Six rungs, matching WordPress. Offering only four mapped 81 `h6` and 7 `h5` source headings
+    // onto the h2 scale, rendering them at 43px where the reference renders 18px.
     expect(optionValues(findField(HeadingComponent.fields as FieldNode[], 'appearance'))).toEqual([
       'h1',
       'h2',
       'h3',
       'h4',
+      'h5',
+      'h6',
     ])
   })
 
@@ -229,7 +233,11 @@ describe('bounded editor controls', () => {
     expect(optionValues(findField(fields, 'verticalAlign'))).toEqual(['start', 'center'])
     expect(optionValues(findField(fields, 'heightMode'))).toEqual(['fill', 'content'])
     expect(optionValues(findField(fields, 'componentGap'))).toEqual(['none', 'regular'])
-    expect(optionValues(findField(fields, 'padding'))).toEqual(['none', 'medium'])
+    expect(optionValues(findField(fields, 'padding'))).toEqual([
+      // WordPress offers md/lg/xl; only md was mapped, so 32 surfaced or bordered columns lost
+      // their inner padding. lg and xl both fold into `large`.
+      'none', 'medium', 'large',
+    ])
     expect(optionValues(findField(fields, 'surface'))).toEqual(['none', 'muted', 'soft'])
     expect(optionValues(findField(fields, 'border'))).toEqual(['none', 'subtle'])
     expect(optionValues(findField(fields, 'radius'))).toEqual(['default', 'xl'])

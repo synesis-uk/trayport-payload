@@ -12,7 +12,7 @@ export interface ContentSectionPresentationColumn {
   heightMode: 'content' | 'fill'
   horizontalAlign: 'center' | 'left'
   key: string
-  padding: 'medium' | 'none'
+  padding: 'large' | 'medium' | 'none'
   radius: 'default' | 'xl'
   span: number
   surface: 'muted' | 'none' | 'soft'
