@@ -293,13 +293,24 @@ The content *is* present in the HTML, so a crawler that parses markup can read i
 executes JavaScript. What is affected is anything that does not: text browsers, JavaScript-disabled
 users, some social-preview scrapers, and any assistive tooling that reads the served document.
 
-This is outside C2 and larger than it. Three routes forward, in order of preference:
+This is outside C2 and larger than it. Both fixes were costed on 2026-08-08 and **neither is cheap**:
 
-1. Mark the content route's data loaders cacheable (`use cache`), so pages prerender into the
-   shell and the streamed boundaries carry only genuinely per-request content. Keeps the
-   performance benefit and fixes the rendering.
-2. Set `cacheComponents: false` and accept conventional SSR.
-3. Accept it, and record it as a deliberate trade-off.
+1. **Make the published render prerenderable.** `contentRoute.renderer.tsx` calls `connection()`
+   before choosing between the draft and published paths, because `draftMode()` is request-scoped
+   and the whole content render depends on the result. Splitting it means restructuring that choice
+   so the published branch touches no request API — a real change to a deliberate design that
+   `contentRouteCacheContract` documents (`publishedCached: true, draftCached: false`) and that four
+   integration specs cover.
+2. **Turn `cacheComponents` off.** Not a one-line change: `use cache` *requires* the flag. Disabling
+   it fails compilation in all eleven files that use it, so this means unwinding the entire cache
+   architecture — content routes, globals, listings, indexes, market data, matrix, maps and search.
+
+**Direction taken: defer, and record it as a launch decision.** This corrects an earlier
+recommendation of option 1, which was made before reading the render path and assumed a targeted
+change. Given the content is present in the served HTML, that Google executes JavaScript, and that
+both fixes are structural rather than incremental, neither is proportionate to run mid-C2 — and
+attempting one now would put the cache correctness guarantees at risk for a benefit that is real but
+narrow.
 
 It should be decided before launch, and it is worth deciding before much more C2 work, because it
 changes what "the page renders" means for every measurement taken here.
