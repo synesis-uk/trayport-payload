@@ -283,12 +283,31 @@ media. Desktop mean absolute delta is now **509px**, from 645 at the start of C2
 Feature-grid density is deliberately **not** here: it is verified to move `/products/joule/` by
 +503px, so it belongs in Phase 6 behind a pixel check rather than a height one.
 
-### Phase 5 — restore missing content
+### Phase 5 — restore missing content (investigated 2026-08-08; three of four items do not exist)
 
-The only category that is a genuine deficit at *both* viewports: HubSpot height reservation (the
-mount is an inert 1px stub, **−4,208px across 7 routes**), the legal disclaimer, inline prose figures
-and per-paragraph inset media (dropped entirely by the transform and the HTML-to-Lexical converter),
-and `/learning-hub/`'s missing "Become a Product Pro" section.
+Phase 5 was scoped from the family diagnoses. Checked against the corpus and both running sites,
+**most of it is not there to restore.** Recorded so nobody scopes it again.
+
+| Item | Claimed | Verified |
+| ---- | ------- | -------- |
+| Inline prose images | "7 posts carry inline prose images" | **Zero.** Across all 287 paragraph sections in every published post and event, not one contains an `<img>`. |
+| Per-paragraph inset figures | "8 posts carry inset paragraph figures" | **Zero.** No paragraph section in the corpus carries a `media_type` at all. |
+| `/learning-hub/` "Become a Product Pro" | Missing, plus a missing auth affordance | **Both present.** Our page renders the Product Pro section and the logged-out bar. |
+| Legal disclaimer on articles | −188px universally | **Present, in the footer.** The reference renders the same sentence twice — once in the article body and once in the footer. See below. |
+
+**The article disclaimer is a deliberate non-duplication.** The trading disclaimer ("Trayport is a
+software provider of trading solutions and is not a trading venue") appears in our footer on every
+page, so the legal text is not missing. The reference additionally repeats it inside the article
+body. Printing the same legal sentence twice on one page is the kind of inconsistency the change
+policy says to improve rather than reproduce, and it states in one sentence: *the trading disclaimer
+appears once in the footer rather than twice on the same page.* Recorded as a class 3 keep.
+
+**HubSpot is the one real gap, and it is not C2 work.** Measured on `/contact/`, the reference
+renders 6 forms with 6 inputs; we render none — the mount is an inert stub, a documented deferral.
+The diagnosis proposed *reserving the reference's height* so the sections stop collapsing. That would
+add a blank box where a form belongs, which is worse than the current honest absence and would have
+to be undone. The fix is **D1 — activate the HubSpot provider** — not a height reservation. Until
+then the ~−4,208px across 7 routes stays, correctly, as a measured absence.
 
 ### Phase 6 — global typography, behind a pixel check
 
