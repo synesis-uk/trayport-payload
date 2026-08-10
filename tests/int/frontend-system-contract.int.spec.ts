@@ -359,7 +359,7 @@ describe('locked frontend system', () => {
     }
   })
 
-  it('keeps source-measured Home and Joule corrections route-scoped and reversible', () => {
+  it('keeps source-measured corrections template-scoped, never page-scoped', () => {
     const home = readFileSync(
       new URL('../../src/app/(frontend)/parity-home.css', import.meta.url),
       'utf8',
@@ -378,7 +378,16 @@ describe('locked frontend system', () => {
     expect(home).toContain('font-size: 1.5rem;')
     expect(home).toContain('padding-inline: 3rem;')
 
-    expect(joule).toContain(".trayport-page[data-page-path='/products/joule/']")
+    /*
+     * The rule: all layout and styling comes from modular components and templates, never from
+     * which page a rule happens to be on. These declarations were measured against
+     * /products/joule/ but describe the product template, and keying them to one URL left the
+     * other 21 product routes without them. Promoting the prefix improved all three other sampled
+     * products and regressed none.
+     */
+    expect(joule).toContain('.trayport-page--product')
+    expect(joule).not.toContain('data-page-path')
+    expect(home).not.toContain('data-page-path')
     expect(joule).toMatch(
       /@media \(min-width: 48rem\)[\s\S]*?> \.trayport-section--has-faq[\s\S]*?font-size: 1\.25rem;[\s\S]*?flex-basis: 0;[\s\S]*?min-height: 4\.25rem;/,
     )
