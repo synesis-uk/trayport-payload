@@ -35,16 +35,32 @@ When a route looks wrong, fix the component or the template so every route using
 rule seems to need a page selector, that is the signal that a component is missing a bounded option
 an editor should be able to set.
 
-### Current violations
+### Violations
 
-Measured 2026-08-08. 309 selectors breach the rule:
+Measured 2026-08-08. 309 selectors breached the rule; **184 are gone**, and no
+`[data-page-path='…']` selector remains anywhere in `src/`.
 
-| File | Selectors | Locked to |
-| ---- | --------: | --------- |
-| `parity-joule.css` | 124 | `[data-page-path='/products/joule/']` |
-| `parity-home.css` | 111 | `.trayport-page--home` |
-| `parity-insights.css` | 60 | `[data-page-path='/resources/insights/']` |
-| `parity-blocks.css` | 14 | mixed |
+| File | Was | Now | Outcome |
+| ---- | --: | --: | ------- |
+| `parity-insights.css` | 60 | **0** | Promoted to `.trayport-page--index` — fixed 4 routes |
+| `parity-joule.css` | 124 | **0** | Promoted to `.trayport-page--product` — fixed 21 routes |
+| `parity-home.css` | 111 | 111 | **Blocked.** See below |
+| `parity-blocks.css` | 14 | 14 | Superseded `--index` rules, dead but tangled |
+
+`frontend-system-contract.int.spec.ts` now asserts the rule rather than the old policy: no parity
+stylesheet may contain a page-path selector.
+
+**Why `parity-home.css` is blocked.** Its selectors are content-derived and look promotable —
+`--has-feature-list` (35), `--has-data-chart` (11), `--has-market-coverage` (6) key on what a
+section *contains*, not on which page it is. Stripping the prefix was tried and measured: it
+improved the three largest page archetypes (product 475→401, standard 349→283, legal 1,053→918) but
+**broke the best-matched route on the site** — Joule went from +1 to +143 on desktop and lost its
+exact mobile height match, because Home's feature-list rules collide with the product template's
+own. Reverted.
+
+Separating them is per-rule work: each of Home's ~95 rules has to be reconciled against the product
+template before it can go generic. That is the remaining Phase 7, and it is the only part of the
+styling rule still outstanding.
 
 The inverse defect also exists and is worse, because it is invisible: **3,790 of the 4,975 parity
 lines are globally-applying rules living in files named after routes.** `parity-blocks.css:276-290`
