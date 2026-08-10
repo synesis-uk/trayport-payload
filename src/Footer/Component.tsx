@@ -1,4 +1,5 @@
 import { getCachedGlobal } from '@/utilities/getGlobals'
+import { cookieYesSiteKey } from '@/integrations/cookieYes'
 
 import { footerModelFromGlobals } from './adapter'
 import { CookieNotice } from './CookieNotice'
@@ -17,7 +18,11 @@ export async function Footer() {
   return (
     <>
       <FooterPresentation model={footerModelFromGlobals(footer, settings)} />
-      {settings.cookieNotice?.enabled && settings.cookieNotice.message ? (
+      {/*
+       * The managed notice is the FE-018 local bridge. CookieYes owns consent wherever it is
+       * configured, so rendering both would show a visitor two cookie banners at once.
+       */}
+      {!cookieYesSiteKey() && settings.cookieNotice?.enabled && settings.cookieNotice.message ? (
         <CookieNotice
           acceptLabel={settings.cookieNotice.acceptLabel || undefined}
           message={settings.cookieNotice.message}

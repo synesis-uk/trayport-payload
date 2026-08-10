@@ -434,8 +434,29 @@ Independent of Tracks B and C and can run in parallel.
 
   No test submission has been made. Doing so creates a real contact record in
   Trayport's production portal and is deliberately left as an explicit decision.
-- **D2 — CookieYes.** Clone the live consent categories and behaviour through the
-  Next.js integration, and retire the FE-018 local bridge.
+- **D2 — CookieYes (delivered 2026-08-08; needs a domain registered before it shows).**
+  The banner loads from `NEXT_PUBLIC_COOKIEYES_SITE_KEY`, and the FE-018 local notice
+  is suppressed wherever that key is set so a visitor never sees two cookie banners.
+
+  **The part that is not obvious: CookieYes cannot block anything this site loads.**
+  Its blocking works by rewriting `<script>` tags in the served HTML, and our only
+  third-party embed — HubSpot — is created by JavaScript at runtime, so no tag ever
+  exists for it to rewrite. Left alone it would have loaded regardless of the
+  visitor's choice. The HubSpot gate therefore *reads* CookieYes' `cookieyes-consent`
+  cookie directly (category `functional`, verified against the served script's own
+  category list) and treats "no decision yet" as "not granted".
+
+  With no key set the FE-018 banner remains the authority, so development and tests
+  keep a real consent decision rather than defaulting to granted.
+
+  **Verified locally:** script loads, banner suppressed correctly, HubSpot reports
+  `blocked` and requests no script. **Not verified:** the accept path. CookieYes
+  validates the requesting domain against the site registered in the account, so on
+  `127.0.0.1` the script returns 200 and then does nothing — `window.cookieyes` stays
+  empty and no banner renders. The key is therefore documented in `.env.example` and
+  deliberately left unset locally. Setting it needs the review domain added to the
+  CookieYes account first, otherwise the site would show no banner at all and every
+  form would stay blocked.
 - **D3 — TIM.** Implement TIM as a separate customer-authentication boundary,
   mapped to the existing non-authenticating identity record. Preserve the
   protected documentation-link and auto-login outcome. Test expiry, revocation,

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { CookieYesScript } from '@/components/CookieYes/CookieYesScript'
 import { draftMode } from 'next/headers'
 import Link from 'next/link'
 import { connection } from 'next/server'
@@ -62,6 +63,9 @@ const RequestTimeFooter = async () => {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html data-scroll-behavior="smooth" lang="en">
+      <head>
+        <CookieYesScript />
+      </head>
       <body>
         <Suspense fallback={null}>
           <DraftAdminBar />

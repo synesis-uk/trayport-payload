@@ -5,8 +5,12 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import {
   COOKIE_CONSENT_CHANGE_EVENT,
   readCookieConsent,
-  type CookieConsentChoice,
 } from '@/Footer/cookieConsent'
+import {
+  HUBSPOT_CONSENT_CATEGORY,
+  cookieYesSiteKey,
+  readCookieYesCategory,
+} from '@/integrations/cookieYes'
 
 /**
  * The HubSpot embed, loaded only after consent.
@@ -89,17 +93,37 @@ const loadHubSpotScript = (): Promise<void> => {
 const subscribeToConsent = (callback: () => void) => {
   window.addEventListener(COOKIE_CONSENT_CHANGE_EVENT, callback)
   window.addEventListener('storage', callback)
+  // CookieYes writes a cookie rather than firing an event we can rely on, so poll while it is the
+  // authority. One second is imperceptible against a banner interaction and costs nothing.
+  const poll = cookieYesSiteKey() ? window.setInterval(callback, 1_000) : null
+
   return () => {
     window.removeEventListener(COOKIE_CONSENT_CHANGE_EVENT, callback)
     window.removeEventListener('storage', callback)
+    if (poll !== null) window.clearInterval(poll)
   }
 }
 
-const useConsent = (): CookieConsentChoice | null =>
+/**
+ * Whether the visitor has allowed the HubSpot embed.
+ *
+ * CookieYes is the authority wherever it is configured — its blocking cannot reach a script created
+ * at runtime, so the decision has to be read rather than relied upon. Everywhere else the FE-018
+ * local banner stands in, which keeps development and tests honest instead of defaulting to
+ * "granted".
+ */
+const readConsentGranted = (): boolean => {
+  if (cookieYesSiteKey()) {
+    return readCookieYesCategory(document.cookie, HUBSPOT_CONSENT_CATEGORY) === true
+  }
+  return readCookieConsent(window.localStorage) === 'accepted'
+}
+
+const useConsentGranted = (): boolean =>
   useSyncExternalStore(
     subscribeToConsent,
-    () => readCookieConsent(window.localStorage),
-    () => null,
+    readConsentGranted,
+    () => false,
   )
 
 /**
@@ -116,13 +140,13 @@ export const HubSpotFormRuntime = ({
   formId: string
   portalId: string
 }) => {
-  const consent = useConsent()
+  const consentGranted = useConsentGranted()
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const targetRef = useRef<HTMLDivElement>(null)
   const createdRef = useRef(false)
 
   useEffect(() => {
-    if (consent !== 'accepted') return
+    if (!consentGranted) return
     if (createdRef.current || !targetRef.current) return
 
     createdRef.current = true
@@ -152,9 +176,9 @@ export const HubSpotFormRuntime = ({
     return () => {
       cancelled = true
     }
-  }, [consent, formId, portalId])
+  }, [consentGranted, formId, portalId])
 
-  const status = consent !== 'accepted' ? 'blocked' : (outcome ?? 'loading')
+  const status = !consentGranted ? 'blocked' : (outcome ?? 'loading')
   const targetID = `hubspot-form-target-${formId}`
 
   const message = {
