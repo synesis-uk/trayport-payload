@@ -1,9 +1,13 @@
-import { normalizeHubSpotFormID } from '@/integrations/hubSpotForm'
+import { HUBSPOT_PORTAL_ID, normalizeHubSpotFormID } from '@/integrations/hubSpotForm'
+
+import { HubSpotFormRuntime } from './HubSpotFormRuntime.client'
 
 /**
- * Consent-aware HubSpot runtime code hydrates this stable mount point. Keeping the
- * source identifier in managed markup preserves local review without submitting
- * data or loading third-party scripts before the shared integration is enabled.
+ * The managed shell around a HubSpot form.
+ *
+ * The heading and identifiers are server-rendered so the section exists in the document without
+ * JavaScript; the form itself is created by `HubSpotFormRuntime`, which does not request the
+ * third-party script until consent is granted.
  */
 export const HubSpotFormMount = ({
   formId,
@@ -20,12 +24,12 @@ export const HubSpotFormMount = ({
       aria-labelledby={`hubspot-form-${normalizedFormID}`}
       className="trayport-hubspot-form"
       data-hubspot-form-id={normalizedFormID}
-      data-hubspot-portal-id="7257359"
+      data-hubspot-portal-id={HUBSPOT_PORTAL_ID}
     >
       <h2 id={`hubspot-form-${normalizedFormID}`}>
         {title?.trim() || 'Contact the Trayport team'}
       </h2>
-      <div className="trayport-hubspot-form__mount" data-hubspot-form-mount="" />
+      <HubSpotFormRuntime formId={normalizedFormID} portalId={HUBSPOT_PORTAL_ID} />
     </section>
   )
 }

@@ -62,7 +62,32 @@ const SAMPLE = [
   { archetype: 'page.landing', routes: 3, paths: ['/regions/europe/', '/regions/asia-pacific/'] },
 ]
 
+/**
+ * Wait for any HubSpot form to finish arriving.
+ *
+ * The third-party embed takes several seconds. Without this the page is measured before the form
+ * exists, understating us by roughly 759px on each of the seven routes that carry one — a
+ * measurement artefact that reads exactly like a content deficit.
+ */
+const settleThirdPartyForms = async (page) => {
+  const mounts = await page.locator('[data-hubspot-form-status]').count()
+  if (mounts === 0) return
+  await page
+    .waitForFunction(
+      () =>
+        [...document.querySelectorAll('[data-hubspot-form-status]')].every((node) =>
+          ['ready', 'error', 'blocked'].includes(node.dataset.hubspotFormStatus ?? ''),
+        ),
+      undefined,
+      { timeout: 15_000 },
+    )
+    .catch(() => undefined)
+  // The iframe reports ready before it has laid out its final height.
+  await page.waitForTimeout(2_500)
+}
+
 const settle = async (page) => {
+  await settleThirdPartyForms(page)
   await page.addStyleTag({
     content: '*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important}',
   })
@@ -98,9 +123,29 @@ const viewport = VIEWPORTS[VIEWPORT]
 if (!viewport) throw new Error(`Unknown viewport "${VIEWPORT}". Expected desktop or mobile.`)
 
 const browser = await chromium.launch()
-const page = await (
-  await browser.newContext({ ...viewport, deviceScaleFactor: 1, locale: 'en-GB' })
-).newPage()
+const context = await browser.newContext({ ...viewport, deviceScaleFactor: 1, locale: 'en-GB' })
+
+/*
+ * Grant cookie consent before measuring.
+ *
+ * The reference loads its HubSpot forms unconditionally; ours load only after consent. Measuring
+ * without it compares our deliberately-blocked state against their rendered one, which reports a
+ * deficit that is really a consent difference — the forms are ~759px each.
+ */
+await context.addInitScript(
+  ([key, record]) => window.localStorage.setItem(key, record),
+  [
+    'trayport-cookie-consent',
+    JSON.stringify({
+      choice: 'accepted',
+      decidedAt: Date.now(),
+      expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
+      version: 1,
+    }),
+  ],
+)
+
+const page = await context.newPage()
 
 const rows = []
 for (const { archetype, paths, routes } of SAMPLE) {

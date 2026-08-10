@@ -410,9 +410,30 @@ Highcharts, Mapbox, Excel generation, and video stay behind lazy boundaries.
 
 Independent of Tracks B and C and can run in parallel.
 
-- **D1 — HubSpot.** Activate the bounded provider lifecycle behind the retained
-  form identifiers. Verify loading, blocked, error, consent, and accessibility
-  behaviour before enabling a real test submission.
+- **D1 — HubSpot (delivered 2026-08-08).** The migration had already carried the
+  portal (`7257359`) and every form UUID through; only the runtime was missing, so
+  the mount rendered as an inert 1px stub and seven routes showed a heading above
+  nothing. `HubSpotFormRuntime.client.tsx` now loads the embed, with four states —
+  blocked, loading, ready, error — each announced through a live region.
+
+  **It improves on the reference rather than copying it.** The reference embeds
+  `js.hsforms.net` inline and unconditionally, so the third-party script runs before
+  any consent decision. Here the script is not requested at all until consent is
+  granted, and a refusal shows an explanation instead of an empty gap. The UI spec
+  asserts the no-script-before-consent property directly; it is the one assertion in
+  that file that must never be relaxed.
+
+  Verified in a browser: without consent the mount reports `blocked` and no script is
+  requested; with consent the form renders at 759px on
+  `/products/conformance-testing/` — the reference's own measured height for that
+  form. `page.product` impact fell 10,450 → 7,810.
+
+  `measure:parity` now grants consent and waits for the embed. Without that it was
+  comparing our deliberately-blocked state against the reference's rendered one,
+  understating us by ~759px on each of the seven routes that carry a form.
+
+  No test submission has been made. Doing so creates a real contact record in
+  Trayport's production portal and is deliberately left as an explicit decision.
 - **D2 — CookieYes.** Clone the live consent categories and behaviour through the
   Next.js integration, and retire the FE-018 local bridge.
 - **D3 — TIM.** Implement TIM as a separate customer-authentication boundary,
